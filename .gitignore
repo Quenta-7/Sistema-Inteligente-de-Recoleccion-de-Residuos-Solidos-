@@ -1,0 +1,14 @@
+# Node
+node_modules/
+
+# Mac
+.DS_Store
+
+# Logs
+*.log
+
+# Env
+.env
+
+# Scripts temporales (Opcional, los dejamos si quieres que tus compañeros los usen)
+# *.bat 

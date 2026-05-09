@@ -7,6 +7,7 @@ echo.
 echo 1. Preparando la Base de Datos (Backend)...
 cd backend
 call npx prisma db push
+call npx prisma generate
 
 echo.
 echo 2. Iniciando Servidor Backend (Puerto 3000)...
