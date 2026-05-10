@@ -12,6 +12,10 @@ cd proyecto-residuos
 
 # 2. Configurar backend (Django)
 cd backend
+python -m venv .venv
+# Activar entorno virtual
+# Windows: .\.venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
 # 3. Configurar frontend
