@@ -1,5 +1,77 @@
-# 🚀 PLANIFICACIÓN DEL MVP - ÍNDICE Y GUÍA DE INICIO
+#  PLANIFICACIÓN DEL MVP - ÍNDICE Y GUÍA DE INICIO
 ## Sistema Inteligente de Recolección de Residuos Sólidos - Cusco
+
+##  CÓMO EMPEZAR
+
+### Paso 1: Preparar Ambiente
+```bash
+# 1. Clonar repositorio
+git clone <repo-url> proyecto-residuos
+cd proyecto-residuos
+
+# 2. Configurar backend (Django)
+cd backend
+python -m venv .venv
+# Activar entorno virtual
+# Windows: .\.venv\Scripts\activate
+# macOS/Linux: source .venv/bin/activate
+pip install -r requirements.txt
+python manage.py migrate
+
+# 3. Configurar frontend
+cd ../frontend
+npm install
+
+# 4. Iniciar desarrollo
+# Terminal 1: Backend
+cd backend
+python manage.py runserver
+# Terminal 2: Frontend
+cd frontend && npm run dev
+```
+
+### Paso 2: Sprint Planning
+```
+SEMANA 1 - LUNES
+├─ 09:00 AM: Kick-off del proyecto
+├─ 10:00 AM: Sprint 1 Planning
+│           └─ Distribuir tareas HU-001 a HU-004
+├─ 12:00 PM: Setup ambiente de desarrollo
+└─ 2:00 PM: Daily standup inicial
+
+SEMANA 1 - MARTES A VIERNES
+└─ Daily standup: 9:00 AM (15 min)
+```
+
+---
+
+## 🎪 CEREMONIASPRINTSCRUM
+
+### Sprint Planning (Inicio de Sprint)
+- **Duración:** 1-2 horas
+- **Participantes:** Todo el equipo
+- **Objetivo:** Seleccionar HU y descomponerlas en tareas
+- **Entregable:** Sprint Backlog completo
+
+### Daily Standup (Diario)
+- **Duración:** 15 minutos
+- **Hora:** 9:00 AM
+- **Preguntas:**
+  1. ¿Qué hice ayer?
+  2. ¿Qué haré hoy?
+  3. ¿Hay bloqueadores?
+
+### Sprint Review (Fin de Sprint)
+- **Duración:** 30-45 minutos
+- **Participantes:** Todo el equipo + Product Owner
+- **Objetivo:** Demostrar lo completado
+- **Criterio:** HU completadas = Done según DoD
+
+### Sprint Retrospective (Fin de Sprint)
+- **Duración:** 30 minutos
+- **Participantes:** Solo dev team + Scrum Master
+- **Objetivo:** Mejorar proceso
+- **Temas:** Qué funcionó, qué mejorar, acciones
 
 ---
 
@@ -56,8 +128,8 @@ Hemos creado **4 documentos de referencia** que cubren todos los aspectos:
 **Contiene:**
 - Stack tecnológico detallado
 - Estructura de carpetas del proyecto
-- Variables de entorno (.env)
-- Esquema de BD con SQL y Prisma
+- Configuración de entorno y settings
+- Modelos, migraciones y base de datos
 - Rutas API REST completas
 - Consideraciones de seguridad
 - Performance y escalabilidad
@@ -80,217 +152,6 @@ Hemos creado **4 documentos de referencia** que cubren todos los aspectos:
 - Métricas de seguimiento
 
 **Cuándo usar:** Gestión del proyecto, seguimiento de progreso
-
----
-
-## 🎯 CÓMO EMPEZAR
-
-### Paso 1: Formar el Equipo SCRUM
-```
-Roles necesarios:
-├─ Product Owner (1 persona)
-│  └─ Responsable de Product Backlog y requisitos
-├─ Scrum Master (1 persona)
-│  └─ Facilita ceremonias, elimina obstáculos
-└─ Development Team (2-3 personas)
-   ├─ Backend developers (1-2)
-   ├─ Frontend developer (1)
-   └─ QA/Tester (1 si es posible)
-
-Total recomendado: 4 personas (conforme con especificación del proyecto)
-```
-
-### Paso 2: Leer Documentación
-```
-1️⃣  MVP_PLANIFICACION.md (30 min)
-    └─ Entender la visión y alcance
-
-2️⃣  PRODUCT_BACKLOG.md (30 min)
-    └─ Conocer las historias de usuario
-
-3️⃣  ESPECIFICACION_TECNICA.md (1 hora)
-    └─ Detalles técnicos antes de comenzar
-
-4️⃣  CRONOGRAMA_ENTREGAS.md (20 min)
-    └─ Entender el timeline
-```
-
-### Paso 3: Preparar Ambiente
-```bash
-# 1. Clonar repositorio
-git clone <repo-url> proyecto-residuos
-cd proyecto-residuos
-
-# 2. Configurar backend
-cd backend
-cp .env.example .env
-# Editar .env con configuración local
-npm install
-npm run setup-db  # Crear BD local
-
-# 3. Configurar frontend
-cd ../frontend
-cp .env.example .env
-npm install
-
-# 4. Iniciar desarrollo
-# Terminal 1: Backend
-cd backend && npm run dev
-# Terminal 2: Frontend
-cd frontend && npm run dev
-```
-
-### Paso 4: Sprint Planning
-```
-SEMANA 1 - LUNES
-├─ 09:00 AM: Kick-off del proyecto
-├─ 10:00 AM: Sprint 1 Planning
-│           └─ Distribuir tareas HU-001 a HU-004
-├─ 12:00 PM: Setup ambiente de desarrollo
-└─ 2:00 PM: Daily standup inicial
-
-SEMANA 1 - MARTES A VIERNES
-└─ Daily standup: 9:00 AM (15 min)
-```
-
----
-
-## 🎪 CEREMONIASPRINTSCRUM
-
-### Sprint Planning (Inicio de Sprint)
-- **Duración:** 1-2 horas
-- **Participantes:** Todo el equipo
-- **Objetivo:** Seleccionar HU y descomponerlas en tareas
-- **Entregable:** Sprint Backlog completo
-
-### Daily Standup (Diario)
-- **Duración:** 15 minutos
-- **Hora:** 9:00 AM
-- **Preguntas:**
-  1. ¿Qué hice ayer?
-  2. ¿Qué haré hoy?
-  3. ¿Hay bloqueadores?
-
-### Sprint Review (Fin de Sprint)
-- **Duración:** 30-45 minutos
-- **Participantes:** Todo el equipo + Product Owner
-- **Objetivo:** Demostrar lo completado
-- **Criterio:** HU completadas = Done según DoD
-
-### Sprint Retrospective (Fin de Sprint)
-- **Duración:** 30 minutos
-- **Participantes:** Solo dev team + Scrum Master
-- **Objetivo:** Mejorar proceso
-- **Temas:** Qué funcionó, qué mejorar, acciones
-
----
-
-## 📊 VELOCITY Y ESTIMACIÓN
-
-### Puntos Scrum Utilizados
-```
-1 punto  = 1-2 horas
-2 puntos = 2-4 horas
-3 puntos = ½ día
-5 puntos = 1 día
-8 puntos = 2 días
-13 puntos = 3+ días (considerar dividir)
-```
-
-### Velocidad Esperada por Sprint
-```
-Sprint 1: 18 puntos (2 semanas) = ~9 pts/semana
-Sprint 2: 27 puntos (1 semana) = ~27 pts/semana
-Sprint 3: 21 puntos (1 semana) = ~21 pts/semana
-Sprint 4: 18 puntos (2 semanas) = ~9 pts/semana
-
-Promedio: 16-20 puntos/semana
-```
-
----
-
-## 📋 CHECKLIST PRE-DESARROLLO
-
-Antes de comenzar, verificar:
-
-### Equipo y Roles
-- [ ] Product Owner asignado
-- [ ] Scrum Master asignado
-- [ ] Developers seleccionados
-- [ ] Reuniones programadas
-
-### Ambiente
-- [ ] Node.js 18+ instalado
-- [ ] PostgreSQL funcionando
-- [ ] Git configurado
-- [ ] Repositorio creado en GitHub
-- [ ] .env configurado
-
-### Documentación
-- [ ] Todos leen MVP_PLANIFICACION.md
-- [ ] Dev team lee ESPECIFICACION_TECNICA.md
-- [ ] PO entiende PRODUCT_BACKLOG.md
-- [ ] Scrum Master conoce CRONOGRAMA_ENTREGAS.md
-
-### Herramientas
-- [ ] Jira/Trello configurado
-- [ ] Slack/Discord para comunicación
-- [ ] GitHub con ramas (main, dev, feature/*)
-- [ ] Documentación compartida (Notion/Confluence)
-
----
-
-## 🚨 RIESGOS PRINCIPALES
-
-| Riesgo | Probabilidad | Mitigación |
-|--------|--------------|-----------|
-| Retrasos tecnológicos | Media | Usar templates/boilerplates |
-| Claridad de requisitos | Media | Daily standups, feedback rápido |
-| Testing insuficiente | Media | Dedicar 20% tiempo a testing |
-| Comunicación en equipo | Baja | Scrum master activo, reuniones |
-| Cambio scope | Media | Decir "no" a features post-MVP |
-
----
-
-## 📞 CONTACTOS Y RESPONSABLES
-
-```
-Docentes (Consultas académicas):
-├─ Jisbaj Gamarra Salas
-├─ Stephan Jhoel Cosio Loaiza
-└─ Luz Indira Ticona
-
-Equipo de Desarrollo:
-├─ Product Owner: [NOMBRE]
-├─ Scrum Master: [NOMBRE]
-├─ Backend Dev: [NOMBRE]
-└─ Frontend Dev: [NOMBRE]
-```
-
----
-
-## 💡 TIPS PARA EL ÉXITO
-
-### Técnicos
-1. **Git workflows:** Feature branches (`git checkout -b feature/HU-001`)
-2. **Commits claros:** `[HU-001] Implementar registro de usuario`
-3. **PR reviews:** Revisar código antes de merge
-4. **Tests:** Escribir tests al mismo tiempo que código
-5. **DB migrations:** Usar Prisma, evitar scripts manuales
-
-### Team
-1. **Comunicación:** Slack diario, reuniones puntuales
-2. **Transparencia:** Reportar problemas temprano
-3. **Colaboración:** Pair programming si es necesario
-4. **Iteración:** Feedback constante, pivotear si es necesario
-5. **Documentación:** Actualizar mientras desarrollas, no al final
-
-### Proyecto
-1. **MVP First:** No agregar features más allá del alcance
-2. **User-centric:** Pensar siempre en el ciudadano de Cusco
-3. **Seguridad:** Validar inputs, hashear contraseñas desde día 1
-4. **Testing:** Tests desde el sprint 1
-5. **Impacto:** Documentar cómo el sistema impacta a la comunidad
 
 ---
 
@@ -320,9 +181,9 @@ Agenda:
 ```
 ├─ Crear repositorio Git
 ├─ Inicializar proyectos backend/frontend
-├─ Configurar BD local con Docker
+├─ Ejecutar migraciones y verificar BD local
 ├─ Primer push a GitHub
-└─ Verificar que todos pueden ejecutar `npm run dev`
+└─ Verificar que todos pueden ejecutar `python manage.py runserver` y `npm run dev`
 ```
 
 ### 2:00 PM - Daily Standup #1 (15 min)
@@ -386,11 +247,11 @@ Cada persona:
 ## 📖 REFERENCIAS ÚTILES
 
 ### Documentación Externa
-- [Prisma Docs](https://www.prisma.io/docs/)
-- [Express.js Guide](https://expressjs.com/)
+- [Django Documentation](https://docs.djangoproject.com/en/5.2/)
+- [Django REST Framework](https://www.django-rest-framework.org/)
 - [React Documentation](https://react.dev/)
-- [PostgreSQL Tutorial](https://www.postgresql.org/docs/)
-- [JWT.io](https://jwt.io/)
+- [Vite Documentation](https://vitejs.dev/)
+- [SQLite Documentation](https://www.sqlite.org/docs.html)
 
 ### Libros Recomendados
 - "Scrum: The Art of Doing Twice the Work in Half the Time" - Sutherland
@@ -400,7 +261,7 @@ Cada persona:
 ### Cursos Online
 - Scrum Master basics (Coursera, Udemy)
 - Full Stack Development (FreeCodeCamp)
-- PostgreSQL + Node.js (YouTube)
+- Python + Django (YouTube)
 
 ---
 
