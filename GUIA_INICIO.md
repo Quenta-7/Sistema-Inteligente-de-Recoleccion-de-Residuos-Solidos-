@@ -6,8 +6,8 @@
 ### Paso 1: Preparar Ambiente
 ```bash
 # 1. Clonar repositorio
-git clone <repo-url> proyecto-residuos
-cd proyecto-residuos
+git clone git@github.com:Quenta-7/Sistema-Inteligente-de-Recoleccion-de-Residuos-Solidos-.git
+cd Sistema-Inteligente-de-Recoleccion-de-Residuos-Solidos-
 
 
 # 2. Configurar backend (Django)
