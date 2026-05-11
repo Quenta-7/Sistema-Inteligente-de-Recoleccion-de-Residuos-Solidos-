@@ -1,6 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Leaf, Mail, Lock, User, MapPin, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+
+type Zona = {
+  id: number;
+  nombre: string;
+  codigo: string;
+};
 
 const Registro = () => {
   const [nombre, setNombre] = useState('');
@@ -10,8 +16,36 @@ const Registro = () => {
   const [confirmacion, setConfirmacion] = useState('');
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState('');
+  const [zonas, setZonas] = useState<Zona[]>([]);
+  const [cargando, setCargando] = useState(false);
+  const [cargandoZonas, setCargandoZonas] = useState(false);
+  const [errorZonas, setErrorZonas] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  useEffect(() => {
+    const cargarZonas = async () => {
+      setCargandoZonas(true);
+      setErrorZonas('');
+
+      try {
+        const response = await fetch('http://localhost:8000/api/zonas/');
+        const data = await response.json();
+
+        if (response.ok) {
+          setZonas(data);
+        } else {
+          setErrorZonas('No se pudieron cargar las zonas.');
+        }
+      } catch (err) {
+        setErrorZonas('Error de conexion con el servidor.');
+      } finally {
+        setCargandoZonas(false);
+      }
+    };
+
+    cargarZonas();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setEnviado(false);
@@ -21,7 +55,44 @@ const Registro = () => {
       return;
     }
 
-    setEnviado(true);
+    setCargando(true);
+
+    try {
+      const response = await fetch('http://localhost:8000/api/register/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          nombre_completo: nombre,
+          password,
+          zona: zona ? Number(zona) : null,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setEnviado(true);
+        setNombre('');
+        setEmail('');
+        setZona('');
+        setPassword('');
+        setConfirmacion('');
+      } else {
+        setError(
+          data.errors?.email?.[0] ||
+            data.errors?.nombre_completo?.[0] ||
+            data.errors?.password?.[0] ||
+            'No se pudo registrar el usuario'
+        );
+      }
+    } catch (err) {
+      setError('Error de conexion. Verifica que el servidor este activo.');
+    } finally {
+      setCargando(false);
+    }
   };
 
   return (
@@ -51,7 +122,7 @@ const Registro = () => {
           <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-emerald-700">
-              Registro enviado. Revisa tu correo para activar la cuenta.
+              Registro exitoso. Ya puedes iniciar sesion.
             </p>
           </div>
         )}
@@ -67,6 +138,7 @@ const Registro = () => {
                 name="nombre"
                 type="text"
                 required
+                disabled={cargando}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
                 placeholder="Nombre completo"
                 value={nombre}
@@ -83,6 +155,7 @@ const Registro = () => {
                 name="email"
                 type="email"
                 required
+                disabled={cargando}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
                 placeholder="Correo electronico"
                 value={email}
@@ -98,15 +171,24 @@ const Registro = () => {
                 id="zona"
                 name="zona"
                 required
+                disabled={cargando || cargandoZonas}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
                 value={zona}
                 onChange={(e) => setZona(e.target.value)}
               >
                 <option value="">Zona de residencia</option>
-                <option value="centro">Centro Historico</option>
-                <option value="wanchaq">Wanchaq</option>
-                <option value="san-sebastian">San Sebastian</option>
+                {zonas.map((zonaItem) => (
+                  <option key={zonaItem.id} value={zonaItem.id}>
+                    {zonaItem.nombre}
+                  </option>
+                ))}
               </select>
+              {cargandoZonas && (
+                <p className="text-xs text-gray-500 mt-2">Cargando zonas...</p>
+              )}
+              {errorZonas && (
+                <p className="text-xs text-red-600 mt-2">{errorZonas}</p>
+              )}
             </div>
 
             <div className="relative group">
@@ -118,6 +200,7 @@ const Registro = () => {
                 name="password"
                 type="password"
                 required
+                disabled={cargando}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
                 placeholder="Contrasena"
                 value={password}
@@ -134,6 +217,7 @@ const Registro = () => {
                 name="confirmacion"
                 type="password"
                 required
+                disabled={cargando}
                 className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
                 placeholder="Confirmar contrasena"
                 value={confirmacion}
@@ -145,9 +229,10 @@ const Registro = () => {
           <div>
             <button
               type="submit"
+              disabled={cargando}
               className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-md transform transition-all hover:-translate-y-0.5"
             >
-              Crear cuenta
+              {cargando ? 'Creando cuenta...' : 'Crear cuenta'}
               <ArrowRight className="ml-2 h-5 w-5 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
             </button>
           </div>

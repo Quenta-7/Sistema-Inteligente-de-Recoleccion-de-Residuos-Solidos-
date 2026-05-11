@@ -14,6 +14,8 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # Endpoint de login
     path('api/login/', views.LoginView.as_view(), name='login'),
+    # Endpoint de registro
+    path('api/register/', views.RegisterView.as_view(), name='register'),
     # Incluimos todas las rutas generadas por el router bajo el prefijo 'api/'
     path('api/', include(router.urls)), 
 ]

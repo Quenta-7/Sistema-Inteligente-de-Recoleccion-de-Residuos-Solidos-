@@ -24,6 +24,38 @@ class UsuarioSerializer(serializers.ModelSerializer):
         fields = ['id', 'email', 'nombre_completo', 'rol', 'zona', 'telefono', 'activo']
         read_only_fields = ['id']
 
+class RegistroSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(
+        write_only=True,
+        style={'input_type': 'password'},
+        trim_whitespace=False,
+        min_length=6
+    )
+    zona = serializers.PrimaryKeyRelatedField(
+        queryset=Zona.objects.all(),
+        required=False,
+        allow_null=True
+    )
+
+    class Meta:
+        model = Usuario
+        fields = ['email', 'nombre_completo', 'password', 'telefono', 'zona']
+
+    def validate_email(self, value):
+        if Usuario.objects.filter(email__iexact=value).exists():
+            raise serializers.ValidationError('Ya existe un usuario con ese email.')
+        return value
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        email = validated_data.get('email')
+
+        usuario = Usuario(**validated_data)
+        usuario.username = email
+        usuario.set_password(password)
+        usuario.save()
+        return usuario
+
 class LoginSerializer(serializers.Serializer):
     """Serializer para autenticar usuario con email y password"""
     email = serializers.EmailField()
