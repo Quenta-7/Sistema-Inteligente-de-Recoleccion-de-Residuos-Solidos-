@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Calendar, AlertTriangle, LogOut, Map, Bell, User, ChevronRight, Leaf } from 'lucide-react';
+import { Calendar, LogOut, Map, Bell, User, ChevronRight, Leaf, Camera, Trophy } from 'lucide-react';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -50,10 +50,29 @@ const Dashboard = () => {
 
       {/* Main Content */}
       <main className="flex-1 w-full max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-10 fade-in-up">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6 mb-10 fade-in-up">
           <div>
             <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Panel de Control</h1>
             <p className="mt-2 text-gray-600 font-medium">¿Qué deseas realizar hoy para mantener limpia tu ciudad?</p>
+          </div>
+          <div className="w-full lg:w-auto">
+            <div className="bg-white/80 border border-emerald-100 rounded-2xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="h-12 w-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center shadow-inner">
+                <Trophy className="h-6 w-6" />
+              </div>
+              <div>
+                <p className="text-xs font-bold text-emerald-600 uppercase tracking-wide">EcoPuntos</p>
+                <p className="text-2xl font-extrabold text-gray-900">1,250</p>
+                <p className="text-xs text-gray-500 font-medium">Bonificación por evidencia validada: +50</p>
+              </div>
+              <div className="sm:ml-6">
+                <p className="text-xs text-gray-500 font-medium mb-2">Progreso a recompensa</p>
+                <div className="w-full sm:w-48 h-2 bg-emerald-100 rounded-full">
+                  <div className="h-2 bg-emerald-500 rounded-full w-[83%]"></div>
+                </div>
+                <p className="text-xs text-gray-500 mt-2 font-medium">Siguiente meta: 1,500 puntos</p>
+              </div>
+            </div>
           </div>
         </div>
         
@@ -79,16 +98,16 @@ const Dashboard = () => {
           {/* Card 2 */}
           <Link to="/reportes" className="group glass-card rounded-2xl overflow-hidden fade-in-up delay-200 relative">
             <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-              <AlertTriangle className="h-24 w-24 text-amber-500" />
+              <Camera className="h-24 w-24 text-emerald-600" />
             </div>
             <div className="p-8 relative z-10">
-              <div className="h-14 w-14 bg-amber-100 text-amber-600 rounded-2xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-                <AlertTriangle className="h-7 w-7" />
+              <div className="h-14 w-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
+                <Camera className="h-7 w-7" />
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Reportar Incidencia</h3>
-              <p className="text-gray-500 text-sm mb-6 line-clamp-2">¿Ves basura acumulada en tu calle? Envía un reporte con foto a las autoridades locales.</p>
-              <div className="flex items-center text-amber-600 font-semibold text-sm group-hover:translate-x-2 transition-transform">
-                Crear reporte <ChevronRight className="h-4 w-4 ml-1" />
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Evidencias de Reciclaje</h3>
+              <p className="text-gray-500 text-sm mb-6 line-clamp-2">Sube una foto y registra tu reciclaje para sumar EcoPuntos en tu cuenta.</p>
+              <div className="flex items-center text-emerald-600 font-semibold text-sm group-hover:translate-x-2 transition-transform">
+                Subir evidencia <ChevronRight className="h-4 w-4 ml-1" />
               </div>
             </div>
           </Link>
@@ -121,16 +140,16 @@ const Dashboard = () => {
           <div className="relative z-10 flex flex-col md:flex-row items-center justify-between">
             <div className="mb-6 md:mb-0">
               <h2 className="text-2xl font-bold mb-2">Cusco más limpio, juntos.</h2>
-              <p className="text-emerald-100 max-w-lg">Has ahorrado aproximadamente 24kg de CO2 al reciclar tus residuos orgánicos este mes. ¡Sigue así!</p>
+              <p className="text-emerald-100 max-w-lg">Tus evidencias de reciclaje ya están sumando EcoPuntos y mejoran la recolección en tu zona.</p>
             </div>
             <div className="flex space-x-6">
               <div className="text-center bg-white/20 backdrop-blur-sm rounded-2xl p-4 min-w-[120px]">
-                <p className="text-4xl font-black mb-1">12</p>
-                <p className="text-sm text-emerald-100 font-medium">Reportes Resueltos</p>
+                <p className="text-4xl font-black mb-1">8</p>
+                <p className="text-sm text-emerald-100 font-medium">Evidencias registradas</p>
               </div>
               <div className="text-center bg-white/20 backdrop-blur-sm rounded-2xl p-4 min-w-[120px]">
-                <p className="text-4xl font-black mb-1">98%</p>
-                <p className="text-sm text-emerald-100 font-medium">Precisión de zona</p>
+                <p className="text-4xl font-black mb-1">32 kg</p>
+                <p className="text-sm text-emerald-100 font-medium">Reciclaje acumulado</p>
               </div>
             </div>
           </div>

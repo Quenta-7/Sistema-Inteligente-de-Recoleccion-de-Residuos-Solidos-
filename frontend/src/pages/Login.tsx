@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Leaf, Mail, Lock, ArrowRight, AlertCircle, Loader } from 'lucide-react';
 
 const Login = () => {
@@ -119,9 +119,9 @@ const Login = () => {
               </label>
             </div>
             <div className="text-sm">
-              <a href="#" className="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors">
+              <Link to="/recuperar-contrasena" className="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors">
                 ¿Olvidaste tu contraseña?
-              </a>
+              </Link>
             </div>
           </div>
 
@@ -147,9 +147,9 @@ const Login = () => {
           
           <p className="text-center text-sm text-gray-600 mt-4">
             ¿No tienes cuenta?{' '}
-            <a href="#" className="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors">
+            <Link to="/registro" className="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors">
               Regístrate aquí
-            </a>
+            </Link>
           </p>
         </form>
 
