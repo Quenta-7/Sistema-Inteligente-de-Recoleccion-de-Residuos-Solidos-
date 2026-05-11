@@ -18,6 +18,7 @@ python -m venv .venv
 # macOS/Linux: source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
+python manage.py seed_db #para agregar datos a la base de datos
 # 3. Configurar frontend
 cd ../frontend
 npm install

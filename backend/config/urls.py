@@ -12,6 +12,8 @@ router.register(r'reportes', views.ReporteViewSet)
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    # Endpoint de login
+    path('api/login/', views.LoginView.as_view(), name='login'),
     # Incluimos todas las rutas generadas por el router bajo el prefijo 'api/'
     path('api/', include(router.urls)), 
 ]
