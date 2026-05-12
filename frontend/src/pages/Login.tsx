@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Leaf, Mail, Lock, ArrowRight, AlertCircle, Loader } from 'lucide-react';
+import CuscoImagen from '../assets/Cusco_imagen.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -48,7 +49,15 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center animated-bg py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+    <div 
+      className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden"
+      style={{
+        backgroundImage: `linear-gradient(135deg, rgba(0, 0, 0, 0.5) 0%, rgba(30, 30, 30, 0.45) 50%, rgba(20, 20, 20, 0.5) 100%), url(${CuscoImagen})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
+    >
       
       {/* Decorative Circles */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-white opacity-10 rounded-full mix-blend-overlay filter blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
@@ -60,7 +69,7 @@ const Login = () => {
             <Leaf className="h-8 w-8 text-white" />
           </div>
           <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-            EcoCusco
+            Te Quiero Verde Cusco
           </h2>
           <p className="mt-3 text-sm text-gray-600 font-medium">
             Sistema Inteligente de Recolección de Residuos

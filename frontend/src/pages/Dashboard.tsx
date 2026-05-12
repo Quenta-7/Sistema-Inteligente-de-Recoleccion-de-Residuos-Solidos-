@@ -18,9 +18,9 @@ const Dashboard = () => {
           <div className="flex justify-between h-20">
             <div className="flex items-center">
               <div className="h-10 w-10 bg-gradient-to-tr from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-md mr-3">
-                 <span className="text-white font-bold text-xl">E</span>
+                 <span className="text-white font-bold text-xl">V</span>
               </div>
-              <span className="text-gray-900 text-2xl font-extrabold tracking-tight">Eco<span className="text-emerald-600">Cusco</span></span>
+              <span className="text-gray-900 text-2xl font-extrabold tracking-tight">Te Quiero <span className="text-emerald-600">Verde</span> Cusco</span>
             </div>
             <div className="flex items-center space-x-4">
               <button className="p-2 text-gray-400 hover:text-emerald-500 transition-colors bg-gray-100 hover:bg-emerald-50 rounded-full">
