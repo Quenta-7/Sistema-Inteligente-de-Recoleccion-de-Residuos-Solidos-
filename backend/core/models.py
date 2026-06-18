@@ -19,6 +19,7 @@ class EstadoReporte(models.TextChoices):
     NUEVO = 'nuevo', 'Nuevo'
     EN_REVISION = 'en_revision', 'En Revisión'
     RESUELTO = 'resuelto', 'Resuelto'
+    RECHAZADO = 'rechazado', 'Rechazado'
 
 # 2. TABLAS
 
@@ -37,6 +38,7 @@ class Zona(models.Model):
 class Usuario(AbstractUser):
     # Extendemos el usuario de Django para que use Email como login
     email = models.EmailField(unique=True)
+    dni = models.CharField(max_length=8, unique=True, null=True, blank=True)
     nombre_completo = models.CharField(max_length=150)
     telefono = models.CharField(max_length=20, null=True, blank=True)
     zona = models.ForeignKey(Zona, on_delete=models.SET_NULL, null=True, blank=True)
@@ -90,9 +92,24 @@ class Evidencia(models.Model):
     cantidad = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True)  # en kg
     ecopuntos = models.IntegerField(default=50)  # puntos otorgados
     estado = models.CharField(max_length=20, choices=EstadoReporte.choices, default=EstadoReporte.NUEVO)
+    direccion_entrega = models.CharField(max_length=255, null=True, blank=True)
+    horario_entrega = models.ForeignKey(Horario, on_delete=models.SET_NULL, null=True, blank=True, related_name='evidencias')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering = ['-created_at']
         indexes = [models.Index(fields=['usuario', 'estado', '-created_at'])]
+
+class Notificacion(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='notificaciones')
+    mensaje = models.CharField(max_length=255)
+    leido = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['usuario', 'leido', '-created_at'])]
+
+    def __str__(self):
+        return f"Notificación para {self.usuario.username}: {self.mensaje[:30]}"

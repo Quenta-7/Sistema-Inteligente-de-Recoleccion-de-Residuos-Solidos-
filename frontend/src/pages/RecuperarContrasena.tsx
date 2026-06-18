@@ -1,15 +1,41 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Leaf, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Leaf, Mail, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
 import CuscoImagen from '../assets/Cusco_imagen.png';
 
 const RecuperarContrasena = () => {
   const [email, setEmail] = useState('');
   const [enviado, setEnviado] = useState(false);
+  const [cargando, setCargando] = useState(false);
+  const [error, setError] = useState('');
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setEnviado(true);
+    setError('');
+    setEnviado(false);
+    setCargando(true);
+
+    try {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+      const response = await fetch(`${apiBaseUrl}/api/auth/recuperar-contrasena/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      if (response.ok && data.success) {
+        setEnviado(true);
+        setEmail('');
+      } else {
+        setError(data.message || 'Ocurrió un error al enviar el correo.');
+      }
+    } catch (err) {
+      setError('Error de conexión. Verifica que el servidor esté activo.');
+    } finally {
+      setCargando(false);
+    }
   };
 
   return (
@@ -36,6 +62,13 @@ const RecuperarContrasena = () => {
           </p>
         </div>
 
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-700">{error}</p>
+          </div>
+        )}
+
         {enviado && (
           <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
@@ -55,7 +88,8 @@ const RecuperarContrasena = () => {
               name="email"
               type="email"
               required
-              className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
+              disabled={cargando}
+              className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
               placeholder="Correo electronico"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -65,9 +99,10 @@ const RecuperarContrasena = () => {
           <div>
             <button
               type="submit"
-              className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-md transform transition-all hover:-translate-y-0.5"
+              disabled={cargando}
+              className="group relative w-full flex justify-center items-center py-3 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 shadow-md transform transition-all hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Enviar enlace
+              {cargando ? 'Enviar enlace...' : 'Enviar enlace'}
               <ArrowRight className="ml-2 h-5 w-5 opacity-70 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
             </button>
           </div>

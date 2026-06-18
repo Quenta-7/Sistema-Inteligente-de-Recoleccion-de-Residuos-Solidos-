@@ -169,12 +169,21 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('user_data');
-    localStorage.removeItem('auth_token');
-    sessionStorage.removeItem('user_data');
-    sessionStorage.removeItem('auth_token');
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await authedFetch('/api/auth/logout/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (error) {
+      console.error('Error invalidando token en servidor:', error);
+    } finally {
+      localStorage.removeItem('user_data');
+      localStorage.removeItem('auth_token');
+      sessionStorage.removeItem('user_data');
+      sessionStorage.removeItem('auth_token');
+      navigate('/login');
+    }
   };
 
   const showFeedback = (text: string, type: 'success' | 'error') => {

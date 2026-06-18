@@ -1,6 +1,6 @@
 # backend/core/serializers.py
 from rest_framework import serializers
-from .models import Usuario, Zona, Horario, Reporte, Evidencia
+from .models import Usuario, Zona, Horario, Reporte, Evidencia, Notificacion
 from django.contrib.auth import authenticate
 
 class ZonaSerializer(serializers.ModelSerializer):
@@ -22,10 +22,11 @@ class EvidenciaSerializer(serializers.ModelSerializer):
     foto_url = serializers.SerializerMethodField()
     usuario_nombre = serializers.CharField(source='usuario.nombre_completo', read_only=True)
     zona_nombre = serializers.CharField(source='zona.nombre', read_only=True)
+    horario_entrega_detalle = serializers.SerializerMethodField()
 
     class Meta:
         model = Evidencia
-        fields = ['id', 'usuario', 'usuario_nombre', 'zona', 'zona_nombre', 'tipo_residuo', 'descripcion', 'foto', 'foto_url', 'cantidad', 'ecopuntos', 'estado', 'created_at', 'updated_at']
+        fields = ['id', 'usuario', 'usuario_nombre', 'zona', 'zona_nombre', 'tipo_residuo', 'descripcion', 'foto', 'foto_url', 'cantidad', 'ecopuntos', 'estado', 'direccion_entrega', 'horario_entrega', 'horario_entrega_detalle', 'created_at', 'updated_at']
         read_only_fields = ['id', 'usuario', 'ecopuntos', 'created_at', 'updated_at']
 
     def get_foto_url(self, obj):
@@ -36,10 +37,21 @@ class EvidenciaSerializer(serializers.ModelSerializer):
             return obj.foto.url
         return None
 
+    def get_horario_entrega_detalle(self, obj):
+        if obj.horario_entrega:
+            return f"{obj.horario_entrega.dia.capitalize()} {obj.horario_entrega.hora_inicio.strftime('%H:%M')}-{obj.horario_entrega.hora_fin.strftime('%H:%M')}"
+        return None
+
+class NotificacionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notificacion
+        fields = ['id', 'mensaje', 'leido', 'created_at']
+        read_only_fields = ['id', 'mensaje', 'created_at']
+
 class UsuarioSerializer(serializers.ModelSerializer):
     class Meta:
         model = Usuario
-        fields = ['id', 'email', 'nombre_completo', 'rol', 'zona', 'telefono', 'activo', 'ecopuntos']
+        fields = ['id', 'email', 'dni', 'nombre_completo', 'rol', 'zona', 'telefono', 'activo', 'ecopuntos']
         read_only_fields = ['id', 'ecopuntos']
 
 class UsuarioAdminSerializer(serializers.ModelSerializer):
@@ -49,6 +61,12 @@ class UsuarioAdminSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'email', 'fecha_aceptacion_terminos']
 
 class RegistroSerializer(serializers.ModelSerializer):
+    dni = serializers.CharField(
+        write_only=True,
+        required=True,
+        min_length=8,
+        max_length=8
+    )
     password = serializers.CharField(
         write_only=True,
         style={'input_type': 'password'},
@@ -64,7 +82,14 @@ class RegistroSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ['email', 'nombre_completo', 'password', 'telefono', 'zona', 'acepta_terminos']
+        fields = ['email', 'dni', 'nombre_completo', 'password', 'telefono', 'zona', 'acepta_terminos']
+
+    def validate_dni(self, value):
+        if not value.isdigit() or len(value) != 8:
+            raise serializers.ValidationError('El DNI debe contener exactamente 8 caracteres numéricos.')
+        if Usuario.objects.filter(dni=value).exists():
+            raise serializers.ValidationError('Ya existe un usuario registrado con este DNI.')
+        return value
 
     def validate_password(self, value):
         import re

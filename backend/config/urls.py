@@ -13,11 +13,18 @@ router.register(r'horarios', views.HorarioViewSet)
 router.register(r'reportes', views.ReporteViewSet)
 router.register(r'evidencias', views.EvidenciaViewSet, basename='evidencia')
 router.register(r'usuarios', views.UsuarioViewSet, basename='usuario')
+router.register(r'notificaciones', views.NotificacionViewSet, basename='notificacion')
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     # Endpoint de login con token
     path('api/auth/login/', views.LoginView.as_view(), name='login'),
+    # Endpoint de logout
+    path('api/auth/logout/', views.LogoutView.as_view(), name='logout'),
+    # Endpoint de recuperar contraseña
+    path('api/auth/recuperar-contrasena/', views.RecuperarContrasenaView.as_view(), name='recuperar_contrasena'),
+    # Endpoint de consulta DNI
+    path('api/consultar-dni/<str:dni>/', views.ConsultarDniView.as_view(), name='consultar_dni'),
     # Endpoint de registro
     path('api/register/', views.RegisterView.as_view(), name='register'),
     # Endpoint de perfil del usuario autenticado

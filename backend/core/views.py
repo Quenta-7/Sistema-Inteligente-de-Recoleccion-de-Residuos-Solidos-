@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
-from .models import Zona, Horario, Reporte, Usuario, Evidencia
+from .models import Zona, Horario, Reporte, Usuario, Evidencia, Notificacion
 from .serializers import (
     ZonaSerializer,
     HorarioSerializer,
@@ -15,6 +15,7 @@ from .serializers import (
     RegistroSerializer,
     EvidenciaSerializer,
     UsuarioAdminSerializer,
+    NotificacionSerializer,
 )
 
 class ZonaViewSet(viewsets.ModelViewSet):
@@ -116,7 +117,6 @@ class EvidenciaViewSet(viewsets.ModelViewSet):
         usuario = self.request.user
         # Por defecto se crea en estado 'nuevo'
         evidencia = serializer.save(usuario=usuario, estado='nuevo')
-        # Los EcoPuntos ahora se otorgan cuando el administrador la aprueba (estado='resuelto')
 
     def perform_update(self, serializer):
         instancia = self.get_object()
@@ -134,6 +134,25 @@ class EvidenciaViewSet(viewsets.ModelViewSet):
             puntos = puntos_por_tipo.get(evidencia.tipo_residuo.lower(), 0)
             usuario.ecopuntos += puntos
             usuario.save()
+
+        # Si el estado cambia, crear una notificación para el ciudadano
+        if evidencia.estado != estado_previo:
+            if evidencia.estado == 'resuelto':
+                puntos_por_tipo = {
+                    'reciclable': 20,
+                    'organico': 10,
+                    'no_reciclable': 5,
+                }
+                puntos = puntos_por_tipo.get(evidencia.tipo_residuo.lower(), 0)
+                Notificacion.objects.create(
+                    usuario=evidencia.usuario,
+                    mensaje=f"Tu entrega de residuos ({evidencia.tipo_residuo.capitalize()}) ha sido Aprobada. ¡Has ganado {puntos} EcoPuntos!"
+                )
+            elif evidencia.estado == 'rechazado':
+                Notificacion.objects.create(
+                    usuario=evidencia.usuario,
+                    mensaje=f"Tu entrega de residuos ({evidencia.tipo_residuo.capitalize()}) ha sido Rechazada por el administrador."
+                )
 
 
 class UsuarioViewSet(viewsets.ModelViewSet):
@@ -163,3 +182,120 @@ class PerfilView(APIView):
             'success': True,
             'user': usuario_serializer.data
         }, status=status.HTTP_200_OK)
+
+
+class ConsultarDniView(APIView):
+    """
+    Consulta a la RENIEC a través del API de Decolecta.
+    GET /api/consultar-dni/<dni>/
+    """
+    def get(self, request, dni):
+        if not dni.isdigit() or len(dni) != 8:
+            return Response({
+                'success': False,
+                'message': 'El DNI debe contener exactamente 8 caracteres numéricos.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        import requests
+        try:
+            token = "sk_14327.Mp0kGu1vUedcnvCZNFpFFss0NrUEOZ8D"
+            url = f"https://api.decolecta.com/v1/reniec/dni?numero={dni}"
+            headers = {
+                'Authorization': f'Bearer {token}',
+                'Accept': 'application/json'
+            }
+
+            response = requests.get(url, headers=headers, timeout=10)
+
+            if response.status_code == 200:
+                data = response.json()
+                
+                # Extraer los datos de la respuesta de Decolecta
+                first_name = data.get('first_name', '')
+                first_last_name = data.get('first_last_name', '')
+                second_last_name = data.get('second_last_name', '')
+
+                # Construir el nombre completo de manera ordenada
+                nombres = first_name
+                apellidos = f"{first_last_name} {second_last_name}".strip()
+                nombre_completo = f"{nombres} {apellidos}".strip()
+
+                return Response({
+                    'success': True,
+                    'nombres': nombres,
+                    'apellidos': apellidos,
+                    'nombre_completo': nombre_completo
+                }, status=status.HTTP_200_OK)
+            elif response.status_code == 404:
+                return Response({
+                    'success': False,
+                    'message': 'El DNI ingresado no fue encontrado en los registros de RENIEC.'
+                }, status=status.HTTP_404_NOT_FOUND)
+            else:
+                return Response({
+                    'success': False,
+                    'message': f'Error en el servicio de consulta (Código: {response.status_code}).'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        except requests.exceptions.RequestException:
+            return Response({
+                'success': False,
+                'message': 'No se pudo conectar con el servicio externo de consulta de DNI.'
+            }, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+
+class LogoutView(APIView):
+    """
+    Invalida y elimina el token de autenticación del usuario en la base de datos.
+    POST /api/auth/logout/
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            request.user.auth_token.delete()
+            return Response({
+                'success': True,
+                'message': 'Sesión cerrada correctamente en el servidor.'
+            }, status=status.HTTP_200_OK)
+        except Exception:
+            return Response({
+                'success': False,
+                'message': 'Error al intentar cerrar la sesión en el servidor.'
+            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class RecuperarContrasenaView(APIView):
+    """
+    Endpoint mock para la solicitud de recuperación de contraseña.
+    POST /api/auth/recuperar-contrasena/
+    """
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({
+                'success': False,
+                'message': 'El correo electrónico es obligatorio.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        # Simula envío exitoso de correo de recuperación
+        return Response({
+            'success': True,
+            'message': f'Se ha enviado un enlace de recuperación al correo {email} exitosamente.'
+        }, status=status.HTTP_200_OK)
+
+
+class NotificacionViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para listar y marcar notificaciones del ciudadano.
+    GET /api/notificaciones/ - Listar notificaciones
+    PATCH /api/notificaciones/<id>/ - Cambiar estado a leído
+    """
+    serializer_class = NotificacionSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Notificacion.objects.filter(usuario=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(usuario=self.request.user)

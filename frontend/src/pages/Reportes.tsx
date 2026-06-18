@@ -7,6 +7,9 @@ const Reportes = () => {
   const [descripcion, setDescripcion] = useState('');
   const [tipoResiduo, setTipoResiduo] = useState('');
   const [cantidad, setCantidad] = useState('');
+  const [direccionEntrega, setDireccionEntrega] = useState('');
+  const [horarioEntrega, setHorarioEntrega] = useState('');
+  const [horarios, setHorarios] = useState<any[]>([]);
   const [enviado, setEnviado] = useState(false);
   const [fileName, setFileName] = useState('');
   const [file, setFile] = useState<File | null>(null);
@@ -33,10 +36,32 @@ const Reportes = () => {
   };
   const [loadingEvidencias, setLoadingEvidencias] = useState(false);
 
-  // Cargar evidencias al montar
+  // Cargar evidencias y horarios de zona al montar
   useEffect(() => {
     cargarEvidencias();
+    cargarHorariosZona();
   }, []);
+
+  const cargarHorariosZona = async () => {
+    try {
+      const perfilResponse = await authedFetch('/api/perfil/');
+      if (perfilResponse.ok) {
+        const perfilData = await perfilResponse.json();
+        const user = perfilData.user;
+        if (user.zona) {
+          const horariosResponse = await authedFetch('/api/horarios/');
+          if (horariosResponse.ok) {
+            const horariosData = await horariosResponse.json();
+            const list = Array.isArray(horariosData) ? horariosData : horariosData.results || [];
+            const filtered = list.filter((h: any) => h.zona === user.zona);
+            setHorarios(filtered);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error cargando horarios de la zona:', err);
+    }
+  };
 
   const cargarEvidencias = async () => {
     try {
@@ -63,9 +88,13 @@ const Reportes = () => {
       formData.append('tipo_residuo', tipoResiduo);
       formData.append('descripcion', descripcion);
       formData.append('cantidad', cantidad);
+      formData.append('direccion_entrega', direccionEntrega);
+      if (horarioEntrega) {
+        formData.append('horario_entrega', horarioEntrega);
+      }
       
-      // Obtener zona del usuario del sessionStorage
-      const userData = sessionStorage.getItem('user_data');
+      // Obtener zona del usuario de localStorage o sessionStorage
+      const userData = localStorage.getItem('user_data') ?? sessionStorage.getItem('user_data');
       if (userData) {
         const user = JSON.parse(userData);
         if (user.zona) {
@@ -87,6 +116,8 @@ const Reportes = () => {
         setDescripcion('');
         setTipoResiduo('');
         setCantidad('');
+        setDireccionEntrega('');
+        setHorarioEntrega('');
         setFileName('');
         setFile(null);
         
@@ -100,14 +131,10 @@ const Reportes = () => {
             const perfilData = await perfilResponse.json();
             const updatedUser = perfilData.user;
             
-            // Actualizar sessionStorage con nuevos datos del perfil
-            sessionStorage.setItem('user_data', JSON.stringify(updatedUser));
-            
-            // También actualizar localStorage si existe
-            const localUserData = localStorage.getItem('user_data');
-            if (localUserData) {
-              localStorage.setItem('user_data', JSON.stringify(updatedUser));
-            }
+            // Actualizar el storage correspondiente (local o session)
+            const isLocal = localStorage.getItem('auth_token') !== null;
+            const storage = isLocal ? localStorage : sessionStorage;
+            storage.setItem('user_data', JSON.stringify(updatedUser));
           }
         } catch (err) {
           console.error('Error actualizando perfil:', err);
@@ -116,7 +143,7 @@ const Reportes = () => {
         // Resetear mensaje de éxito después de 3 segundos
         setTimeout(() => {
           setEnviado(false);
-        }, 3000);
+        }, 3500);
       } else {
         const errorData = await response.json();
         setError(errorData.detail || 'Error al enviar la evidencia');
@@ -144,6 +171,8 @@ const Reportes = () => {
         return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
       case 'resuelto':
         return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+      case 'rechazado':
+        return 'bg-red-100 text-red-800 border border-red-200';
       default:
         return 'bg-gray-100 text-gray-800 border border-gray-200';
     }
@@ -241,6 +270,43 @@ const Reportes = () => {
                 />
               </div>
             </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              <div>
+                <label htmlFor="direccion-entrega" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+                  Ubicación / Dirección de entrega
+                </label>
+                <input
+                  id="direccion-entrega"
+                  type="text"
+                  required
+                  className="block w-full border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-white transition-all"
+                  placeholder="Ej. Av. de la Cultura 1500"
+                  value={direccionEntrega}
+                  onChange={(e) => setDireccionEntrega(e.target.value)}
+                />
+              </div>
+              <div>
+                <label htmlFor="horario-entrega" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+                  Horario de entrega programado
+                </label>
+                <select
+                  id="horario-entrega"
+                  required
+                  className="block w-full border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-white transition-all"
+                  value={horarioEntrega}
+                  onChange={(e) => setHorarioEntrega(e.target.value)}
+                >
+                  <option value="">Selecciona un horario</option>
+                  {horarios.map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.dia.charAt(0).toUpperCase() + h.dia.slice(1)} {h.hora_inicio.substring(0, 5)} - {h.hora_fin.substring(0, 5)} ({h.tipos_residuo.join(', ')})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
             <div className="mb-6">
               <label htmlFor="descripcion" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
                 Descripción del reciclaje
@@ -339,13 +405,25 @@ const Reportes = () => {
                           {evidencia.tipo_residuo}
                         </span>
                         <span className={`px-2 py-1 text-xs leading-5 font-bold rounded-full ${getEstadoBadge(evidencia.estado)}`}>
-                          {evidencia.estado === 'nuevo' ? 'Nuevo' :
+                          {evidencia.estado === 'nuevo' ? 'Pendiente de Validación' :
                            evidencia.estado === 'en_revision' ? 'En revisión' :
-                           'Resuelto'}
+                           evidencia.estado === 'resuelto' ? 'Aprobado' :
+                           evidencia.estado === 'rechazado' ? 'Rechazado' :
+                           evidencia.estado}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-700 font-medium mb-2">{evidencia.descripcion.substring(0, 80)}...</p>
-                      <div className="flex items-center justify-between text-xs text-gray-600">
+                      <p className="text-sm text-gray-700 font-medium mb-2">{evidencia.descripcion}</p>
+                      {evidencia.direccion_entrega && (
+                        <p className="text-xs text-gray-500 mb-1">
+                          <span className="font-bold">Ubicación:</span> {evidencia.direccion_entrega}
+                        </p>
+                      )}
+                      {evidencia.horario_entrega_detalle && (
+                        <p className="text-xs text-gray-500 mb-2">
+                          <span className="font-bold">Horario:</span> {evidencia.horario_entrega_detalle}
+                        </p>
+                      )}
+                      <div className="flex items-center justify-between text-xs text-gray-650">
                         <span>{evidencia.cantidad} kg</span>
                         <span className="font-bold text-emerald-600">+{evidencia.ecopuntos} pts</span>
                       </div>

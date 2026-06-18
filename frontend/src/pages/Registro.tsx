@@ -11,6 +11,9 @@ type Zona = {
 
 const Registro = () => {
   const [nombre, setNombre] = useState('');
+  const [dni, setDni] = useState('');
+  const [nombreReadOnly, setNombreReadOnly] = useState(false);
+  const [buscandoDni, setBuscandoDni] = useState(false);
   const [email, setEmail] = useState('');
   const [zona, setZona] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +32,8 @@ const Registro = () => {
       setErrorZonas('');
 
       try {
-        const response = await fetch('http://127.0.0.1:8000/api/zonas/');
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+        const response = await fetch(`${apiBaseUrl}/api/zonas/`);
         const data = await response.json();
 
         if (response.ok) {
@@ -47,10 +51,55 @@ const Registro = () => {
     cargarZonas();
   }, []);
 
+  const handleDniChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, '').substring(0, 8);
+    setDni(val);
+    setError('');
+
+    if (val.length === 8) {
+      setBuscandoDni(true);
+      try {
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+        const response = await fetch(`${apiBaseUrl}/api/consultar-dni/${val}/`);
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setNombre(data.nombre_completo);
+          setNombreReadOnly(true);
+        } else {
+          setError(data.message || 'El DNI no se encuentra registrado en RENIEC.');
+          setNombre('');
+          setNombreReadOnly(false);
+        }
+      } catch (err) {
+        setError('Error al consultar el servicio de DNI.');
+        setNombre('');
+        setNombreReadOnly(false);
+      } finally {
+        setBuscandoDni(false);
+      }
+    } else {
+      if (nombreReadOnly) {
+        setNombre('');
+        setNombreReadOnly(false);
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setEnviado(false);
+
+    if (dni.length !== 8) {
+      setError('El DNI debe contener exactamente 8 dígitos.');
+      return;
+    }
+
+    if (!nombre) {
+      setError('Por favor, ingresa un DNI válido.');
+      return;
+    }
 
     if (password !== confirmacion) {
       setError('Las contraseñas no coinciden');
@@ -72,13 +121,15 @@ const Registro = () => {
     setCargando(true);
 
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/register/', {
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+      const response = await fetch(`${apiBaseUrl}/api/register/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
           email,
+          dni,
           nombre_completo: nombre,
           password,
           zona: zona ? Number(zona) : null,
@@ -91,6 +142,8 @@ const Registro = () => {
       if (response.ok && data.success) {
         setEnviado(true);
         setNombre('');
+        setDni('');
+        setNombreReadOnly(false);
         setEmail('');
         setZona('');
         setPassword('');
@@ -98,7 +151,8 @@ const Registro = () => {
         setAceptaTerminos(false);
       } else {
         setError(
-          data.errors?.email?.[0] ||
+          data.errors?.dni?.[0] ||
+            data.errors?.email?.[0] ||
             data.errors?.nombre_completo?.[0] ||
             data.errors?.password?.[0] ||
             'No se pudo registrar el usuario'
@@ -153,6 +207,31 @@ const Registro = () => {
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
+            
+            {/* Campo DNI */}
+            <div className="relative group">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <span className="text-gray-400 font-bold text-xs group-focus-within:text-emerald-500 transition-colors">DNI</span>
+              </div>
+              <input
+                id="dni"
+                name="dni"
+                type="text"
+                required
+                disabled={cargando || buscandoDni}
+                className="block w-full pl-12 pr-10 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
+                placeholder="Número de DNI (8 dígitos)"
+                value={dni}
+                onChange={handleDniChange}
+              />
+              {buscandoDni && (
+                <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-emerald-500"></div>
+                </div>
+              )}
+            </div>
+
+            {/* Campo Nombre Completo */}
             <div className="relative group">
               <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                 <User className="h-5 w-5 text-gray-400 group-focus-within:text-emerald-500 transition-colors" />
@@ -162,8 +241,11 @@ const Registro = () => {
                 name="nombre"
                 type="text"
                 required
-                disabled={cargando}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
+                readOnly={nombreReadOnly}
+                disabled={cargando || buscandoDni}
+                className={`block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-450 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm ${
+                  nombreReadOnly ? 'bg-gray-50 text-gray-500 cursor-not-allowed font-medium' : ''
+                }`}
                 placeholder="Nombre completo"
                 value={nombre}
                 onChange={(e) => setNombre(e.target.value)}

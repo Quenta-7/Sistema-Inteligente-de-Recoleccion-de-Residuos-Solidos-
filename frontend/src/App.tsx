@@ -10,6 +10,7 @@ import MapaEnVivo from './pages/MapaEnVivo';
 import TerminosCondiciones from './pages/TerminosCondiciones';
 import PoliticaPrivacidad from './pages/PoliticaPrivacidad';
 import AdminDashboard from './pages/AdminDashboard';
+import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
   return (
@@ -19,14 +20,44 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/tienda-ecopuntos" element={<TiendaEcoPuntos />} />
-        <Route path="/mapa-en-vivo" element={<MapaEnVivo />} />
-        <Route path="/horarios" element={<Horarios />} />
-        <Route path="/reportes" element={<Reportes />} />
+        
+        {/* Rutas protegidas para ciudadanos */}
+        <Route path="/dashboard" element={
+          <ProtectedRoute>
+            <Dashboard />
+          </ProtectedRoute>
+        } />
+        <Route path="/tienda-ecopuntos" element={
+          <ProtectedRoute>
+            <TiendaEcoPuntos />
+          </ProtectedRoute>
+        } />
+        <Route path="/mapa-en-vivo" element={
+          <ProtectedRoute>
+            <MapaEnVivo />
+          </ProtectedRoute>
+        } />
+        <Route path="/horarios" element={
+          <ProtectedRoute>
+            <Horarios />
+          </ProtectedRoute>
+        } />
+        <Route path="/reportes" element={
+          <ProtectedRoute>
+            <Reportes />
+          </ProtectedRoute>
+        } />
+        
+        {/* Rutas públicas de soporte legal */}
         <Route path="/terminos-condiciones" element={<TerminosCondiciones />} />
         <Route path="/politica-privacidad" element={<PoliticaPrivacidad />} />
-        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        
+        {/* Rutas protegidas exclusivas de administrador */}
+        <Route path="/admin-dashboard" element={
+          <ProtectedRoute adminOnly={true}>
+            <AdminDashboard />
+          </ProtectedRoute>
+        } />
       </Routes>
     </BrowserRouter>
   );
