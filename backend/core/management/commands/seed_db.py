@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.hashers import make_password
 from datetime import time
-from core.models import Zona, Usuario, Horario, Reporte
+from core.models import Zona, Usuario, Horario, Reporte, Evidencia, Notificacion, Recompensa, Canje
 
 class Command(BaseCommand):
     help = 'Agregar datos de prueba (seed) a la base de datos'
@@ -16,6 +16,10 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options['clean']:
             self.stdout.write(self.style.WARNING('Limpiando datos existentes...'))
+            Canje.objects.all().delete()
+            Recompensa.objects.all().delete()
+            Notificacion.objects.all().delete()
+            Evidencia.objects.all().delete()
             Horario.objects.all().delete()
             Reporte.objects.all().delete()
             Usuario.objects.all().delete()
@@ -62,7 +66,7 @@ class Command(BaseCommand):
                 defaults=zona_data
             )
             if created:
-                self.stdout.write(self.style.SUCCESS(f'✓ Zona creada: {zona.nombre}'))
+                self.stdout.write(self.style.SUCCESS(f'[OK] Zona creada: {zona.nombre}'))
             else:
                 self.stdout.write(f'  Zona existente: {zona.nombre}')
             zonas_creadas[zona.codigo] = zona
@@ -126,7 +130,7 @@ class Command(BaseCommand):
                 defaults=usuario_data
             )
             if created:
-                self.stdout.write(self.style.SUCCESS(f'✓ Usuario creado: {usuario.nombre_completo}'))
+                self.stdout.write(self.style.SUCCESS(f'[OK] Usuario creado: {usuario.nombre_completo}'))
             else:
                 self.stdout.write(f'  Usuario existente: {usuario.nombre_completo}')
             usuarios_creados[usuario.email] = usuario
@@ -218,7 +222,7 @@ class Command(BaseCommand):
                     horarios_creados += 1
 
         if horarios_creados > 0:
-            self.stdout.write(self.style.SUCCESS(f'✓ {horarios_creados} horarios creados'))
+            self.stdout.write(self.style.SUCCESS(f'[OK] {horarios_creados} horarios creados'))
         else:
             self.stdout.write('  Todos los horarios ya existen')
 
@@ -262,11 +266,78 @@ class Command(BaseCommand):
                     reportes_creados += 1
 
         if reportes_creados > 0:
-            self.stdout.write(self.style.SUCCESS(f'✓ {reportes_creados} reportes creados'))
+            self.stdout.write(self.style.SUCCESS(f'[OK] {reportes_creados} reportes creados'))
         else:
             self.stdout.write('  Todos los reportes ya existen')
 
-        self.stdout.write(self.style.SUCCESS('\n✅ Datos de prueba agregados exitosamente'))
-        self.stdout.write('\n📋 Credenciales de administrador:')
+        # 5. CREAR RECOMPENSAS
+        self.stdout.write('Creando recompensas...')
+        recompensas_data = [
+            {
+                'nombre': 'Botella termica reutilizable',
+                'descripcion': 'Acero inoxidable, 750 ml con aislante.',
+                'puntos': 280,
+                'categoria': 'Hogar',
+                'imagen': 'gift',
+                'stock': 15,
+                'disponible': True
+            },
+            {
+                'nombre': 'Bono para transporte urbano',
+                'descripcion': 'Recarga digital para bus o corredor.',
+                'puntos': 420,
+                'categoria': 'Movilidad',
+                'imagen': 'ticket',
+                'stock': 30,
+                'disponible': True
+            },
+            {
+                'nombre': 'Kit de compostaje en casa',
+                'descripcion': 'Incluye guia practica y mini compostera.',
+                'puntos': 650,
+                'categoria': 'Hogar',
+                'imagen': 'sparkles',
+                'stock': 8,
+                'disponible': True
+            },
+            {
+                'nombre': 'Tote bag de algodon organico',
+                'descripcion': 'Bolsa reforzada para compras sin plastico.',
+                'puntos': 220,
+                'categoria': 'EcoModa',
+                'imagen': 'shopping-bag',
+                'stock': 25,
+                'disponible': True
+            },
+            {
+                'nombre': 'Entrada a ruta verde guiada',
+                'descripcion': 'Experiencia local con enfoque ambiental.',
+                'puntos': 780,
+                'categoria': 'Experiencias',
+                'imagen': 'map-pin',
+                'stock': 5,
+                'disponible': True
+            },
+            {
+                'nombre': 'Pack de semillas nativas',
+                'descripcion': 'Variedades andinas para tu huerto urbano.',
+                'puntos': 180,
+                'categoria': 'Hogar',
+                'imagen': 'star',
+                'stock': 50,
+                'disponible': True
+            },
+        ]
+
+        for recompensa_data in recompensas_data:
+            recompensa, created = Recompensa.objects.get_or_create(
+                nombre=recompensa_data['nombre'],
+                defaults=recompensa_data
+            )
+            if created:
+                self.stdout.write(self.style.SUCCESS(f'[OK] Recompensa creada: {recompensa.nombre}'))
+
+        self.stdout.write(self.style.SUCCESS('\n*** Datos de prueba agregados exitosamente'))
+        self.stdout.write('\n=== Credenciales de administrador:')
         self.stdout.write('   Email: admin@residuos.com')
         self.stdout.write('   Contraseña: admin123')

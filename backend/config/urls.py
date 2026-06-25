@@ -14,6 +14,8 @@ router.register(r'reportes', views.ReporteViewSet)
 router.register(r'evidencias', views.EvidenciaViewSet, basename='evidencia')
 router.register(r'usuarios', views.UsuarioViewSet, basename='usuario')
 router.register(r'notificaciones', views.NotificacionViewSet, basename='notificacion')
+router.register(r'recompensas', views.RecompensaViewSet, basename='recompensa')
+router.register(r'canjes', views.CanjeViewSet, basename='canje')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

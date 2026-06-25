@@ -3,10 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, LogOut, Map, Bell, User, ChevronRight, Leaf, Camera, Trophy, Sun, Moon, Menu, X, AlertTriangle } from 'lucide-react';
 import { authedFetch } from '../api';
 
-type UsuarioLocal = {
-  nombre?: string;
-  zona?: number | null;
-};
+
 
 const Dashboard = () => {
   const navigate = useNavigate();

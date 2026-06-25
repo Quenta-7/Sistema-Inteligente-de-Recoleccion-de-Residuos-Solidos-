@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
-from .models import Zona, Horario, Reporte, Usuario, Evidencia, Notificacion
+from .models import Zona, Horario, Reporte, Usuario, Evidencia, Notificacion, Recompensa, Canje
 from .serializers import (
     ZonaSerializer,
     HorarioSerializer,
@@ -16,6 +16,8 @@ from .serializers import (
     EvidenciaSerializer,
     UsuarioAdminSerializer,
     NotificacionSerializer,
+    RecompensaSerializer,
+    CanjeSerializer,
 )
 
 class ZonaViewSet(viewsets.ModelViewSet):
@@ -30,15 +32,32 @@ class ReporteViewSet(viewsets.ModelViewSet):
     queryset = Reporte.objects.all()
     serializer_class = ReporteSerializer
 
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.throttling import SimpleRateThrottle
+
+class LoginRateThrottle(SimpleRateThrottle):
+    scope = 'login'
+
+    def get_cache_key(self, request, view):
+        if request.method != 'POST':
+            return None
+        email = request.data.get('email', '')
+        ident = self.get_ident(request)
+        return self.cache_format % {
+            'scope': self.scope,
+            'ident': f"{ident}_{email}"
+        }
+
 class LoginView(APIView):
     """
-    Endpoint para autenticar usuarios con Token
+    Endpoint para autenticar usuarios con JWT Token
     POST /api/auth/login/
     {
         "email": "usuario@email.com",
         "password": "password123"
     }
     """
+    throttle_classes = [LoginRateThrottle]
     
     def post(self, request):
         serializer = LoginSerializer(data=request.data)
@@ -46,8 +65,9 @@ class LoginView(APIView):
         if serializer.is_valid():
             usuario = serializer.validated_data['usuario']
             
-            # Generar o obtener token para el usuario
-            token, created = Token.objects.get_or_create(user=usuario)
+            # Generar token JWT para el usuario
+            refresh = RefreshToken.for_user(usuario)
+            access_token = str(refresh.access_token)
             
             # Responder con token y datos del usuario autenticado
             usuario_serializer = UsuarioSerializer(usuario)
@@ -55,7 +75,7 @@ class LoginView(APIView):
             return Response({
                 'success': True,
                 'message': f'Bienvenido {usuario.nombre_completo}',
-                'token': token.key,
+                'token': access_token,
                 'user': usuario_serializer.data
             }, status=status.HTTP_200_OK)
         
@@ -121,7 +141,14 @@ class EvidenciaViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         instancia = self.get_object()
         estado_previo = instancia.estado
-        evidencia = serializer.save()
+        
+        # Registrar validador y fecha de validacion si cambia el estado
+        nuevo_estado = serializer.validated_data.get('estado', estado_previo)
+        if nuevo_estado in ['resuelto', 'rechazado', 'en_revision'] and nuevo_estado != estado_previo:
+            from django.utils import timezone
+            evidencia = serializer.save(validador=self.request.user, fecha_validacion=timezone.now())
+        else:
+            evidencia = serializer.save()
         
         # Si el estado cambia a 'resuelto' (aprobada por admin) y antes no lo estaba, otorgar EcoPuntos
         if evidencia.estado == 'resuelto' and estado_previo != 'resuelto':
@@ -299,3 +326,65 @@ class NotificacionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(usuario=self.request.user)
+
+class RecompensaViewSet(viewsets.ModelViewSet):
+    queryset = Recompensa.objects.all()
+    serializer_class = RecompensaSerializer
+    
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return []
+        return [IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        from rest_framework.exceptions import PermissionDenied
+        if not hasattr(self.request.user, 'rol') or self.request.user.rol != 'admin':
+            raise PermissionDenied("Solo los administradores pueden crear recompensas.")
+        serializer.save()
+
+    def perform_update(self, serializer):
+        from rest_framework.exceptions import PermissionDenied
+        if not hasattr(self.request.user, 'rol') or self.request.user.rol != 'admin':
+            raise PermissionDenied("Solo los administradores pueden modificar recompensas.")
+        serializer.save()
+
+class CanjeViewSet(viewsets.ModelViewSet):
+    serializer_class = CanjeSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        if hasattr(self.request.user, 'rol') and self.request.user.rol == 'admin':
+            return Canje.objects.all()
+        return Canje.objects.filter(usuario=self.request.user)
+
+    def perform_create(self, serializer):
+        from django.db import transaction
+        from rest_framework.exceptions import ValidationError
+
+        recompensa = serializer.validated_data['recompensa']
+        usuario = self.request.user
+
+        with transaction.atomic():
+            recompensa_db = Recompensa.objects.select_for_update().get(id=recompensa.id)
+            usuario_db = Usuario.objects.select_for_update().get(id=usuario.id)
+
+            if usuario_db.ecopuntos < recompensa_db.puntos:
+                raise ValidationError({"detail": "No tienes suficientes EcoPuntos para canjear esta recompensa."})
+
+            if recompensa_db.stock <= 0 or not recompensa_db.disponible:
+                raise ValidationError({"detail": "Esta recompensa no tiene stock disponible."})
+
+            usuario_db.ecopuntos -= recompensa_db.puntos
+            usuario_db.save()
+
+            recompensa_db.stock -= 1
+            if recompensa_db.stock == 0:
+                recompensa_db.disponible = False
+            recompensa_db.save()
+
+            serializer.save(usuario=usuario_db, puntos=recompensa_db.puntos)
+
+            Notificacion.objects.create(
+                usuario=usuario_db,
+                mensaje=f"Has canjeado '{recompensa_db.nombre}' por {recompensa_db.puntos} EcoPuntos. Código de canje: {serializer.instance.id}."
+            )

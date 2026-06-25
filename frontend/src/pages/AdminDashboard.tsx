@@ -32,6 +32,9 @@ type Evidencia = {
   ecopuntos: number;
   estado: string;
   created_at: string;
+  validador?: number;
+  validador_nombre?: string;
+  fecha_validacion?: string;
 };
 
 type Usuario = {
@@ -194,7 +197,7 @@ const AdminDashboard = () => {
   };
 
   // Validar evidencia (Aprobar / Rechazar)
-  const cambiarEstadoEvidencia = async (id: number, nuevoEstado: 'resuelto' | 'en_revision') => {
+  const cambiarEstadoEvidencia = async (id: number, nuevoEstado: 'resuelto' | 'en_revision' | 'rechazado') => {
     try {
       const res = await authedFetch(`/api/evidencias/${id}/`, {
         method: 'PATCH',
@@ -204,6 +207,8 @@ const AdminDashboard = () => {
         showFeedback(
           nuevoEstado === 'resuelto' 
             ? 'Evidencia aprobada correctamente. EcoPuntos otorgados.' 
+            : nuevoEstado === 'rechazado'
+            ? 'Evidencia rechazada correctamente.'
             : 'Evidencia marcada en revisión / observada.', 
           'success'
         );
@@ -555,11 +560,13 @@ const AdminDashboard = () => {
                             </span>
                             <span className={`text-[10px] font-bold px-2 py-0.5 rounded uppercase ${
                               evidencia.estado === 'nuevo' ? 'bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-400 border border-amber-200 dark:border-amber-400/20' :
-                              evidencia.estado === 'en_revision' ? 'bg-red-105 text-red-700 dark:bg-red-400/10 dark:text-red-400 border border-red-200 dark:border-red-400/20' :
+                              evidencia.estado === 'en_revision' ? 'bg-yellow-105 text-yellow-750 dark:bg-yellow-400/10 dark:text-yellow-400 border border-yellow-250 dark:border-yellow-400/20' :
+                              evidencia.estado === 'rechazado' ? 'bg-red-105 text-red-700 dark:bg-red-400/10 dark:text-red-400 border border-red-250 dark:border-red-450/20' :
                               'bg-emerald-100 text-emerald-700 dark:bg-emerald-400/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-400/20'
                             }`}>
                               {evidencia.estado === 'nuevo' ? 'Pendiente' : 
                                evidencia.estado === 'en_revision' ? 'Observado' : 
+                               evidencia.estado === 'rechazado' ? 'Rechazado' :
                                'Aprobado'}
                             </span>
                           </div>
@@ -572,22 +579,39 @@ const AdminDashboard = () => {
                             <span>Cantidad: <strong className="text-slate-850 dark:text-white">{evidencia.cantidad} kg</strong></span>
                             <span>Valoración: <strong className="text-emerald-600 dark:text-emerald-400">+{evidencia.ecopuntos} pts</strong></span>
                           </div>
+                          {evidencia.validador_nombre && (
+                            <div className="mt-4 p-2.5 bg-slate-100/50 dark:bg-slate-900/40 rounded-xl border border-slate-200 dark:border-slate-800 text-[10px] space-y-1 text-slate-500 dark:text-gray-450">
+                              <p><span className="font-bold">Validador:</span> {evidencia.validador_nombre}</p>
+                              {evidencia.fecha_validacion && (
+                                <p><span className="font-bold">Fecha:</span> {new Date(evidencia.fecha_validacion).toLocaleString('es-PE')}</p>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
 
                       {evidencia.estado === 'nuevo' && (
-                        <div className="p-5 pt-0 border-t border-slate-100 dark:border-slate-900/60 mt-4 flex gap-3">
+                        <div className="p-5 pt-0 border-t border-slate-100 dark:border-slate-900/60 mt-4 flex gap-2">
                           <button
                             onClick={() => cambiarEstadoEvidencia(evidencia.id, 'resuelto')}
-                            className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-md transition-all active:scale-95"
+                            className="flex-1 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-1 shadow-md transition-all active:scale-95"
+                            title="Aprobar reporte"
                           >
-                            <CheckCircle className="h-4 w-4" /> Aprobar
+                            <CheckCircle className="h-3.5 w-3.5" /> Aprobar
                           </button>
                           <button
                             onClick={() => cambiarEstadoEvidencia(evidencia.id, 'en_revision')}
-                            className="flex-1 py-2 bg-slate-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-955/65 text-slate-700 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 font-bold text-xs rounded-xl flex items-center justify-center gap-1.5 border border-slate-200 dark:border-slate-700 hover:border-red-200 dark:hover:border-red-900/40 transition-all active:scale-95"
+                            className="flex-1 py-2 bg-slate-100 hover:bg-yellow-50 dark:bg-slate-800 dark:hover:bg-yellow-950/40 text-slate-700 hover:text-yellow-600 dark:text-slate-300 dark:hover:text-yellow-450 font-bold text-xs rounded-xl flex items-center justify-center gap-1 border border-slate-200 dark:border-slate-700 hover:border-yellow-250 transition-all active:scale-95"
+                            title="Marcar como observado"
                           >
-                            <XCircle className="h-4 w-4" /> Observar
+                            <XCircle className="h-3.5 w-3.5 text-yellow-550" /> Observar
+                          </button>
+                          <button
+                            onClick={() => cambiarEstadoEvidencia(evidencia.id, 'rechazado')}
+                            className="flex-1 py-2 bg-slate-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-950/40 text-slate-700 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 font-bold text-xs rounded-xl flex items-center justify-center gap-1 border border-slate-200 dark:border-slate-700 hover:border-red-250 transition-all active:scale-95"
+                            title="Rechazar reporte"
+                          >
+                            <XCircle className="h-3.5 w-3.5 text-red-550" /> Rechazar
                           </button>
                         </div>
                       )}

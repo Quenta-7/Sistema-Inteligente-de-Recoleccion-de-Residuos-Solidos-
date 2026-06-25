@@ -1,0 +1,399 @@
+====================================================
+PROYECTO: SISTEMA DE GESTIÓN DE RESIDUOS Y ECOPUNTOS
+BACKLOG DE PRODUCTO - HISTORIAS DE USUARIO
+====================================================
+
+====================================================
+HU-001
+AUTENTICACIÓN DE USUARIO
+====================================================
+
+Como usuario registrado,
+
+Quiero iniciar sesión utilizando mis credenciales de acceso,
+
+Para acceder de forma segura a las funcionalidades disponibles del sistema.
+
+Prioridad: Alta
+Actor: Usuario
+
+Valor de Negocio:
+Permite el acceso seguro a la plataforma y protege la información de los usuarios.
+
+CRITERIOS DE ACEPTACIÓN
+
+Funcionales
+- El usuario debe poder ingresar correo electrónico y contraseña.
+- El sistema debe validar campos obligatorios.
+- El sistema debe verificar que las credenciales correspondan a un usuario registrado.
+- Si la autenticación es exitosa, el usuario debe acceder al Dashboard.
+- Si la autenticación falla, el sistema debe mostrar un mensaje adecuado.
+
+Técnicos
+- Las contraseñas deben almacenarse utilizando BCrypt.
+- La autenticación debe generar un token JWT.
+- La sesión debe mantenerse mediante token seguro.
+- Todas las comunicaciones deben realizarse mediante HTTPS.
+
+Seguridad
+- El sistema debe proteger las credenciales almacenadas.
+- Debe prevenir ataques de fuerza bruta mediante limitación de intentos.
+
+SUBTASKS
+- Diseñar pantalla Login.
+- Implementar API de autenticación.
+- Implementar cifrado BCrypt.
+- Implementar JWT.
+- Implementar validaciones.
+- Realizar pruebas de autenticación.
+
+====================================================
+HU-002
+REGISTRO DE CIUDADANO MEDIANTE DNI
+====================================================
+
+Como ciudadano que aún no posee una cuenta,
+
+Quiero registrarme utilizando mi número de DNI,
+
+Para crear una cuenta y acceder a los servicios digitales de la plataforma.
+
+Prioridad: Alta
+Actor: Ciudadano
+
+CRITERIOS DE ACEPTACIÓN
+
+Funcionales
+- El formulario debe solicitar:
+  * DNI
+  * Distrito
+  * Correo electrónico
+  * Contraseña
+  * Confirmación de contraseña
+- El DNI debe contener exactamente 8 dígitos.
+- El sistema debe consultar automáticamente los nombres y apellidos.
+- El DNI no debe estar previamente registrado.
+- El correo no debe estar previamente registrado.
+
+Técnicos
+- Integración con servicio de consulta de DNI.
+- Contraseña almacenada mediante BCrypt.
+
+Seguridad
+- Validación de formato y unicidad.
+- Comunicación mediante HTTPS.
+
+Reglas de Negocio
+- Contraseña mínima de 8 caracteres.
+- Al menos una mayúscula.
+- Al menos una minúscula.
+- Al menos un número.
+- Al menos un carácter especial.
+
+SUBTASKS
+- Diseñar formulario de registro.
+- Integrar consulta de DNI.
+- Implementar validaciones.
+- Implementar registro de usuario.
+- Implementar cifrado de contraseña.
+- Realizar pruebas.
+
+====================================================
+HU-003
+PANEL PRINCIPAL DE NAVEGACIÓN
+====================================================
+
+Como usuario autenticado,
+
+Quiero acceder a un panel principal que centralice las funcionalidades del sistema,
+
+Para navegar de manera rápida y organizada.
+
+Prioridad: Alta
+Actor: Usuario
+
+CRITERIOS DE ACEPTACIÓN
+
+- El sistema debe redirigir al Dashboard después del Login.
+- Debe mostrar opciones según el rol.
+- Debe permitir navegar entre módulos autorizados.
+- Debe indicar visualmente el módulo activo.
+- Debe ser responsivo.
+
+Seguridad
+- Solo usuarios autenticados pueden acceder.
+- Los permisos dependen del rol.
+
+SUBTASKS
+- Diseñar Dashboard.
+- Implementar Sidebar.
+- Implementar control de roles.
+- Implementar navegación.
+- Pruebas de acceso.
+
+====================================================
+HU-004
+REGISTRO DE DISPOSICIÓN RESPONSABLE DE RESIDUOS
+====================================================
+
+Como ciudadano,
+
+Quiero registrar la disposición de mis residuos,
+
+Para obtener ecopuntos por mis acciones responsables.
+
+Prioridad: Alta
+Actor: Ciudadano
+
+CRITERIOS DE ACEPTACIÓN
+
+- El ciudadano debe estar autenticado.
+- Debe seleccionar el tipo de residuo.
+- Debe registrar ubicación.
+- Debe registrar fecha y hora.
+- El reporte debe crearse como Pendiente.
+
+Técnicos
+- Generación de identificador único.
+- Registro de auditoría.
+- Flujo de estados:
+  * Pendiente
+  * Aprobado
+  * Rechazado
+
+Reglas de Negocio
+- Solo reportes aprobados generan ecopuntos.
+- La cantidad de puntos depende del tipo de residuo.
+
+SUBTASKS
+- Diseñar formulario.
+- Implementar API de reportes.
+- Implementar estados.
+- Implementar auditoría.
+- Implementar notificaciones.
+- Pruebas funcionales.
+
+====================================================
+HU-005
+VISUALIZACIÓN DE SALDO DE ECOPUNTOS
+====================================================
+
+Como ciudadano,
+
+Quiero visualizar mi saldo actual de ecopuntos,
+
+Para conocer mi progreso dentro del sistema.
+
+Prioridad: Media
+Actor: Ciudadano
+
+CRITERIOS DE ACEPTACIÓN
+
+- Mostrar saldo actual de ecopuntos.
+- Actualizar saldo automáticamente.
+- Mostrar saldo dentro del Dashboard.
+- Si no posee puntos mostrar 0.
+
+Técnicos
+- Consultar entidad Ecopunto.
+- Mostrar información del usuario autenticado.
+
+SUBTASKS
+- Diseñar componente de ecopuntos.
+- Implementar consulta de saldo.
+- Mostrar saldo en Dashboard.
+- Pruebas de visualización.
+
+====================================================
+HU-006
+CONSULTA DE CATÁLOGO DE RECOMPENSAS
+====================================================
+
+Como ciudadano,
+
+Quiero visualizar las recompensas disponibles,
+
+Para conocer los beneficios que puedo obtener.
+
+Prioridad: Alta
+Actor: Ciudadano
+
+CRITERIOS DE ACEPTACIÓN
+
+- Mostrar catálogo de recompensas.
+- Mostrar nombre.
+- Mostrar descripción.
+- Mostrar imagen.
+- Mostrar costo en ecopuntos.
+- Mostrar disponibilidad.
+- Mostrar detalle de recompensa.
+- Mostrar mensaje si no existen recompensas.
+
+Técnicos
+- Consulta desde entidad Recompensa.
+- Carga optimizada.
+
+SUBTASKS
+- Diseñar tienda.
+- Implementar consulta de recompensas.
+- Implementar detalle de recompensa.
+- Implementar indicadores de disponibilidad.
+- Pruebas funcionales.
+
+====================================================
+HU-007
+CANJE DE ECOPUNTOS
+====================================================
+
+Como ciudadano,
+
+Quiero utilizar mis ecopuntos para canjear recompensas,
+
+Para obtener beneficios por mis acciones responsables.
+
+Prioridad: Alta
+Actor: Ciudadano
+
+CRITERIOS DE ACEPTACIÓN
+
+- Seleccionar recompensa.
+- Validar saldo disponible.
+- Validar stock.
+- Procesar canje.
+- Descontar puntos automáticamente.
+- Actualizar saldo.
+- Mostrar confirmación.
+
+Técnicos
+- Transacción atómica.
+- Registro de canje.
+- Actualización de stock.
+
+Seguridad
+- Validaciones realizadas en servidor.
+
+SUBTASKS
+- Implementar API de canje.
+- Implementar validación de saldo.
+- Implementar validación de stock.
+- Actualizar saldo.
+- Registrar transacción.
+- Pruebas de canje.
+
+====================================================
+HU-008
+VALIDACIÓN DE REPORTES CIUDADANOS
+====================================================
+
+Como administrador,
+
+Quiero revisar y validar reportes,
+
+Para garantizar que los ecopuntos sean asignados correctamente.
+
+Prioridad: Alta
+Actor: Administrador
+
+CRITERIOS DE ACEPTACIÓN
+
+- Mostrar reportes pendientes.
+- Visualizar detalle.
+- Aprobar reporte.
+- Rechazar reporte.
+- Filtrar por estado.
+- Mostrar confirmación.
+
+Técnicos
+- Registrar fecha de validación.
+- Registrar administrador responsable.
+- Actualizar estado.
+
+Seguridad
+- Solo administradores pueden validar.
+
+SUBTASKS
+- Diseñar módulo de validación.
+- Implementar listado de reportes.
+- Implementar aprobación.
+- Implementar rechazo.
+- Implementar filtros.
+- Pruebas funcionales.
+
+====================================================
+HU-009
+CONSULTA DE HISTORIAL DE REPORTES
+====================================================
+
+Como ciudadano,
+
+Quiero consultar mi historial de reportes,
+
+Para conocer el estado de mis solicitudes.
+
+Prioridad: Media
+Actor: Ciudadano
+
+CRITERIOS DE ACEPTACIÓN
+
+- Mostrar reportes del usuario autenticado.
+- Mostrar:
+  * Código
+  * Tipo de residuo
+  * Fecha
+  * Estado
+- Mostrar detalle.
+- Ordenar por fecha descendente.
+- Mostrar mensaje si no existen registros.
+
+Seguridad
+- Solo visualizar reportes propios.
+
+SUBTASKS
+- Diseñar historial.
+- Implementar consulta.
+- Implementar detalle.
+- Implementar validación de acceso.
+- Pruebas funcionales.
+
+====================================================
+HU-010
+CONSULTA DE HORARIOS DE RECOLECCIÓN
+====================================================
+
+Como ciudadano,
+
+Quiero consultar los horarios de recolección de mi zona,
+
+Para disponer correctamente mis residuos.
+
+Prioridad: Alta
+Actor: Ciudadano
+
+CRITERIOS DE ACEPTACIÓN
+
+- Identificar zona del ciudadano.
+- Mostrar:
+  * Día
+  * Hora
+  * Tipo de residuo
+- Permitir filtrado.
+- Mostrar próximos horarios.
+- Mostrar mensaje si no existe programación.
+
+Técnicos
+- Consulta de horarios por zona.
+- Actualización automática de cronogramas.
+
+Seguridad
+- Solo visualizar horarios correspondientes a la zona del ciudadano.
+
+SUBTASKS
+- Diseñar vista de cronograma.
+- Implementar consulta de horarios.
+- Implementar filtros.
+- Implementar validaciones de zona.
+- Pruebas funcionales.
+
+====================================================
+FIN DEL BACKLOG
+====================================================

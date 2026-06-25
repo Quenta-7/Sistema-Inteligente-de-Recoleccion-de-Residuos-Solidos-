@@ -57,6 +57,19 @@ const Horarios = () => {
         if (!resHorarios.ok) throw new Error('Error al cargar horarios');
         const dataHorarios = await resHorarios.json();
         setHorarios(Array.isArray(dataHorarios) ? dataHorarios : dataHorarios.results || []);
+
+        // Identificar zona del ciudadano para auto-filtrado (HU-010)
+        try {
+          const resPerfil = await authedFetch('/api/perfil/');
+          if (resPerfil.ok) {
+            const dataPerfil = await resPerfil.json();
+            if (dataPerfil.user && dataPerfil.user.zona) {
+              setZonaSeleccionada(Number(dataPerfil.user.zona));
+            }
+          }
+        } catch (perfilErr) {
+          console.error('Error al identificar zona del ciudadano:', perfilErr);
+        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Error al cargar los datos');
       } finally {

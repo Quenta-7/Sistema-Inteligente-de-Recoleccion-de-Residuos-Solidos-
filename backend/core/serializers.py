@@ -1,6 +1,6 @@
 # backend/core/serializers.py
 from rest_framework import serializers
-from .models import Usuario, Zona, Horario, Reporte, Evidencia, Notificacion
+from .models import Usuario, Zona, Horario, Reporte, Evidencia, Notificacion, Recompensa, Canje
 from django.contrib.auth import authenticate
 
 class ZonaSerializer(serializers.ModelSerializer):
@@ -24,10 +24,12 @@ class EvidenciaSerializer(serializers.ModelSerializer):
     zona_nombre = serializers.CharField(source='zona.nombre', read_only=True)
     horario_entrega_detalle = serializers.SerializerMethodField()
 
+    validador_nombre = serializers.CharField(source='validador.nombre_completo', read_only=True)
+
     class Meta:
         model = Evidencia
-        fields = ['id', 'usuario', 'usuario_nombre', 'zona', 'zona_nombre', 'tipo_residuo', 'descripcion', 'foto', 'foto_url', 'cantidad', 'ecopuntos', 'estado', 'direccion_entrega', 'horario_entrega', 'horario_entrega_detalle', 'created_at', 'updated_at']
-        read_only_fields = ['id', 'usuario', 'ecopuntos', 'created_at', 'updated_at']
+        fields = ['id', 'usuario', 'usuario_nombre', 'zona', 'zona_nombre', 'tipo_residuo', 'descripcion', 'foto', 'foto_url', 'cantidad', 'ecopuntos', 'estado', 'direccion_entrega', 'horario_entrega', 'horario_entrega_detalle', 'validador', 'validador_nombre', 'fecha_validacion', 'created_at', 'updated_at']
+        read_only_fields = ['id', 'usuario', 'ecopuntos', 'validador', 'fecha_validacion', 'created_at', 'updated_at']
 
     def get_foto_url(self, obj):
         if obj.foto:
@@ -41,6 +43,22 @@ class EvidenciaSerializer(serializers.ModelSerializer):
         if obj.horario_entrega:
             return f"{obj.horario_entrega.dia.capitalize()} {obj.horario_entrega.hora_inicio.strftime('%H:%M')}-{obj.horario_entrega.hora_fin.strftime('%H:%M')}"
         return None
+
+class RecompensaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Recompensa
+        fields = '__all__'
+
+class CanjeSerializer(serializers.ModelSerializer):
+    usuario_nombre = serializers.CharField(source='usuario.nombre_completo', read_only=True)
+    recompensa_nombre = serializers.CharField(source='recompensa.nombre', read_only=True)
+    recompensa_puntos = serializers.IntegerField(source='recompensa.puntos', read_only=True)
+    recompensa_categoria = serializers.CharField(source='recompensa.categoria', read_only=True)
+
+    class Meta:
+        model = Canje
+        fields = ['id', 'usuario', 'usuario_nombre', 'recompensa', 'recompensa_nombre', 'recompensa_puntos', 'recompensa_categoria', 'puntos', 'estado', 'created_at']
+        read_only_fields = ['id', 'usuario', 'puntos', 'created_at']
 
 class NotificacionSerializer(serializers.ModelSerializer):
     class Meta:

@@ -94,6 +94,8 @@ class Evidencia(models.Model):
     estado = models.CharField(max_length=20, choices=EstadoReporte.choices, default=EstadoReporte.NUEVO)
     direccion_entrega = models.CharField(max_length=255, null=True, blank=True)
     horario_entrega = models.ForeignKey(Horario, on_delete=models.SET_NULL, null=True, blank=True, related_name='evidencias')
+    validador = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='evidencias_validadas')
+    fecha_validacion = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -113,3 +115,30 @@ class Notificacion(models.Model):
 
     def __str__(self):
         return f"Notificación para {self.usuario.username}: {self.mensaje[:30]}"
+
+class Recompensa(models.Model):
+    nombre = models.CharField(max_length=150)
+    descripcion = models.TextField()
+    puntos = models.IntegerField()
+    categoria = models.CharField(max_length=50) # Movilidad, Hogar, EcoModa, Experiencias
+    imagen = models.CharField(max_length=255, null=True, blank=True)
+    stock = models.IntegerField(default=10)
+    disponible = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.nombre
+
+class Canje(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='canjes')
+    recompensa = models.ForeignKey(Recompensa, on_delete=models.CASCADE, related_name='canjes')
+    puntos = models.IntegerField()
+    estado = models.CharField(max_length=20, default='en_proceso') # en_proceso, entregado
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.usuario.nombre_completo} - {self.recompensa.nombre}"

@@ -14,7 +14,8 @@ import {
   Ticket,
   TrendingUp,
   Sun,
-  Moon
+  Moon,
+  AlertCircle
 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { authedFetch } from '../api';
@@ -26,20 +27,17 @@ type Categoria = {
 };
 
 type Producto = {
+  id?: number;
   nombre: string;
   descripcion: string;
   puntos: number;
   categoria: string;
   badge?: string;
-  cover: string;
-  icon: React.ElementType;
-};
-
-type Historial = {
-  titulo: string;
-  fecha: string;
-  puntos: number;
-  estado: string;
+  cover?: string;
+  icon?: React.ElementType;
+  imagen?: string;
+  stock?: number;
+  disponible?: boolean;
 };
 
 const categorias: Categoria[] = [
@@ -49,84 +47,39 @@ const categorias: Categoria[] = [
   { label: 'Experiencias', tone: 'bg-amber-100 text-amber-700', icon: MapPin },
 ];
 
-const productos: Producto[] = [
-  {
-    nombre: 'Botella termica reutilizable',
-    descripcion: 'Acero inoxidable, 750 ml con aislante.',
-    puntos: 280,
-    categoria: 'Hogar',
-    badge: 'Nuevo',
-    cover: 'bg-gradient-to-br from-emerald-100 via-white to-teal-100',
-    icon: Gift,
-  },
-  {
-    nombre: 'Bono para transporte urbano',
-    descripcion: 'Recarga digital para bus o corredor.',
-    puntos: 420,
-    categoria: 'Movilidad',
-    badge: 'Top',
-    cover: 'bg-gradient-to-br from-amber-100 via-white to-rose-100',
-    icon: Ticket,
-  },
-  {
-    nombre: 'Kit de compostaje en casa',
-    descripcion: 'Incluye guia practica y mini compostera.',
-    puntos: 650,
-    categoria: 'Hogar',
-    cover: 'bg-gradient-to-br from-lime-100 via-white to-emerald-100',
-    icon: Sparkles,
-  },
-  {
-    nombre: 'Tote bag de algodon organico',
-    descripcion: 'Bolsa reforzada para compras sin plastico.',
-    puntos: 220,
-    categoria: 'EcoModa',
-    cover: 'bg-gradient-to-br from-teal-100 via-white to-cyan-100',
-    icon: ShoppingBag,
-  },
-  {
-    nombre: 'Entrada a ruta verde guiada',
-    descripcion: 'Experiencia local con enfoque ambiental.',
-    puntos: 780,
-    categoria: 'Experiencias',
-    badge: 'Limitado',
-    cover: 'bg-gradient-to-br from-amber-100 via-white to-yellow-100',
-    icon: MapPin,
-  },
-  {
-    nombre: 'Pack de semillas nativas',
-    descripcion: 'Variedades andinas para tu huerto urbano.',
-    puntos: 180,
-    categoria: 'Hogar',
-    cover: 'bg-gradient-to-br from-emerald-100 via-white to-lime-100',
-    icon: Star,
-  },
-];
+const mapIcon = (imagen: string) => {
+  switch (imagen) {
+    case 'gift': return Gift;
+    case 'ticket': return Ticket;
+    case 'sparkles': return Sparkles;
+    case 'shopping-bag': return ShoppingBag;
+    case 'map-pin': return MapPin;
+    case 'star': return Star;
+    default: return Gift;
+  }
+};
 
-const historial: Historial[] = [
-  {
-    titulo: 'Tote bag de algodon organico',
-    fecha: '10 May 2026',
-    puntos: 220,
-    estado: 'Entregado',
-  },
-  {
-    titulo: 'Bono para transporte urbano',
-    fecha: '02 May 2026',
-    puntos: 420,
-    estado: 'En proceso',
-  },
-  {
-    titulo: 'Pack de semillas nativas',
-    fecha: '21 Abr 2026',
-    puntos: 180,
-    estado: 'Entregado',
-  },
-];
+const mapCover = (categoria: string) => {
+  switch (categoria) {
+    case 'Hogar': return 'bg-gradient-to-br from-emerald-100 via-white to-teal-100';
+    case 'Movilidad': return 'bg-gradient-to-br from-amber-100 via-white to-rose-100';
+    case 'EcoModa': return 'bg-gradient-to-br from-teal-100 via-white to-cyan-100';
+    case 'Experiencias': return 'bg-gradient-to-br from-amber-100 via-white to-yellow-100';
+    default: return 'bg-gradient-to-br from-emerald-100 via-white to-teal-100';
+  }
+};
 
 const TiendaEcoPuntos = () => {
   const [ecopuntos, setEcopuntos] = useState(0);
   const [loadingPerfil, setLoadingPerfil] = useState(true);
+  const [productos, setProductos] = useState<Producto[]>([]);
+  const [loadingProductos, setLoadingProductos] = useState(true);
+  const [historial, setHistorial] = useState<any[]>([]);
+  const [loadingHistorial, setLoadingHistorial] = useState(true);
+  
+  const [errorCanje, setErrorCanje] = useState('');
+  const [exitoCanje, setExitoCanje] = useState('');
+
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('color-theme') as 'light' | 'dark') || 'light';
   });
@@ -146,24 +99,81 @@ const TiendaEcoPuntos = () => {
     localStorage.setItem('color-theme', nextTheme);
   };
 
-  useEffect(() => {
-    const cargarPerfil = async () => {
-      try {
-        setLoadingPerfil(true);
-        const response = await authedFetch('/api/perfil/');
-        if (response.ok) {
-          const data = await response.json();
-          setEcopuntos(data.user.ecopuntos || 0);
-        }
-      } catch (error) {
-        console.error('Error cargando perfil:', error);
-      } finally {
-        setLoadingPerfil(false);
+  const cargarPerfil = async () => {
+    try {
+      setLoadingPerfil(true);
+      const response = await authedFetch('/api/perfil/');
+      if (response.ok) {
+        const data = await response.json();
+        setEcopuntos(data.user.ecopuntos || 0);
       }
-    };
+    } catch (error) {
+      console.error('Error cargando perfil:', error);
+    } finally {
+      setLoadingPerfil(false);
+    }
+  };
 
+  const cargarProductos = async () => {
+    try {
+      setLoadingProductos(true);
+      const response = await authedFetch('/api/recompensas/');
+      if (response.ok) {
+        const data = await response.json();
+        setProductos(Array.isArray(data) ? data : data.results || []);
+      }
+    } catch (error) {
+      console.error('Error cargando recompensas:', error);
+    } finally {
+      setLoadingProductos(false);
+    }
+  };
+
+  const cargarHistorial = async () => {
+    try {
+      setLoadingHistorial(true);
+      const response = await authedFetch('/api/canjes/');
+      if (response.ok) {
+        const data = await response.json();
+        setHistorial(Array.isArray(data) ? data : data.results || []);
+      }
+    } catch (error) {
+      console.error('Error cargando historial de canjes:', error);
+    } finally {
+      setLoadingHistorial(false);
+    }
+  };
+
+  useEffect(() => {
     cargarPerfil();
+    cargarProductos();
+    cargarHistorial();
   }, []);
+
+  const handleCanjear = async (recompensaId: number) => {
+    setErrorCanje('');
+    setExitoCanje('');
+    try {
+      const response = await authedFetch('/api/canjes/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recompensa: recompensaId }),
+      });
+
+      const data = await response.json();
+      if (response.ok) {
+        setExitoCanje('¡Canje realizado con éxito! Tus EcoPuntos han sido actualizados.');
+        await Promise.all([cargarPerfil(), cargarProductos(), cargarHistorial()]);
+        setTimeout(() => setExitoCanje(''), 5000);
+      } else {
+        setErrorCanje(data.detail || data.errors?.non_field_errors?.[0] || 'No se pudo procesar el canje.');
+        setTimeout(() => setErrorCanje(''), 5000);
+      }
+    } catch (err) {
+      setErrorCanje('Error de conexión con el servidor.');
+      setTimeout(() => setErrorCanje(''), 5000);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 transition-colors duration-300">
@@ -252,7 +262,9 @@ const TiendaEcoPuntos = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Recompensas canjeadas</p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">12</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
+                    {loadingHistorial ? '...' : historial.length}
+                  </p>
                 </div>
                 <Gift className="h-10 w-10 text-rose-500" />
               </div>
@@ -263,6 +275,18 @@ const TiendaEcoPuntos = () => {
       </div>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        {exitoCanje && (
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-250 rounded-xl flex items-start gap-3 shadow-md">
+            <BadgeCheck className="h-6 w-6 text-emerald-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-emerald-800 font-semibold">{exitoCanje}</p>
+          </div>
+        )}
+        {errorCanje && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl flex items-start gap-3 shadow-md">
+            <AlertCircle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-red-800 font-semibold">{errorCanje}</p>
+          </div>
+        )}
         <section className="mt-6 flex flex-wrap gap-3">
           {categorias.map((categoria) => {
             const Icon = categoria.icon;
@@ -292,35 +316,54 @@ const TiendaEcoPuntos = () => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {productos.map((producto) => {
-                const Icon = producto.icon;
-                return (
-                  <div key={producto.nombre} className="glass-card rounded-3xl p-5 flex flex-col">
-                    <div className={`h-36 rounded-2xl flex items-center justify-center ${producto.cover}`}>
-                      <Icon className="h-14 w-14 text-emerald-700 dark:text-emerald-950" />
-                    </div>
-                    <div className="mt-4 flex items-center justify-between">
-                      <span className="text-xs font-semibold uppercase text-emerald-600 dark:text-emerald-400">{producto.categoria}</span>
-                      {producto.badge && (
-                        <span className="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-1 rounded-full">
-                          {producto.badge}
-                        </span>
-                      )}
-                    </div>
-                    <h3 className="mt-2 text-lg font-bold text-slate-900 dark:text-white">{producto.nombre}</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{producto.descripcion}</p>
-                    <div className="mt-5 flex items-center justify-between">
-                      <div>
-                        <p className="text-xs text-slate-500 dark:text-slate-400">Costo</p>
-                        <p className="text-lg font-extrabold text-slate-900 dark:text-white">{producto.puntos} pts</p>
+              {loadingProductos ? (
+                <div className="col-span-2 text-center py-10 text-slate-500">Cargando catálogo...</div>
+              ) : productos.length === 0 ? (
+                <div className="col-span-2 text-center py-10 text-slate-500">No hay recompensas disponibles.</div>
+              ) : (
+                productos.map((producto) => {
+                  const Icon = mapIcon(producto.imagen || '');
+                  const cover = mapCover(producto.categoria || '');
+                  return (
+                    <div key={producto.id} className="glass-card rounded-3xl p-5 flex flex-col">
+                      <div className={`h-36 rounded-2xl flex items-center justify-center ${cover}`}>
+                        <Icon className="h-14 w-14 text-emerald-700 dark:text-emerald-950" />
                       </div>
-                      <button className="px-4 py-2 rounded-full text-sm font-semibold bg-emerald-600 hover:bg-emerald-500 text-white transition-all">
-                        Canjear
-                      </button>
+                      <div className="mt-4 flex items-center justify-between">
+                        <span className="text-xs font-semibold uppercase text-emerald-600 dark:text-emerald-400">{producto.categoria}</span>
+                        {producto.stock !== undefined && producto.stock <= 5 && producto.stock > 0 && (
+                          <span className="text-xs font-bold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 px-2 py-1 rounded-full">
+                            ¡Últimos {producto.stock}!
+                          </span>
+                        )}
+                        {producto.stock === 0 && (
+                          <span className="text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-full">
+                            Agotado
+                          </span>
+                        )}
+                      </div>
+                      <h3 className="mt-2 text-lg font-bold text-slate-900 dark:text-white">{producto.nombre}</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">{producto.descripcion}</p>
+                      <div className="mt-5 flex items-center justify-between">
+                        <div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">Costo</p>
+                          <p className="text-lg font-extrabold text-slate-900 dark:text-white">{producto.puntos} pts</p>
+                        </div>
+                        <button
+                          onClick={() => handleCanjear(producto.id!)}
+                          disabled={producto.stock === 0 || ecopuntos < producto.puntos}
+                          className={`px-4 py-2 rounded-full text-sm font-semibold text-white transition-all
+                            ${producto.stock === 0 || ecopuntos < producto.puntos
+                              ? 'bg-slate-350 cursor-not-allowed dark:bg-slate-700 text-slate-500'
+                              : 'bg-emerald-600 hover:bg-emerald-500 active:scale-95'}`}
+                        >
+                          {producto.stock === 0 ? 'Sin stock' : 'Canjear'}
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                })
+              )}
             </div>
           </div>
 
@@ -408,18 +451,30 @@ const TiendaEcoPuntos = () => {
               <button className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-350">Ver todo</button>
             </div>
             <div className="mt-4 space-y-3">
-              {historial.map((item) => (
-                <div key={item.titulo} className="flex items-center justify-between border border-slate-100 dark:border-slate-800 rounded-2xl px-4 py-3">
-                  <div>
-                    <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.titulo}</p>
-                    <p className="text-xs text-slate-500 dark:text-slate-400">{item.fecha}</p>
+              {loadingHistorial ? (
+                <p className="text-sm text-slate-500 text-center py-4">Cargando historial...</p>
+              ) : historial.length === 0 ? (
+                <p className="text-sm text-slate-550 text-center py-4">No has realizado ningún canje aún.</p>
+              ) : (
+                historial.map((item) => (
+                  <div key={item.id} className="flex items-center justify-between border border-slate-100 dark:border-slate-800 rounded-2xl px-4 py-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900 dark:text-white">{item.recompensa_nombre}</p>
+                      <p className="text-xs text-slate-550 dark:text-slate-400">{new Date(item.created_at).toLocaleDateString('es-PE')} {new Date(item.created_at).toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit' })}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">-{item.recompensa_puntos} pts</p>
+                      <span className={`inline-flex px-2 py-0.5 rounded-full text-xxs font-bold uppercase ${
+                        item.estado === 'en_proceso' 
+                          ? 'bg-amber-100 text-amber-700 dark:bg-amber-400/10 dark:text-amber-400' 
+                          : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-450/10 dark:text-emerald-450'
+                      }`}>
+                        {item.estado === 'en_proceso' ? 'En proceso' : 'Entregado'}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">-{item.puntos} pts</p>
-                    <p className="text-xs text-emerald-600 dark:text-emerald-450">{item.estado}</p>
-                  </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         </section>
