@@ -263,7 +263,7 @@ export default function RecolectorDashboard() {
         const map = L.map(mapContainerRef.current, {
           zoomControl: false,
           scrollWheelZoom: true
-        }).setView([-12.046, -77.042], 15);
+        }).setView([-13.522, -71.968], 15);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,

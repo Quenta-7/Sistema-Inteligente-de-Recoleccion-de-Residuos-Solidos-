@@ -33,31 +33,31 @@ class Command(BaseCommand):
         self.stdout.write('Creando zonas...')
         zonas_data = [
             {
-                'nombre': 'Zona Centro',
+                'nombre': 'Cusco (Cercado)',
                 'codigo': 'ZC001',
-                'descripcion': 'Zona del centro histórico de la ciudad',
-                'geometria': {'type': 'Polygon', 'coordinates': [[[-74.0, 40.7], [-74.0, 40.8], [-73.9, 40.8], [-73.9, 40.7], [-74.0, 40.7]]]},
+                'descripcion': 'Centro Histórico y Cercado de Cusco',
+                'geometria': {'type': 'Polygon', 'coordinates': [[[-71.98, -13.51], [-71.98, -13.52], [-71.97, -13.52], [-71.97, -13.51], [-71.98, -13.51]]]},
                 'activa': True
             },
             {
-                'nombre': 'Zona Norte',
+                'nombre': 'Wanchaq',
                 'codigo': 'ZN001',
-                'descripcion': 'Zona norte de la ciudad',
-                'geometria': {'type': 'Polygon', 'coordinates': [[[-74.0, 40.8], [-74.0, 40.9], [-73.9, 40.9], [-73.9, 40.8], [-74.0, 40.8]]]},
+                'descripcion': 'Distrito de Wanchaq - Cusco',
+                'geometria': {'type': 'Polygon', 'coordinates': [[[-71.96, -13.52], [-71.96, -13.53], [-71.95, -13.53], [-71.95, -13.52], [-71.96, -13.52]]]},
                 'activa': True
             },
             {
-                'nombre': 'Zona Sur',
+                'nombre': 'San Sebastián',
                 'codigo': 'ZS001',
-                'descripcion': 'Zona sur de la ciudad',
-                'geometria': {'type': 'Polygon', 'coordinates': [[[-74.0, 40.6], [-74.0, 40.7], [-73.9, 40.7], [-73.9, 40.6], [-74.0, 40.6]]]},
+                'descripcion': 'Distrito de San Sebastián - Cusco',
+                'geometria': {'type': 'Polygon', 'coordinates': [[[-71.94, -13.52], [-71.94, -13.53], [-71.93, -13.53], [-71.93, -13.52], [-71.94, -13.52]]]},
                 'activa': True
             },
             {
-                'nombre': 'Zona Este',
+                'nombre': 'San Jerónimo',
                 'codigo': 'ZE001',
-                'descripcion': 'Zona este de la ciudad',
-                'geometria': {'type': 'Polygon', 'coordinates': [[[-73.9, 40.7], [-73.9, 40.8], [-73.8, 40.8], [-73.8, 40.7], [-73.9, 40.7]]]},
+                'descripcion': 'Distrito de San Jerónimo - Cusco',
+                'geometria': {'type': 'Polygon', 'coordinates': [[[-71.90, -13.53], [-71.90, -13.54], [-71.89, -13.54], [-71.89, -13.53], [-71.90, -13.53]]]},
                 'activa': True
             },
         ]
@@ -360,14 +360,14 @@ class Command(BaseCommand):
         zona_norte = zonas_creadas.get('ZN001')
         
         geometria_ruta_centro = [
-            {"lat": -12.046374, "lng": -77.042793, "nombre": "Punto Centro A"},
-            {"lat": -12.047814, "lng": -77.041123, "nombre": "Punto Centro B"},
-            {"lat": -12.049254, "lng": -77.039453, "nombre": "Punto Centro C"}
+            {"lat": -13.5168, "lng": -71.9785, "nombre": "Plaza de Armas (Punto A)"},
+            {"lat": -13.5191, "lng": -71.9765, "nombre": "Santa Catalina (Punto B)"},
+            {"lat": -13.5222, "lng": -71.9729, "nombre": "Qorikancha (Punto C)"}
         ]
         geometria_ruta_norte = [
-            {"lat": -12.036374, "lng": -77.052793, "nombre": "Punto Norte A"},
-            {"lat": -12.037814, "lng": -77.051123, "nombre": "Punto Norte B"},
-            {"lat": -12.039254, "lng": -77.049453, "nombre": "Punto Norte C"}
+            {"lat": -13.5241, "lng": -71.9688, "nombre": "Estacion Wanchaq (Punto A)"},
+            {"lat": -13.5218, "lng": -71.9635, "nombre": "Av. Garcilaso (Punto B)"},
+            {"lat": -13.5202, "lng": -71.9582, "nombre": "Oval Garcilaso (Punto C)"}
         ]
         
         if recolector and zona_centro and zona_norte:

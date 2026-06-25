@@ -667,6 +667,7 @@ const AdminDashboard = () => {
                                 className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-2.5 py-1 text-xs text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-1 focus:ring-sky-500 font-bold transition-colors duration-300"
                               >
                                 <option value="ciudadano">Ciudadano</option>
+                                <option value="recolector">Recolector</option>
                                 <option value="admin">Administrador</option>
                               </select>
                             </td>
