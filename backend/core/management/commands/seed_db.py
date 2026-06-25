@@ -1,7 +1,7 @@
 from django.core.management.base import BaseCommand
 from django.contrib.auth.hashers import make_password
 from datetime import time
-from core.models import Zona, Usuario, Horario, Reporte, Evidencia, Notificacion, Recompensa, Canje
+from core.models import Zona, Usuario, Horario, Reporte, Evidencia, Notificacion, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio
 
 class Command(BaseCommand):
     help = 'Agregar datos de prueba (seed) a la base de datos'
@@ -16,6 +16,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         if options['clean']:
             self.stdout.write(self.style.WARNING('Limpiando datos existentes...'))
+            CalificacionServicio.objects.all().delete()
+            Incidencia.objects.all().delete()
+            Ruta.objects.all().delete()
             Canje.objects.all().delete()
             Recompensa.objects.all().delete()
             Notificacion.objects.all().delete()
@@ -120,6 +123,15 @@ class Command(BaseCommand):
                 'rol': 'admin',
                 'zona': zonas_creadas.get('ZE001'),
                 'telefono': '+9999999999'
+            },
+            {
+                'email': 'recolector@residuos.com',
+                'username': 'recolector',
+                'nombre_completo': 'Recolector de Prueba',
+                'password': make_password('pass123'),
+                'rol': 'recolector',
+                'zona': zonas_creadas.get('ZC001'),
+                'telefono': '+51987654321'
             },
         ]
         
@@ -337,7 +349,105 @@ class Command(BaseCommand):
             if created:
                 self.stdout.write(self.style.SUCCESS(f'[OK] Recompensa creada: {recompensa.nombre}'))
 
+        # 6. CREAR RUTAS, INCIDENCIAS Y CALIFICACIONES
+        self.stdout.write('Creando rutas...')
+        from datetime import date, timedelta
+        hoy = date.today()
+        manana = hoy + timedelta(days=1)
+        recolector = usuarios_creados.get('recolector@residuos.com')
+        ciudadano = usuarios_creados.get('ciudadano1@residuos.com')
+        zona_centro = zonas_creadas.get('ZC001')
+        zona_norte = zonas_creadas.get('ZN001')
+        
+        geometria_ruta_centro = [
+            {"lat": -12.046374, "lng": -77.042793, "nombre": "Punto Centro A"},
+            {"lat": -12.047814, "lng": -77.041123, "nombre": "Punto Centro B"},
+            {"lat": -12.049254, "lng": -77.039453, "nombre": "Punto Centro C"}
+        ]
+        geometria_ruta_norte = [
+            {"lat": -12.036374, "lng": -77.052793, "nombre": "Punto Norte A"},
+            {"lat": -12.037814, "lng": -77.051123, "nombre": "Punto Norte B"},
+            {"lat": -12.039254, "lng": -77.049453, "nombre": "Punto Norte C"}
+        ]
+        
+        if recolector and zona_centro and zona_norte:
+            # Ruta completada
+            ruta_completada, _ = Ruta.objects.get_or_create(
+                recolector=recolector,
+                zona=zona_centro,
+                fecha=hoy - timedelta(days=1),
+                hora_inicio=time(8, 0),
+                hora_fin_estimada=time(11, 0),
+                defaults={
+                    'estado': Ruta.EstadoRuta.COMPLETADA,
+                    'observaciones': 'Ruta completada sin novedades.',
+                    'geometria_ruta': geometria_ruta_centro,
+                }
+            )
+            
+            # Ruta en progreso (hoy)
+            ruta_hoy, _ = Ruta.objects.get_or_create(
+                recolector=recolector,
+                zona=zona_centro,
+                fecha=hoy,
+                hora_inicio=time(8, 0),
+                hora_fin_estimada=time(12, 0),
+                defaults={
+                    'estado': Ruta.EstadoRuta.EN_PROGRESO,
+                    'observaciones': 'En ejecucion actualmente.',
+                    'geometria_ruta': geometria_ruta_centro,
+                }
+            )
+
+            # Ruta programada (mañana)
+            ruta_manana, _ = Ruta.objects.get_or_create(
+                recolector=recolector,
+                zona=zona_norte,
+                fecha=manana,
+                hora_inicio=time(9, 0),
+                hora_fin_estimada=time(13, 0),
+                defaults={
+                    'estado': Ruta.EstadoRuta.PROGRAMADA,
+                    'observaciones': 'Ruta programada para manana.',
+                    'geometria_ruta': geometria_ruta_norte,
+                }
+            )
+
+            self.stdout.write(self.style.SUCCESS('[OK] Rutas de prueba creadas'))
+
+            # Crear una calificacion para la ruta completada
+            if ciudadano:
+                CalificacionServicio.objects.get_or_create(
+                    ciudadano=ciudadano,
+                    ruta=ruta_completada,
+                    defaults={
+                        'estrellas': 5,
+                        'comentario': 'Excelente servicio, muy punctual.'
+                    }
+                )
+                self.stdout.write(self.style.SUCCESS('[OK] Calificacion de servicio creada'))
+
+            # Crear incidencias de prueba
+            Incidencia.objects.get_or_create(
+                recolector=recolector,
+                tipo='Vehiculo averiado',
+                defaults={
+                    'descripcion': 'Falla mecanica en el motor del camion recolector, se requirio apoyo.',
+                    'estado': Incidencia.EstadoIncidencia.RESUELTA,
+                    'respuesta_admin': 'Se envio unidad de auxilio mecanico.'
+                }
+            )
+            Incidencia.objects.get_or_create(
+                recolector=recolector,
+                tipo='Via bloqueada',
+                defaults={
+                    'descripcion': 'Calle cerrada por obras en la Av. Tacna, desvio tomado.',
+                    'estado': Incidencia.EstadoIncidencia.PENDIENTE
+                }
+            )
+            self.stdout.write(self.style.SUCCESS('[OK] Incidencias de prueba creadas'))
+
         self.stdout.write(self.style.SUCCESS('\n*** Datos de prueba agregados exitosamente'))
         self.stdout.write('\n=== Credenciales de administrador:')
         self.stdout.write('   Email: admin@residuos.com')
-        self.stdout.write('   Contraseña: admin123')
+        self.stdout.write('   Contrasena: admin123')

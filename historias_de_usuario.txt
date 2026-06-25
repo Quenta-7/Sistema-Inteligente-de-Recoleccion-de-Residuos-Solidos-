@@ -1,0 +1,380 @@
+================================================================
+HISTORIAS DE USUARIO – SIDGRC
+================================================================
+
+----------------------------------------------------------------
+RECOLECTOR
+----------------------------------------------------------------
+
+SIDGRC-11 – Programación de Cronogramas de Recolección
+ID: HU-011
+Título: Consulta de Cronogramas de Recolección
+Actor: Recolector
+Prioridad: Alta
+
+Como recolector,
+quiero visualizar mis rutas y horarios asignados,
+para conocer las actividades de recolección que debo realizar durante mi jornada laboral.
+
+Criterios de Aceptación
+
+Funcionales
+- El sistema debe mostrar la lista de rutas asignadas al recolector.
+- Cada ruta debe mostrar: fecha, hora de inicio, hora estimada de finalización, zona asignada y estado de la ruta.
+- El sistema debe permitir consultar cronogramas por fecha.
+- El sistema debe mostrar únicamente las rutas asignadas al usuario autenticado.
+- El sistema debe permitir visualizar los detalles completos de una ruta.
+- Si no existen rutas programadas para la fecha seleccionada, el sistema debe mostrar:
+  "No existen rutas programadas para la fecha seleccionada."
+
+Técnicos
+- La información debe obtenerse desde la base de datos mediante consultas optimizadas.
+- El tiempo de carga de los cronogramas no debe superar los 3 segundos.
+- La comunicación entre cliente y servidor debe realizarse mediante HTTPS/TLS 1.2 o superior.
+- El acceso a la información debe estar protegido mediante JWT válido.
+- Todas las consultas realizadas deben registrarse en la bitácora del sistema.
+
+Reglas de Negocio
+- Solo los usuarios con rol Recolector podrán acceder a esta funcionalidad.
+- Solo podrán visualizarse rutas activas o programadas.
+- No se permitirá modificar cronogramas desde esta funcionalidad.
+
+Valor de Negocio
+Permite organizar eficientemente las actividades de recolección y garantizar el cumplimiento de las rutas asignadas.
+
+----------------------------------------------------------------
+
+SIDGRC-15 – Reporte de Cumplimiento de Ruta
+ID: HU-015
+Título: Reporte de Cumplimiento de Ruta
+Actor: Recolector
+Prioridad: Alta
+
+Como recolector,
+quiero registrar el estado de cumplimiento de una ruta asignada,
+para informar la ejecución de mis actividades de recolección.
+
+Criterios de Aceptación
+
+Funcionales
+- El sistema debe permitir seleccionar una ruta asignada.
+- El sistema debe permitir registrar los siguientes estados: Completada, Parcialmente completada, No completada.
+- El sistema debe permitir agregar observaciones.
+- El sistema debe registrar la fecha y hora del reporte.
+- El sistema debe permitir consultar reportes previamente enviados.
+- El sistema debe mostrar una confirmación al registrar exitosamente el reporte.
+
+Técnicos
+- Los reportes deben almacenarse en la base de datos.
+- Toda modificación debe registrarse en una bitácora.
+- La información debe enviarse mediante conexiones seguras HTTPS.
+- El tiempo de registro no debe superar los 3 segundos.
+- El acceso debe requerir autenticación mediante JWT.
+
+Reglas de Negocio
+- Solo podrán reportarse rutas asignadas al recolector autenticado.
+- Una ruta completada no podrá ser modificada después de ser cerrada por el administrador.
+- Cada ruta deberá contar con un único reporte final de cumplimiento.
+
+Valor de Negocio
+Permite monitorear la ejecución de las actividades operativas y evaluar el cumplimiento de las rutas de recolección.
+
+----------------------------------------------------------------
+
+SIDGRC-13 – Seguimiento de Ruta en Mapa
+ID: HU-013
+Título: Seguimiento de Ruta en Mapa
+Actor: Recolector
+Prioridad: Alta
+
+Como recolector,
+quiero visualizar mi recorrido en un mapa interactivo,
+para seguir la ruta asignada y optimizar mi desplazamiento.
+
+Criterios de Aceptación
+
+Funcionales
+- El sistema debe mostrar la ruta asignada sobre un mapa.
+- El sistema debe indicar: punto de inicio, puntos de recolección y punto final.
+- El sistema debe mostrar la ubicación actual del recolector en tiempo real.
+- El sistema debe actualizar la posición automáticamente.
+- El sistema debe permitir acercar y alejar el mapa.
+- El sistema debe mostrar la distancia restante estimada.
+
+Técnicos
+- La geolocalización debe actualizarse cada 30 segundos como máximo.
+- La información geográfica debe transmitirse mediante HTTPS.
+- El sistema debe utilizar servicios de mapas compatibles con dispositivos móviles.
+- El tiempo de carga inicial del mapa no debe superar los 5 segundos.
+
+Reglas de Negocio
+- Solo se podrán visualizar rutas asignadas al usuario autenticado.
+- La ubicación solo será visible durante la ejecución de la ruta.
+- El seguimiento finalizará automáticamente al completar la ruta.
+
+Valor de Negocio
+Facilita la navegación y mejora la eficiencia operativa durante la recolección de residuos.
+
+----------------------------------------------------------------
+
+SIDGRC-14 – Sistema de Alertas de Proximidad
+ID: HU-014
+Título: Sistema de Alertas de Proximidad
+Actor: Recolector
+Prioridad: Media
+
+Como recolector,
+quiero recibir alertas automáticas durante mi recorrido,
+para conocer eventos importantes relacionados con la ruta asignada.
+
+Criterios de Aceptación
+
+Funcionales
+- El sistema debe generar alertas cuando el recolector se aproxime a un punto de recolección.
+- El sistema debe mostrar una notificación visual y sonora.
+- Las alertas deben indicar: nombre del punto, distancia aproximada y tipo de residuo.
+- El sistema debe registrar las alertas emitidas.
+- El usuario debe poder visualizar el historial de alertas.
+
+Técnicos
+- La detección de proximidad debe realizarse utilizando coordenadas GPS.
+- La precisión mínima debe ser de 50 metros.
+- Las alertas deben procesarse en menos de 2 segundos.
+- La información debe transmitirse mediante HTTPS.
+
+Reglas de Negocio
+- Las alertas solo deben activarse para puntos pertenecientes a la ruta asignada.
+- No deben emitirse alertas duplicadas para el mismo punto.
+- Las alertas deben desactivarse al finalizar la ruta.
+
+Valor de Negocio
+Mejora la precisión del recorrido y reduce la probabilidad de omitir puntos de recolección.
+
+----------------------------------------------------------------
+
+SIDGRC-20 – Interfaz Móvil de Recolector
+ID: HU-020
+Título: Interfaz Móvil de Recolector
+Actor: Recolector
+Prioridad: Alta
+
+Como recolector,
+quiero acceder al sistema desde una aplicación móvil,
+para gestionar mis actividades operativas desde cualquier ubicación.
+
+Criterios de Aceptación
+
+Funcionales
+- El sistema debe ser accesible desde dispositivos móviles.
+- La aplicación debe permitir: consultar cronogramas, visualizar rutas, registrar cumplimiento, reportar incidencias y recibir alertas.
+- La interfaz debe adaptarse a diferentes tamaños de pantalla.
+- La aplicación debe mostrar información actualizada en tiempo real.
+
+Técnicos
+- La aplicación debe ser compatible con Android.
+- La comunicación debe realizarse mediante APIs REST seguras.
+- La autenticación debe realizarse mediante JWT.
+- La aplicación debe funcionar correctamente bajo conexiones móviles 4G o superiores.
+- El tiempo de respuesta no debe superar los 3 segundos.
+
+Reglas de Negocio
+- Solo usuarios autenticados podrán acceder a la aplicación.
+- Cada sesión deberá estar asociada a un único dispositivo activo.
+- La aplicación deberá cerrar la sesión automáticamente cuando expire el token.
+
+Valor de Negocio
+Permite la gestión operativa de las actividades de recolección desde campo.
+
+----------------------------------------------------------------
+
+SIDGRC-18 – Retroalimentación de Incidencias
+ID: HU-018
+Título: Retroalimentación de Incidencias
+Actor: Recolector
+Prioridad: Media
+
+Como recolector,
+quiero consultar el estado y la respuesta emitida sobre mis incidencias reportadas,
+para conocer las acciones tomadas y mantenerme informado sobre su resolución.
+
+Criterios de Aceptación
+
+Funcionales
+- El sistema debe mostrar la lista de incidencias reportadas por el recolector autenticado.
+- Cada incidencia debe mostrar: código único, tipo, fecha de reporte y estado actual.
+- El sistema debe permitir consultar el detalle de una incidencia, incluyendo la respuesta del administrador.
+- El sistema debe notificar al recolector cuando una incidencia reciba una respuesta.
+- Si una incidencia aún no tiene respuesta, el sistema debe mostrar el mensaje:
+  "Esta incidencia está pendiente de atención."
+
+Técnicos
+- La información debe obtenerse desde la base de datos mediante consultas optimizadas.
+- La comunicación debe realizarse mediante HTTPS/TLS 1.2 o superior.
+- El acceso debe requerir autenticación mediante JWT.
+- Las consultas realizadas deben registrarse en la bitácora del sistema.
+- El tiempo máximo de respuesta no debe superar los 3 segundos.
+
+Reglas de Negocio
+- Solo podrán visualizarse incidencias asociadas al recolector autenticado.
+- El recolector no podrá modificar ni eliminar incidencias desde esta funcionalidad.
+- Las respuestas del administrador son de solo lectura para el recolector.
+
+Valor de Negocio
+Permite al recolector conocer el seguimiento dado a las incidencias que reportó, fomentando la comunicación entre el campo y la administración del servicio.
+
+----------------------------------------------------------------
+CIUDADANO
+----------------------------------------------------------------
+
+SIDGRC-9 – Recepción de Reportes
+ID: HU-009
+Título: Recepción de Reportes
+Actor: Ciudadano
+Prioridad: Alta
+
+Como ciudadano,
+quiero registrar reportes relacionados con problemas de recolección de residuos,
+para informar incidencias y contribuir a la mejora del servicio.
+
+Criterios de Aceptación
+
+Funcionales
+- El sistema debe mostrar un formulario para registrar reportes.
+- El formulario debe contener: tipo de reporte, descripción, dirección o ubicación y fotografía (opcional).
+- Los campos Tipo de reporte, Descripción y Dirección son obligatorios.
+- El sistema debe validar que la descripción tenga un mínimo de 10 caracteres.
+- El sistema debe permitir adjuntar imágenes en formato JPG, PNG o JPEG.
+- Al registrar exitosamente un reporte, el sistema debe generar un código único de seguimiento.
+- El sistema debe mostrar el mensaje: "Reporte registrado correctamente."
+- Si ocurre un error, el sistema debe mostrar: "No fue posible registrar el reporte. Intente nuevamente."
+
+Técnicos
+- Los reportes deben almacenarse en la base de datos.
+- Las imágenes adjuntas deben almacenarse de forma segura.
+- La comunicación entre cliente y servidor debe realizarse mediante HTTPS/TLS 1.2 o superior.
+- El acceso a esta funcionalidad debe requerir autenticación mediante JWT.
+- Todas las operaciones de registro deben quedar registradas en una bitácora.
+- El tiempo máximo de respuesta no debe superar los 3 segundos.
+
+Reglas de Negocio
+- Solo usuarios autenticados podrán registrar reportes.
+- Cada reporte debe estar asociado a un único ciudadano.
+- Los reportes no podrán eliminarse una vez registrados.
+
+Valor de Negocio
+Permite a los ciudadanos informar incidencias relacionadas con la gestión de residuos y mejorar la calidad del servicio.
+
+----------------------------------------------------------------
+
+SIDGRC-12 – Consulta de Horarios
+ID: HU-012
+Título: Consulta de Horarios
+Actor: Ciudadano
+Prioridad: Media
+
+Como ciudadano,
+quiero consultar los horarios de recolección de residuos de mi zona,
+para conocer cuándo debo disponer mis residuos para su recolección.
+
+Criterios de Aceptación
+
+Funcionales
+- El sistema debe mostrar los horarios de recolección correspondientes a la zona del ciudadano.
+- El sistema debe mostrar: día de recolección, hora estimada y tipo de residuo.
+- El sistema debe permitir consultar horarios por zona.
+- El sistema debe permitir realizar búsquedas utilizando dirección o sector.
+- Si no existen horarios registrados para la zona consultada, el sistema debe mostrar:
+  "No existen horarios disponibles para la zona seleccionada."
+- La información debe mostrarse de forma clara y ordenada.
+
+Técnicos
+- La información debe obtenerse desde la base de datos mediante consultas optimizadas.
+- La comunicación debe realizarse mediante HTTPS/TLS 1.2 o superior.
+- El acceso debe requerir autenticación válida mediante JWT.
+- Las consultas realizadas deben registrarse en una bitácora.
+- El tiempo máximo de respuesta no debe superar los 3 segundos.
+
+Reglas de Negocio
+- Los horarios mostrados deben corresponder únicamente a rutas activas.
+- La información debe mantenerse actualizada según la programación vigente.
+- Solo usuarios autenticados podrán acceder a esta funcionalidad.
+
+Valor de Negocio
+Permite mejorar la organización de los ciudadanos y reducir problemas relacionados con la disposición inadecuada de residuos.
+
+----------------------------------------------------------------
+
+SIDGRC-19 – Historial de Ciudadano
+ID: HU-019
+Título: Historial de Ciudadano
+Actor: Ciudadano
+Prioridad: Media
+
+Como ciudadano,
+quiero consultar el historial de mis reportes y solicitudes realizadas,
+para realizar seguimiento a mis interacciones dentro del sistema.
+
+Criterios de Aceptación
+
+Funcionales
+- El sistema debe mostrar una lista con el historial de actividades del ciudadano.
+- Cada registro debe mostrar: código de reporte, fecha de creación, tipo de reporte, estado actual y fecha de actualización.
+- El sistema debe permitir consultar el detalle completo de cada registro.
+- El sistema debe permitir ordenar el historial por fecha.
+- El sistema debe permitir filtrar registros por estado.
+- Si el usuario no posee registros, el sistema debe mostrar: "No existen actividades registradas."
+
+Técnicos
+- La información debe recuperarse desde la base de datos mediante consultas optimizadas.
+- La comunicación debe realizarse mediante HTTPS/TLS 1.2 o superior.
+- El acceso debe requerir autenticación mediante JWT.
+- Las consultas realizadas deben registrarse en una bitácora.
+- El tiempo máximo de respuesta no debe superar los 3 segundos.
+
+Reglas de Negocio
+- Cada ciudadano solo podrá visualizar su propio historial.
+- Los registros históricos no podrán ser modificados por el ciudadano.
+- La información deberá mantenerse disponible mientras el usuario permanezca activo en el sistema.
+
+Valor de Negocio
+Permite brindar transparencia y seguimiento sobre las solicitudes y reportes realizados por los ciudadanos.
+
+----------------------------------------------------------------
+
+SIDGRC-21 – Calificación del Servicio
+ID: HU-021
+Título: Calificación del Servicio
+Actor: Ciudadano
+Prioridad: Media
+
+Como ciudadano,
+quiero calificar la calidad del servicio de recolección recibido,
+para expresar mi nivel de satisfacción y contribuir a la mejora continua del servicio.
+
+Criterios de Aceptación
+
+Funcionales
+- El sistema debe permitir registrar una calificación del servicio.
+- La calificación debe realizarse mediante una escala de 1 a 5 estrellas.
+- El sistema debe permitir agregar comentarios opcionales.
+- La calificación debe asociarse a un servicio de recolección previamente realizado.
+- El sistema debe mostrar un mensaje de confirmación: "Calificación registrada correctamente."
+- El sistema debe permitir consultar las calificaciones previamente registradas por el usuario.
+
+Técnicos
+- Las calificaciones deben almacenarse en la base de datos.
+- La comunicación debe realizarse mediante HTTPS/TLS 1.2 o superior.
+- El acceso debe requerir autenticación mediante JWT.
+- Todas las calificaciones registradas deben quedar registradas en una bitácora.
+- El tiempo máximo de respuesta no debe superar los 3 segundos.
+
+Reglas de Negocio
+- Solo usuarios autenticados podrán registrar calificaciones.
+- Un ciudadano solo podrá emitir una calificación por cada servicio de recolección realizado.
+- Las calificaciones registradas no podrán eliminarse.
+- Los comentarios ofensivos o que incumplan las políticas del sistema podrán ser moderados por el administrador.
+
+Valor de Negocio
+Permite medir la satisfacción de los ciudadanos y obtener información valiosa para mejorar la calidad del servicio de gestión de residuos.
+
+================================================================

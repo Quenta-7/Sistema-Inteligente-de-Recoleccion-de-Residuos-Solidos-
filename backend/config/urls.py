@@ -10,12 +10,15 @@ from core import views # Importamos las vistas de nuestra app 'core'
 router = DefaultRouter()
 router.register(r'zonas', views.ZonaViewSet)
 router.register(r'horarios', views.HorarioViewSet)
-router.register(r'reportes', views.ReporteViewSet)
+router.register(r'reportes', views.ReporteViewSet, basename='reporte')
 router.register(r'evidencias', views.EvidenciaViewSet, basename='evidencia')
 router.register(r'usuarios', views.UsuarioViewSet, basename='usuario')
 router.register(r'notificaciones', views.NotificacionViewSet, basename='notificacion')
 router.register(r'recompensas', views.RecompensaViewSet, basename='recompensa')
 router.register(r'canjes', views.CanjeViewSet, basename='canje')
+router.register(r'rutas', views.RutaViewSet, basename='ruta')
+router.register(r'incidencias', views.IncidenciaViewSet, basename='incidencia')
+router.register(r'calificaciones', views.CalificacionServicioViewSet, basename='calificacion')
 
 urlpatterns = [
     path('admin/', admin.site.urls),

@@ -10,6 +10,8 @@ import MapaEnVivo from './pages/MapaEnVivo';
 import TerminosCondiciones from './pages/TerminosCondiciones';
 import PoliticaPrivacidad from './pages/PoliticaPrivacidad';
 import AdminDashboard from './pages/AdminDashboard';
+import RecolectorDashboard from './pages/RecolectorDashboard';
+import ReportesCiudadanos from './pages/ReportesCiudadanos';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -23,28 +25,40 @@ function App() {
         
         {/* Rutas protegidas para ciudadanos */}
         <Route path="/dashboard" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['ciudadano', 'admin']}>
             <Dashboard />
           </ProtectedRoute>
         } />
         <Route path="/tienda-ecopuntos" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['ciudadano', 'admin']}>
             <TiendaEcoPuntos />
           </ProtectedRoute>
         } />
         <Route path="/mapa-en-vivo" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['ciudadano', 'admin']}>
             <MapaEnVivo />
           </ProtectedRoute>
         } />
         <Route path="/horarios" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['ciudadano', 'admin']}>
             <Horarios />
           </ProtectedRoute>
         } />
         <Route path="/reportes" element={
-          <ProtectedRoute>
+          <ProtectedRoute allowedRoles={['ciudadano', 'admin']}>
             <Reportes />
+          </ProtectedRoute>
+        } />
+        <Route path="/reportes-ciudadanos" element={
+          <ProtectedRoute allowedRoles={['ciudadano', 'admin']}>
+            <ReportesCiudadanos />
+          </ProtectedRoute>
+        } />
+        
+        {/* Rutas protegidas para recolectores */}
+        <Route path="/recolector-dashboard" element={
+          <ProtectedRoute allowedRoles={['recolector']}>
+            <RecolectorDashboard />
           </ProtectedRoute>
         } />
         

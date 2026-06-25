@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, LogOut, Map, Bell, User, ChevronRight, Leaf, Camera, Trophy, Sun, Moon, Menu, X, AlertTriangle } from 'lucide-react';
+import { Calendar, LogOut, Map, Bell, User, ChevronRight, Leaf, Camera, Trophy, Sun, Moon, Menu, X, AlertTriangle, Star, CheckCircle } from 'lucide-react';
 import { authedFetch } from '../api';
 
 
@@ -21,6 +21,14 @@ const Dashboard = () => {
   const [cantidadNoLeidas, setCantidadNoLeidas] = useState(0);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [mostrarAlertaDenegado, setMostrarAlertaDenegado] = useState(false);
+
+  // Calificar Servicio states
+  const [completadasSinCalificar, setCompletadasSinCalificar] = useState<any[]>([]);
+  const [rutaACalificar, setRutaACalificar] = useState<any | null>(null);
+  const [ratingEstrellas, setRatingEstrellas] = useState(5);
+  const [ratingComentario, setRatingComentario] = useState('');
+  const [enviandoCalificacion, setEnviandoCalificacion] = useState(false);
+  const [calificacionExito, setCalificacionExito] = useState(false);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -84,7 +92,57 @@ const Dashboard = () => {
     }
   };
 
+  const enviarCalificacion = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!rutaACalificar) return;
+    
+    setEnviandoCalificacion(true);
+    try {
+      const res = await authedFetch('/api/calificaciones/', {
+        method: 'POST',
+        body: JSON.stringify({
+          ruta: rutaACalificar.id,
+          estrellas: ratingEstrellas,
+          comentario: ratingComentario
+        })
+      });
+      if (res.ok) {
+        setCalificacionExito(true);
+        // Remover de la lista
+        setCompletadasSinCalificar(prev => prev.filter(r => r.id !== rutaACalificar.id));
+        setTimeout(() => {
+          setRutaACalificar(null);
+          setCalificacionExito(false);
+          setRatingComentario('');
+          setRatingEstrellas(5);
+        }, 1500);
+      }
+    } catch (err) {
+      console.error('Error al enviar calificacion:', err);
+    } finally {
+      setEnviandoCalificacion(false);
+    }
+  };
+
   useEffect(() => {
+    const cargarRutasCalificables = async () => {
+      try {
+        const rRes = await authedFetch('/api/rutas/');
+        const cRes = await authedFetch('/api/calificaciones/');
+        if (rRes.ok && cRes.ok) {
+          const rData = await rRes.json();
+          const cData = await cRes.json();
+          const calificadasIds = cData.map((c: any) => c.ruta);
+          const completadas = rData.filter((r: any) => 
+            (r.estado === 'completada' || r.estado === 'parcialmente_completada') && 
+            !calificadasIds.includes(r.id)
+          );
+          setCompletadasSinCalificar(completadas);
+        }
+      } catch (err) {
+        console.error('Error al cargar rutas calificables:', err);
+      }
+    };
     const token = localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token');
     const usuarioRaw = localStorage.getItem('user_data') ?? sessionStorage.getItem('user_data');
     
@@ -118,6 +176,7 @@ const Dashboard = () => {
     };
 
     cargarPerfil();
+    cargarRutasCalificables();
     cargarNotificaciones();
 
     // Polling de notificaciones cada 15 segundos
@@ -361,6 +420,27 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Calificación del Servicio Banner (HU-021) */}
+        {completadasSinCalificar.length > 0 && (
+          <div className="mb-8 p-6 bg-gradient-to-r from-amber-500 to-orange-600 rounded-3xl text-white shadow-lg shadow-amber-500/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4 fade-in-up">
+            <div>
+              <div className="flex items-center gap-2">
+                <Star className="h-5 w-5 text-amber-100 fill-amber-100 animate-pulse" />
+                <h3 className="text-base font-extrabold uppercase tracking-wide text-amber-50">Calificar Servicio de Recolección</h3>
+              </div>
+              <p className="text-xs text-amber-100 mt-1 font-semibold">
+                Hay {completadasSinCalificar.length} ruta(s) finalizada(s) en tu zona "{nombreZona}". Por favor, califica cómo fue el servicio.
+              </p>
+            </div>
+            <button
+              onClick={() => setRutaACalificar(completadasSinCalificar[0])}
+              className="px-5 py-2.5 bg-white text-orange-600 rounded-xl text-xs font-black hover:bg-amber-50 transition-colors shadow-sm self-start sm:self-auto"
+            >
+              Calificar Ahora
+            </button>
+          </div>
+        )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           
@@ -417,6 +497,25 @@ const Dashboard = () => {
             </div>
           </Link>
 
+          {/* Card 4: Reportar Incidencia / Reportes Ciudadanos */}
+          <Link to="/reportes-ciudadanos" className="group glass-card rounded-2xl overflow-hidden fade-in-up delay-300 relative">
+            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
+              <AlertTriangle className="h-24 w-24 text-amber-600" />
+            </div>
+            <div className="p-8 relative z-10 h-full flex flex-col justify-between">
+              <div>
+                <div className="h-14 w-14 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-455 rounded-2xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
+                  <AlertTriangle className="h-7 w-7" />
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Reportar Incidencias</h3>
+                <p className="text-gray-500 dark:text-slate-400 text-sm mb-6 line-clamp-2">Reporta acumulación de basura, contenedores dañados o problemas con la ruta y realiza seguimiento.</p>
+              </div>
+              <div className="inline-flex items-center text-amber-700 dark:text-amber-450 font-semibold text-sm group-hover:translate-x-2 transition-transform">
+                Reportar ahora <ChevronRight className="h-4 w-4 ml-1" />
+              </div>
+            </div>
+          </Link>
+
         </div>
 
         {/* Dashboard Stats / Banner */}
@@ -459,6 +558,92 @@ const Dashboard = () => {
           </div>
         </div>
       </footer>
+
+      {/* Modal Calificar Servicio (HU-021) */}
+      {rutaACalificar && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+          <form 
+            onSubmit={enviarCalificacion} 
+            className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-sm space-y-5 shadow-2xl relative"
+          >
+            <div>
+              <h3 className="text-lg font-black text-gray-900 dark:text-white flex items-center gap-2">
+                <Star className="h-5 w-5 text-amber-500 fill-amber-500 animate-pulse" />
+                Calificar Servicio de Recolección
+              </h3>
+              <p className="text-xs text-gray-500 dark:text-slate-400 mt-1 font-medium">
+                Ruta del {rutaACalificar.fecha} en {rutaACalificar.zona_nombre}
+              </p>
+            </div>
+
+            {calificacionExito ? (
+              <div className="py-6 text-center space-y-2">
+                <div className="h-12 w-12 bg-emerald-500/10 rounded-full flex items-center justify-center mx-auto text-emerald-500">
+                  <CheckCircle className="h-6 w-6" />
+                </div>
+                <p className="text-sm font-bold text-emerald-600 dark:text-emerald-400">¡Muchas gracias por calificar!</p>
+                <p className="text-xs text-gray-500">Tu retroalimentación nos ayuda a mejorar el servicio municipal.</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-2">
+                  <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wide">¿Cómo calificarías el servicio?</label>
+                  <div className="flex justify-center gap-2.5 py-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRatingEstrellas(star)}
+                        className="transition-transform active:scale-90"
+                      >
+                        <Star 
+                          className={`h-8 w-8 transition-colors ${
+                            star <= ratingEstrellas 
+                              ? 'text-amber-400 fill-amber-400' 
+                              : 'text-slate-250 dark:text-slate-700'
+                          }`} 
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Comentarios (Opcional)</label>
+                  <textarea
+                    rows={3}
+                    value={ratingComentario}
+                    onChange={(e) => setRatingComentario(e.target.value)}
+                    placeholder="Cuéntanos más detalles sobre el cumplimiento, puntualidad o trato..."
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-250 dark:border-slate-800 p-3 rounded-xl text-xs focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex gap-3 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRutaACalificar(null);
+                      setRatingComentario('');
+                      setRatingEstrellas(5);
+                    }}
+                    className="flex-1 bg-slate-105 hover:bg-slate-200 dark:bg-slate-850 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-300 font-bold text-xs py-3 rounded-xl transition-all"
+                  >
+                    Omitir
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={enviandoCalificacion}
+                    className="flex-1 bg-emerald-500 hover:bg-emerald-600 disabled:opacity-50 text-white font-bold text-xs py-3 rounded-xl transition-all shadow-md shadow-emerald-500/10"
+                  >
+                    {enviandoCalificacion ? 'Guardando...' : 'Enviar Calificación'}
+                  </button>
+                </div>
+              </>
+            )}
+          </form>
+        </div>
+      )}
     </div>
   );
 };

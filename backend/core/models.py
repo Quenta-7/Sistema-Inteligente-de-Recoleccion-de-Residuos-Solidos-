@@ -5,6 +5,7 @@ from django.contrib.auth.models import AbstractUser
 class RolUsuario(models.TextChoices):
     CIUDADANO = 'ciudadano', 'Ciudadano'
     ADMIN = 'admin', 'Administrador'
+    RECOLECTOR = 'recolector', 'Recolector'
 
 class DiaSemana(models.TextChoices):
     LUNES = 'lunes', 'Lunes'
@@ -73,9 +74,12 @@ class Horario(models.Model):
 class Reporte(models.Model):
     usuario = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='reportes')
     zona = models.ForeignKey(Zona, on_delete=models.CASCADE, related_name='reportes')
+    tipo_reporte = models.CharField(max_length=100, default='General')
+    direccion = models.CharField(max_length=255, default='')
     descripcion = models.TextField()
     foto_url = models.URLField(max_length=500, null=True, blank=True)
     estado = models.CharField(max_length=20, choices=EstadoReporte.choices, default=EstadoReporte.NUEVO)
+    codigo_seguimiento = models.CharField(max_length=50, unique=True, null=True, blank=True)
     comentario_admin = models.TextField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -142,3 +146,62 @@ class Canje(models.Model):
 
     def __str__(self):
         return f"{self.usuario.nombre_completo} - {self.recompensa.nombre}"
+
+class Ruta(models.Model):
+    class EstadoRuta(models.TextChoices):
+        PROGRAMADA = 'programada', 'Programada'
+        EN_PROGRESO = 'en_progreso', 'En progreso'
+        COMPLETADA = 'completada', 'Completada'
+        PARCIALMENTE_COMPLETADA = 'parcialmente_completada', 'Parcialmente completada'
+        NO_COMPLETADA = 'no_completada', 'No completada'
+
+    recolector = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='rutas')
+    zona = models.ForeignKey(Zona, on_delete=models.CASCADE, related_name='rutas')
+    fecha = models.DateField()
+    hora_inicio = models.TimeField()
+    hora_fin_estimada = models.TimeField()
+    estado = models.CharField(max_length=30, choices=EstadoRuta.choices, default=EstadoRuta.PROGRAMADA)
+    observaciones = models.TextField(null=True, blank=True)
+    fecha_hora_reporte = models.DateTimeField(null=True, blank=True)
+    distancia_restante = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
+    geometria_ruta = models.JSONField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['fecha', 'hora_inicio']
+
+    def __str__(self):
+        return f"Ruta {self.id} - {self.recolector.nombre_completo} ({self.fecha})"
+
+class Incidencia(models.Model):
+    class EstadoIncidencia(models.TextChoices):
+        PENDIENTE = 'pendiente', 'Pendiente'
+        RESUELTA = 'resuelta', 'Resuelta'
+
+    recolector = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='incidencias')
+    tipo = models.CharField(max_length=100)
+    descripcion = models.TextField()
+    estado = models.CharField(max_length=20, choices=EstadoIncidencia.choices, default=EstadoIncidencia.PENDIENTE)
+    respuesta_admin = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Incidencia {self.id} - {self.tipo} ({self.estado})"
+
+class CalificacionServicio(models.Model):
+    ciudadano = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='calificaciones_enviadas')
+    ruta = models.ForeignKey(Ruta, on_delete=models.CASCADE, related_name='calificaciones')
+    estrellas = models.IntegerField()
+    comentario = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        constraints = [
+            models.UniqueConstraint(fields=['ciudadano', 'ruta'], name='calificacion_unica_por_ruta')
+        ]
+
+    def __str__(self):
+        return f"Calificación {self.estrellas}* para Ruta {self.ruta.id} por {self.ciudadano.nombre_completo}"

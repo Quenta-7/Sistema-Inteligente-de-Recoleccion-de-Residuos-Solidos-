@@ -3,10 +3,11 @@ import { Navigate } from 'react-router-dom';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
+  allowedRoles?: string[];
   adminOnly?: boolean;
 }
 
-const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = false }) => {
+const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRoles, adminOnly = false }) => {
   const token = localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token');
   const userDataRaw = localStorage.getItem('user_data') ?? sessionStorage.getItem('user_data');
 
@@ -20,6 +21,12 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, adminOnly = f
     if (adminOnly && userData.rol !== 'admin') {
       // Si requiere admin pero no lo es, redirigir al dashboard ciudadano con flag de denegación
       return <Navigate to="/dashboard?denied=true" replace />;
+    }
+    if (allowedRoles && !allowedRoles.includes(userData.rol)) {
+      if (userData.rol === 'recolector') {
+        return <Navigate to="/recolector-dashboard" replace />;
+      }
+      return <Navigate to="/dashboard" replace />;
     }
   } catch (e) {
     // En caso de error de parseo (datos corruptos), limpiar y redirigir

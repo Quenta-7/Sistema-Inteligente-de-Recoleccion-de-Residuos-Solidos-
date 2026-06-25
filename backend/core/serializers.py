@@ -1,6 +1,6 @@
 # backend/core/serializers.py
 from rest_framework import serializers
-from .models import Usuario, Zona, Horario, Reporte, Evidencia, Notificacion, Recompensa, Canje
+from .models import Usuario, Zona, Horario, Reporte, Evidencia, Notificacion, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio
 from django.contrib.auth import authenticate
 
 class ZonaSerializer(serializers.ModelSerializer):
@@ -174,3 +174,39 @@ class LoginSerializer(serializers.Serializer):
 
         data['usuario'] = usuario
         return data
+
+class RutaSerializer(serializers.ModelSerializer):
+    recolector_nombre = serializers.CharField(source='recolector.nombre_completo', read_only=True)
+    zona_nombre = serializers.CharField(source='zona.nombre', read_only=True)
+
+    class Meta:
+        model = Ruta
+        fields = '__all__'
+
+    def validate_estado(self, value):
+        if value not in Ruta.EstadoRuta.values:
+            raise serializers.ValidationError("Estado de ruta inválido.")
+        return value
+
+class IncidenciaSerializer(serializers.ModelSerializer):
+    recolector_nombre = serializers.CharField(source='recolector.nombre_completo', read_only=True)
+
+    class Meta:
+        model = Incidencia
+        fields = '__all__'
+        read_only_fields = ['id', 'recolector', 'respuesta_admin', 'created_at']
+
+class CalificacionServicioSerializer(serializers.ModelSerializer):
+    ciudadano_nombre = serializers.CharField(source='ciudadano.nombre_completo', read_only=True)
+    ruta_fecha = serializers.CharField(source='ruta.fecha', read_only=True)
+    recolector_nombre = serializers.CharField(source='ruta.recolector.nombre_completo', read_only=True)
+
+    class Meta:
+        model = CalificacionServicio
+        fields = '__all__'
+        read_only_fields = ['id', 'ciudadano', 'created_at']
+
+    def validate_estrellas(self, value):
+        if value < 1 or value > 5:
+            raise serializers.ValidationError("La calificación debe estar entre 1 y 5 estrellas.")
+        return value

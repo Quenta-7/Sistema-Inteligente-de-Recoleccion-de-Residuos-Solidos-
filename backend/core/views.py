@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
-from .models import Zona, Horario, Reporte, Usuario, Evidencia, Notificacion, Recompensa, Canje
+from .models import Zona, Horario, Reporte, Usuario, Evidencia, Notificacion, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio
 from .serializers import (
     ZonaSerializer,
     HorarioSerializer,
@@ -18,6 +18,9 @@ from .serializers import (
     NotificacionSerializer,
     RecompensaSerializer,
     CanjeSerializer,
+    RutaSerializer,
+    IncidenciaSerializer,
+    CalificacionServicioSerializer,
 )
 
 class ZonaViewSet(viewsets.ModelViewSet):
@@ -29,8 +32,29 @@ class HorarioViewSet(viewsets.ModelViewSet):
     serializer_class = HorarioSerializer
 
 class ReporteViewSet(viewsets.ModelViewSet):
-    queryset = Reporte.objects.all()
     serializer_class = ReporteSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, 'rol') and user.rol == 'admin':
+            return Reporte.objects.all()
+        return Reporte.objects.filter(usuario=user)
+
+    def perform_create(self, serializer):
+        import random
+        import string
+        codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        while Reporte.objects.filter(codigo_seguimiento=codigo).exists():
+            codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=8))
+        
+        zona = serializer.validated_data.get('zona')
+        if not zona:
+            zona = self.request.user.zona
+            if not zona:
+                zona = Zona.objects.filter(activa=True).first()
+        
+        serializer.save(usuario=self.request.user, codigo_seguimiento=codigo, zona=zona)
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.throttling import SimpleRateThrottle
@@ -388,3 +412,46 @@ class CanjeViewSet(viewsets.ModelViewSet):
                 usuario=usuario_db,
                 mensaje=f"Has canjeado '{recompensa_db.nombre}' por {recompensa_db.puntos} EcoPuntos. Código de canje: {serializer.instance.id}."
             )
+
+class RutaViewSet(viewsets.ModelViewSet):
+    serializer_class = RutaSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, 'rol'):
+            if user.rol == 'admin':
+                return Ruta.objects.all()
+            elif user.rol == 'recolector':
+                return Ruta.objects.filter(recolector=user)
+            elif user.rol == 'ciudadano':
+                # Citizens see all routes in their zone (so they can track garbage truck in real time/calificar)
+                if user.zona:
+                    return Ruta.objects.filter(zona=user.zona)
+        return Ruta.objects.none()
+
+class IncidenciaViewSet(viewsets.ModelViewSet):
+    serializer_class = IncidenciaSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, 'rol') and user.rol == 'admin':
+            return Incidencia.objects.all()
+        return Incidencia.objects.filter(recolector=user)
+
+    def perform_create(self, serializer):
+        serializer.save(recolector=self.request.user)
+
+class CalificacionServicioViewSet(viewsets.ModelViewSet):
+    serializer_class = CalificacionServicioSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, 'rol') and user.rol == 'admin':
+            return CalificacionServicio.objects.all()
+        return CalificacionServicio.objects.filter(ciudadano=user)
+
+    def perform_create(self, serializer):
+        serializer.save(ciudadano=self.request.user)

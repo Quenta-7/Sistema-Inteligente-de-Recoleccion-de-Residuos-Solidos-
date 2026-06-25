@@ -57,6 +57,8 @@ const Login = () => {
         // Redirigir al dashboard según el rol
         if (data.user.rol === 'admin') {
           navigate('/admin-dashboard');
+        } else if (data.user.rol === 'recolector') {
+          navigate('/recolector-dashboard');
         } else {
           navigate('/dashboard');
         }
@@ -198,6 +200,7 @@ const Login = () => {
           <p className="text-xs text-gray-500 mb-2 font-semibold">Credenciales de prueba:</p>
           <div className="space-y-1 text-xs text-gray-600">
             <p>Ciudadano: <span className="font-mono bg-gray-100 px-2 py-1 rounded font-semibold text-emerald-700">ciudadano1@residuos.com</span> (pass123)</p>
+            <p className="mt-1">Recolector: <span className="font-mono bg-gray-100 px-2 py-1 rounded font-semibold text-amber-700">recolector@residuos.com</span> (pass123)</p>
             <p className="mt-1">Administrador: <span className="font-mono bg-gray-100 px-2 py-1 rounded font-semibold text-sky-700">admin@residuos.com</span> (admin123)</p>
           </div>
         </div>
