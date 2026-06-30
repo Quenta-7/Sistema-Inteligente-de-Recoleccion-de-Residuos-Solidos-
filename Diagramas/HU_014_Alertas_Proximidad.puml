@@ -1,0 +1,22 @@
+@startuml
+skinparam style strictuml
+actor Recolector as R
+participant "Frontend (React/App)" as FE
+participant "Geolocalización GPS" as GPS
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+loop Durante la ejecución de la ruta en segundo plano
+    GPS -> FE: Emite coordenadas actuales del Recolector
+    FE -> FE: Calcular distancia Euclidiana/Haversine al siguiente punto de acopio
+    alt Distancia <= 50 metros Y alerta_emitida == false
+        FE -> FE: Generar vibración y reproducir sonido de notificación
+        FE -> FE: Mostrar ventana emergente con detalles (Nombre, tipo de residuo)
+        FE -> FE: Marcar alerta_emitida = true para ese punto
+        FE -> BE: POST /api/recolector/rutas/alertas/ { punto_id, timestamp }
+        BE -> DB: Registrar emisión de alerta en la bitácora
+        BE --> FE: HTTP 200 OK
+        FE --> R: Notifica visual y sonoramente al Recolector
+    end
+end
+@enduml

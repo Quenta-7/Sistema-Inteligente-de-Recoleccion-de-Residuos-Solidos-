@@ -1,0 +1,23 @@
+@startuml
+skinparam style strictuml
+actor Usuario as U
+participant "ProtectedRoute (React Guard)" as GUARD
+participant "Frontend (React Dashboards)" as FE
+participant "Backend (Django)" as BE
+
+U -> FE: Intenta acceder a una ruta protegida (ej: /admin-dashboard)
+FE -> GUARD: Evalúa permisos de la ruta
+GUARD -> GUARD: Verifica token JWT y rol del usuario
+alt Usuario NO autenticado
+    GUARD -> FE: Redirigir a /login
+    FE --> U: Muestra pantalla de Login
+else Usuario autenticado como Administrador
+    GUARD -> FE: Permitir acceso a /admin-dashboard
+    FE -> BE: GET /api/admin/data/ (con JWT)
+    BE --> FE: Datos de administración
+    FE --> U: Renderiza AdminDashboard (Sidebar con opciones de Admin)
+else Usuario autenticado como Ciudadano intentando entrar a /admin-dashboard
+    GUARD -> FE: Deniega acceso, redirige a /dashboard?denied=true
+    FE --> U: Renderiza Dashboard de Ciudadano con banner de acceso denegado
+end
+@enduml

@@ -1,0 +1,25 @@
+@startuml
+skinparam style strictuml
+actor Administrador as A
+participant "Frontend (React Admin)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+A -> FE: Accede al listado de reportes de evidencias
+FE -> BE: GET /api/admin/evidencias/ (con JWT de Admin)
+BE -> DB: Consultar evidencias con estado "pendiente"
+DB --> BE: Lista de evidencias pendientes
+BE --> FE: HTTP 200 OK [evidencias]
+FE --> A: Muestra tabla de validación
+A -> FE: Selecciona reporte, revisa detalles y da clic en "Aprobar" (o "Rechazar")
+FE -> BE: POST /api/admin/evidencias/<id>/validar/ { estado: "resuelto"/"rechazado", observaciones }
+BE -> BE: Iniciar Transacción
+BE -> DB: Actualizar estado de Evidencia, fecha de validación y Admin responsable
+alt Estado es "Aprobar" (resuelto)
+    BE -> DB: Calcular EcoPuntos correspondientes y sumar al saldo del Ciudadano
+end
+BE -> DB: Crear registro en Notificacion para el Ciudadano indicando el cambio de estado
+DB --> BE: Confirmación de guardado
+BE --> FE: HTTP 200 OK { mensaje: "Reporte validado exitosamente" }
+FE --> A: Muestra alerta de éxito y refresca la lista
+@enduml

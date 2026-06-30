@@ -1,0 +1,20 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Administrador" as A
+
+rectangle "Módulo de Administración" {
+  usecase "HU-008: Validar Reportes de Evidencias Ciudadanas" as UC_Val
+  usecase "Aprobar Evidencia (Acreditar Ecopuntos)" as UC_Aprob
+  usecase "Rechazar Evidencia (Registrar Observación)" as UC_Rech
+  usecase "Enviar Notificación Automática de Estado" as UC_Notif
+}
+
+A --> UC_Val
+
+UC_Val ..> UC_Aprob : <<extend>>
+UC_Val ..> UC_Rech : <<extend>>
+UC_Aprob ..> UC_Notif : <<include>>
+UC_Rech ..> UC_Notif : <<include>>
+@enduml

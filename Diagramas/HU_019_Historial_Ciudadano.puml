@@ -1,0 +1,20 @@
+@startuml
+skinparam style strictuml
+actor Ciudadano as C
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+C -> FE: Abre la sección de "Mi Historial de Actividades"
+FE -> BE: GET /api/ciudadano/historial/ (con JWT)
+BE -> DB: Consultar reportes, solicitudes y canjes del ciudadano
+DB --> BE: Historial unificado
+BE --> FE: HTTP 200 OK [actividades]
+alt Tiene actividades
+    C -> FE: Selecciona ordenar por fecha o filtrar por estado
+    FE -> FE: Aplicar ordenamiento/filtro en el frontend
+    FE --> C: Muestra el listado de actividades actualizado
+else No tiene actividades
+    FE --> C: Muestra mensaje: "No existen actividades registradas."
+end
+@enduml

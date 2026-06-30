@@ -1,0 +1,30 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Ciudadano" as C
+
+rectangle "Módulo del Ciudadano (Ecopuntos y Reportes)" {
+  usecase "HU-004: Registrar Disposición Responsable de Residuos" as UC_Disp
+  usecase "HU-005: Visualizar Saldo de Ecopuntos" as UC_Saldo
+  usecase "HU-006: Consultar Catálogo de Recompensas" as UC_Tienda
+  usecase "HU-007: Canjear Ecopuntos por Recompensas" as UC_Canje
+  usecase "HU-009: Consultar Historial de Reportes" as UC_HistReportes
+  usecase "HU-010: Consultar Horarios de Recolección de la Zona" as UC_HorariosZona
+  usecase "HU-012: Buscar Horarios de Recolección por Sector" as UC_BusqHorarios
+  usecase "HU-009 (SIDGRC-9): Registrar Reporte de Incidencias Públicas" as UC_IncidPub
+  usecase "HU-019: Consultar Historial Unificado de Actividades" as UC_HistCiudadano
+  usecase "HU-021: Calificar Calidad del Servicio de Recolección" as UC_Calificar
+}
+
+C --> UC_Disp
+C --> UC_Saldo
+C --> UC_Tienda
+C --> UC_Canje
+C --> UC_HistReportes
+C --> UC_HorariosZona
+C --> UC_BusqHorarios
+C --> UC_IncidPub
+C --> UC_HistCiudadano
+C --> UC_Calificar
+@enduml

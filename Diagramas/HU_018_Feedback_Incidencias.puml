@@ -1,0 +1,24 @@
+@startuml
+skinparam style strictuml
+actor Recolector as R
+participant "Frontend (React Móvil)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+R -> FE: Accede a "Mis Incidencias Reportadas"
+FE -> BE: GET /api/recolector/incidencias/ (con JWT)
+BE -> DB: Buscar incidencias reportadas por el recolector autenticado
+DB --> BE: Lista de incidencias (código, tipo, fecha, estado)
+BE --> FE: HTTP 200 OK [incidencias]
+FE --> R: Muestra la lista de incidencias
+R -> FE: Selecciona una incidencia para ver detalles
+FE -> BE: GET /api/recolector/incidencias/<id>/
+BE -> DB: Consultar detalle de la incidencia y respuesta del Administrador
+DB --> BE: Detalle de la incidencia
+BE --> FE: HTTP 200 OK { incidencia, respuesta_admin }
+alt Incidencia respondida
+    FE --> R: Muestra el detalle con la respuesta del Administrador (Solo Lectura)
+else Pendiente de respuesta
+    FE --> R: Muestra detalle con mensaje: "Esta incidencia está pendiente de atención."
+end
+@enduml

@@ -1,0 +1,22 @@
+@startuml
+skinparam style strictuml
+actor Ciudadano as C
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+C -> FE: Selecciona registrar evidencia
+FE -> BE: GET /api/horarios/ (filtrados por zona del ciudadano)
+BE -> DB: Buscar horarios asociados a la zona del usuario
+DB --> BE: Lista de horarios y tipos de residuos
+BE --> FE: HTTP 200 OK (horarios)
+FE --> C: Muestra formulario con horarios válidos
+C -> FE: Selecciona tipo de residuo, cantidad, dirección, horario e imagen (opcional)
+C -> FE: Clic en Enviar
+FE -> BE: POST /api/evidencias/ (multipart/form-data con JWT)
+BE -> BE: Validar datos y formato de imagen (JPG/PNG)
+BE -> DB: Guardar Evidencia (Estado: "pendiente")
+DB --> BE: Evidencia guardada (ID generado)
+BE --> FE: HTTP 201 Created { mensaje: "Reporte registrado correctamente", codigo }
+FE --> C: Muestra mensaje de confirmación y código único
+@enduml

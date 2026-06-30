@@ -1,0 +1,24 @@
+@startuml
+skinparam style strictuml
+actor Recolector as R
+participant "Frontend (React/Map)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+R -> FE: Inicia ejecución de la ruta asignada
+FE -> BE: GET /api/recolector/rutas/<id>/mapa/ (con JWT)
+BE -> DB: Consultar puntos de inicio, acopio y fin de la ruta
+DB --> BE: Coordenadas geográficas de los puntos
+BE --> FE: HTTP 200 OK { puntos_ruta }
+FE -> FE: Cargar mapa interactivo y dibujar la ruta
+loop Cada 30 segundos durante la ejecución
+    FE -> FE: Obtener coordenadas GPS del dispositivo
+    FE -> FE: Actualizar marcador de posición del recolector en mapa
+    FE -> FE: Calcular distancia restante estimada
+    FE -> BE: POST /api/recolector/rutas/<id>/posicion/ { lat, lng } (para tracking en vivo)
+    BE -> DB: Actualizar ubicación en tiempo real de la ruta activa
+    BE --> FE: HTTP 200 OK
+end
+R -> FE: Finaliza la ruta
+FE -> FE: Detener tracking y cerrar el mapa interactivo
+@enduml

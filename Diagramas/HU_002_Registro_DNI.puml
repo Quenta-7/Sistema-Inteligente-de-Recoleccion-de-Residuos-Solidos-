@@ -1,0 +1,30 @@
+@startuml
+skinparam style strictuml
+actor Ciudadano as C
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+participant "API Decolecta (RENIEC)" as EXT
+database "Base de datos (SQLite)" as DB
+
+C -> FE: Ingresa DNI (8 dígitos)
+FE -> BE: GET /api/consultar-dni/<dni>/
+BE -> EXT: GET /api/v1/reniec/<dni> (con Bearer Token)
+EXT --> BE: Retorna nombres y apellidos
+BE --> FE: Retorna { nombres, apellidos }
+FE -> FE: Autocompleta nombres/apellidos y bloquea el campo (readOnly)
+C -> FE: Completa distrito, correo, contraseña y la confirma
+FE -> FE: Valida contraseña fuerte y coincidencia
+C -> FE: Clic en Registrarse
+FE -> BE: POST /api/register/ {dni, nombres, apellidos, correo, contraseña, distrito}
+BE -> DB: Validar unicidad (correo y DNI)
+alt Datos válidos y únicos
+    BE -> BE: Cifrar contraseña con BCrypt
+    BE -> DB: Guardar nuevo Usuario (Rol: Ciudadano)
+    DB --> BE: Usuario creado exitosamente
+    BE --> FE: HTTP 201 Created { mensaje: "Registro exitoso" }
+    FE --> C: Redirigir al Login y mostrar confirmación
+else Correo/DNI duplicado o error
+    BE --> FE: HTTP 400 Bad Request { error }
+    FE --> C: Muestra alerta de error
+end
+@enduml

@@ -1,0 +1,24 @@
+@startuml
+skinparam style strictuml
+actor Usuario as U
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+U -> FE: Ingresa correo y contraseña
+FE -> FE: Valida campos obligatorios
+FE -> BE: POST /api/login/ (credenciales)
+BE -> DB: Buscar usuario por correo
+DB --> BE: Datos del usuario (con contraseña hasheada)
+BE -> BE: Verificar contraseña (BCrypt)
+alt Credenciales válidas
+    BE -> BE: Generar token JWT
+    BE --> FE: HTTP 200 OK { token, user_info, rol }
+    FE -> FE: Guardar token en localStorage
+    FE -> FE: Redirigir al Dashboard correspondiente
+    FE --> U: Muestra Panel Principal
+else Credenciales inválidas o error
+    BE --> FE: HTTP 400 Bad Request / 401 Unauthorized { error }
+    FE --> U: Muestra mensaje de error
+end
+@enduml

@@ -1,0 +1,24 @@
+@startuml
+skinparam style strictuml
+actor Recolector as R
+participant "Frontend (React Móvil)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+R -> FE: Selecciona ruta en ejecución y da clic en "Reportar Cumplimiento"
+FE --> R: Muestra formulario de cumplimiento de ruta
+R -> FE: Selecciona estado (Completada/Parcialmente/No completada) y escribe observaciones
+R -> FE: Clic en Guardar Reporte
+FE -> BE: POST /api/recolector/rutas/<id>/reporte/ { estado, observaciones } (con JWT)
+BE -> DB: Validar que la ruta está asignada a este Recolector y no tiene reporte final
+alt Reporte válido
+    BE -> DB: Guardar reporte con fecha/hora actual, actualizar estado de la ruta a "Finalizada"
+    BE -> DB: Registrar evento en bitácora de auditoría
+    DB --> BE: Datos guardados
+    BE --> FE: HTTP 201 Created { mensaje: "Reporte registrado exitosamente" }
+    FE --> R: Muestra pantalla de confirmación exitosa
+else Ruta ya reportada o cerrada
+    BE --> FE: HTTP 400 Bad Request { error: "Ruta cerrada o ya reportada" }
+    FE --> R: Muestra mensaje de error
+end
+@enduml

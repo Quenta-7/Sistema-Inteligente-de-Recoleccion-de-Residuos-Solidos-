@@ -1,0 +1,19 @@
+@startuml
+skinparam style strictuml
+actor Ciudadano as C
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+C -> FE: Selecciona ver historial de reportes (mis evidencias)
+FE -> BE: GET /api/evidencias/mis_reportes/ (con JWT)
+BE -> DB: Consultar evidencias asociadas al ID del Ciudadano (ordenadas por fecha desc)
+DB --> BE: Lista de registros (código, tipo, fecha, estado)
+BE --> FE: HTTP 200 OK [historial]
+alt Historial no vacío
+    FE -> FE: Renderizar lista interactiva
+    FE --> C: Muestra historial de reportes
+else Historial vacío
+    FE --> C: Muestra mensaje "No existen registros de reportes de evidencias."
+end
+@enduml

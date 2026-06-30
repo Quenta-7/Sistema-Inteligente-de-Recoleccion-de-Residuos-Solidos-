@@ -1,0 +1,19 @@
+@startuml
+skinparam style strictuml
+actor Ciudadano as C
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+C -> FE: Ingresa sector o dirección en la barra de búsqueda de horarios
+FE -> BE: GET /api/horarios/buscar/?direccion=sector (con JWT)
+BE -> DB: Buscar zonas y horarios que coincidan con el término de búsqueda
+DB --> BE: Lista de zonas y horarios coincidentes
+BE --> FE: HTTP 200 OK [horarios_zona]
+alt Existen horarios para la zona
+    FE -> FE: Mostrar detalladamente día, hora estimada y tipo de residuo
+    FE --> C: Renderiza los horarios ordenados de la zona consultada
+else No existen horarios
+    FE --> C: Muestra: "No existen horarios disponibles para la zona seleccionada."
+end
+@enduml

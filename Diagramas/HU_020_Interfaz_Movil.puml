@@ -1,0 +1,24 @@
+@startuml
+skinparam style strictuml
+actor Recolector as R
+participant "Aplicación Móvil (Android)" as APP
+participant "APIs REST (Backend)" as BE
+database "Base de datos (SQLite)" as DB
+
+R -> APP: Abre la aplicación e ingresa credenciales
+APP -> BE: POST /api/login/
+BE -> DB: Validar usuario y rol de Recolector
+DB --> BE: Recolector validado
+BE --> APP: HTTP 200 OK { token JWT }
+APP -> APP: Almacenar token de forma segura
+APP -> APP: Validar si la sesión sigue activa periódicamente
+alt Conexión móvil 4G/5G activa
+    APP -> BE: GET /api/recolector/cronogramas/ (con JWT)
+    BE --> APP: HTTP 200 OK [rutas]
+    APP -> APP: Adaptar interfaz responsiva en pantalla móvil
+    APP --> R: Presenta Dashboard Móvil (Rutas, Incidencias, Alertas)
+else Token expirado
+    APP -> APP: Limpiar sesión y redirigir al Login
+    APP --> R: Muestra pantalla de Login con alerta
+end
+@enduml

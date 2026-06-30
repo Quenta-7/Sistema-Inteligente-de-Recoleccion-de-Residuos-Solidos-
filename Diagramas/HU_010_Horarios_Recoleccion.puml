@@ -1,0 +1,15 @@
+@startuml
+skinparam style strictuml
+actor Ciudadano as C
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+C -> FE: Abre pestaña de Horarios de Recolección
+FE -> BE: GET /api/horarios/mi_zona/ (con JWT)
+BE -> DB: Obtener zona del ciudadano y buscar horarios programados
+DB --> BE: Lista de horarios (Día, hora, tipo de residuo)
+BE --> FE: HTTP 200 OK [horarios]
+FE -> FE: Filtrar horarios próximos y ordenarlos
+FE --> C: Muestra calendario interactivo con horarios de recolección de su zona
+@enduml

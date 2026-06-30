@@ -1,0 +1,19 @@
+@startuml
+skinparam style strictuml
+actor Recolector as R
+participant "Frontend (React Móvil)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+R -> FE: Consulta rutas de su jornada actual
+FE -> BE: GET /api/recolector/cronogramas/?fecha=YYYY-MM-DD (con JWT)
+BE -> DB: Consultar rutas asignadas al Recolector autenticado en la fecha indicada
+DB --> BE: Lista de rutas (fecha, hora inicio, hora fin estimada, zona, estado)
+BE --> FE: HTTP 200 OK [rutas]
+alt Existen rutas asignadas
+    FE -> FE: Renderizar cronogramas y detalles del recorrido
+    FE --> R: Muestra la lista de rutas del día
+else No existen rutas
+    FE --> R: Muestra mensaje "No existen rutas programadas para la fecha seleccionada."
+end
+@enduml

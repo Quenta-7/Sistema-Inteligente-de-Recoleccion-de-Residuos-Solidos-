@@ -1,0 +1,24 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Recolector" as R
+
+rectangle "Módulo del Recolector (Operaciones de Campo)" {
+  usecase "HU-011: Consultar Cronograma de Rutas Asignadas" as UC_Cron
+  usecase "HU-013: Realizar Seguimiento de Ruta en Mapa" as UC_SegMapa
+  usecase "HU-014: Recibir Alertas de Proximidad a Puntos de Acopio" as UC_Alertas
+  usecase "HU-015: Registrar Reporte de Cumplimiento de Ruta" as UC_Cumpl
+  usecase "HU-018: Consultar Retroalimentación de Incidencias" as UC_Feedback
+  usecase "HU-020: Acceder al Sistema mediante Interfaz Móvil" as UC_Movil
+}
+
+R --> UC_Cron
+R --> UC_SegMapa
+R --> UC_Alertas
+R --> UC_Cumpl
+R --> UC_Feedback
+R --> UC_Movil
+
+UC_SegMapa ..> UC_Alertas : <<include>>
+@enduml

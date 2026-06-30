@@ -1,0 +1,27 @@
+@startuml
+skinparam style strictuml
+actor Ciudadano as C
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+C -> FE: Abre sección de "Calificar Servicio" para una ruta o recolección realizada
+FE -> BE: GET /api/servicios/realizados/ (con JWT)
+BE -> DB: Obtener servicios de recolección completados de la zona del Ciudadano
+DB --> BE: Lista de servicios
+BE --> FE: HTTP 200 OK [servicios]
+FE --> C: Muestra la lista de servicios elegibles
+C -> FE: Selecciona un servicio, marca estrellas (1-5) y añade comentarios
+C -> FE: Envía la calificación
+FE -> BE: POST /api/calificaciones/ { servicio_id, estrellas, comentario } (con JWT)
+BE -> DB: Verificar que no exista calificación previa de este ciudadano para el servicio
+alt Calificación única y válida
+    BE -> DB: Guardar Calificación (estado: activa)
+    DB --> BE: Calificación guardada
+    BE --> FE: HTTP 201 Created { mensaje: "Calificación registrada correctamente." }
+    FE --> C: Muestra confirmación de agradecimiento
+else Calificación duplicada o error
+    BE --> FE: HTTP 400 Bad Request { error: "Ya calificó este servicio de recolección." }
+    FE --> C: Muestra alerta de error
+end
+@enduml

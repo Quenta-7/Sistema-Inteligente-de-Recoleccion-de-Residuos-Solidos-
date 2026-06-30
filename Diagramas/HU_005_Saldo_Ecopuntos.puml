@@ -1,0 +1,15 @@
+@startuml
+skinparam style strictuml
+actor Ciudadano as C
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+C -> FE: Accede al Dashboard principal
+FE -> BE: GET /api/usuario/perfil/ (con JWT)
+BE -> DB: Consultar datos del usuario autenticado
+DB --> BE: Registro del usuario (incluyendo campo ecopuntos)
+BE --> FE: HTTP 200 OK { username, ecopuntos_saldo, ... }
+FE -> FE: Evaluar saldo (si es nulo o 0, mostrar "0 EcoPuntos")
+FE --> C: Muestra tarjeta destacada con el saldo de EcoPuntos actualizado
+@enduml

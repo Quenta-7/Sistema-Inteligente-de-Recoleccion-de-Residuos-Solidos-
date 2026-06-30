@@ -1,0 +1,168 @@
+@startuml
+skinparam style strictuml
+skinparam linetype ortho
+
+class Zona {
+    +String nombre
+    +String codigo
+    +String descripcion
+    +JSON geometria
+    +Boolean activa
+    +DateTime created_at
+    +DateTime updated_at
+}
+
+class Usuario {
+    +String email
+    +String dni
+    +String nombre_completo
+    +String telefono
+    +RolUsuario rol
+    +Boolean activo
+    +Integer ecopuntos
+    +Boolean acepta_terminos
+    +DateTime fecha_aceptacion_terminos
+}
+
+class Horario {
+    +DiaSemana dia
+    +Time hora_inicio
+    +Time hora_fin
+    +JSON tipos_residuo
+    +Boolean activo
+    +DateTime created_at
+    +DateTime updated_at
+}
+
+class Reporte {
+    +String tipo_reporte
+    +String direccion
+    +String descripcion
+    +String foto_url
+    +EstadoReporte estado
+    +String codigo_seguimiento
+    +String comentario_admin
+    +DateTime created_at
+    +DateTime updated_at
+}
+
+class Evidencia {
+    +String tipo_residuo
+    +String descripcion
+    +Image foto
+    +Decimal cantidad
+    +Integer ecopuntos
+    +EstadoReporte estado
+    +String direccion_entrega
+    +DateTime fecha_validacion
+    +DateTime created_at
+    +DateTime updated_at
+}
+
+class Notificacion {
+    +String mensaje
+    +Boolean leido
+    +DateTime created_at
+}
+
+class Recompensa {
+    +String nombre
+    +String descripcion
+    +Integer puntos
+    +String categoria
+    +String imagen
+    +Integer stock
+    +Boolean disponible
+    +DateTime created_at
+    +DateTime updated_at
+}
+
+class Canje {
+    +Integer puntos
+    +String estado
+    +DateTime created_at
+}
+
+class Ruta {
+    +Date fecha
+    +Time hora_inicio
+    +Time hora_fin_estimada
+    +EstadoRuta estado
+    +String observaciones
+    +DateTime fecha_hora_reporte
+    +Decimal distancia_restante
+    +JSON geometria_ruta
+}
+
+class Incidencia {
+    +String tipo
+    +String descripcion
+    +EstadoIncidencia estado
+    +String respuesta_admin
+    +DateTime created_at
+}
+
+class CalificacionServicio {
+    +Integer estrellas
+    +String comentario
+    +DateTime created_at
+}
+
+enum RolUsuario {
+    CIUDADANO
+    ADMIN
+    RECOLECTOR
+}
+
+enum DiaSemana {
+    LUNES
+    MARTES
+    MIERCOLES
+    JUEVES
+    VIERNES
+    SABADO
+    DOMINGO
+}
+
+enum EstadoReporte {
+    NUEVO
+    EN_REVISION
+    RESUELTO
+    RECHAZADO
+}
+
+enum EstadoRuta {
+    PROGRAMADA
+    EN_PROGRESO
+    COMPLETADA
+    PARCIALMENTE_COMPLETADA
+    NO_COMPLETADA
+}
+
+enum EstadoIncidencia {
+    PENDIENTE
+    RESUELTA
+}
+
+Usuario "1" --> "0..1" Zona : pertenece a
+Usuario "1" --> "0..*" Reporte : registra
+Usuario "1" --> "0..*" Evidencia : reporta
+Usuario "1" --> "0..*" Notificacion : recibe
+Usuario "1" --> "0..*" Canje : realiza
+Usuario "1" --> "0..*" Ruta : asignada a (recolector)
+Usuario "1" --> "0..*" Incidencia : reporta (recolector)
+Usuario "1" --> "0..*" CalificacionServicio : otorga (ciudadano)
+Usuario "0..1" --> "0..*" Evidencia : valida (validador/admin)
+
+Zona "1" --> "0..*" Horario : tiene
+Zona "1" --> "0..*" Reporte : afecta
+Zona "1" --> "0..*" Evidencia : pertenece
+Zona "1" --> "0..*" Ruta : contiene
+
+Horario "1" --> "0..*" Evidencia : asignado a
+
+Recompensa "1" --> "0..*" Canje : canjeada en
+
+Ruta "1" --> "0..*" CalificacionServicio : calificada en
+
+@enduml

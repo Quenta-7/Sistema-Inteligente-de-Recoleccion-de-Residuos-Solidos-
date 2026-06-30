@@ -1,0 +1,22 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Usuario Registrado" as U
+actor "Ciudadano Nuevo" as C
+
+rectangle "Sistema de Autenticación y Navegación" {
+  usecase "HU-001: Iniciar Sesión con Credenciales" as UC1
+  usecase "HU-002: Registrarse con DNI (RENIEC)" as UC2
+  usecase "HU-003: Acceder al Panel Principal (Dashboard)" as UC3
+  usecase "Autocompletar Nombre por DNI" as UC2_sub
+  usecase "Restablecer Contraseña" as UC1_sub
+}
+
+U --> UC1
+U --> UC3
+C --> UC2
+
+UC1 ..> UC1_sub : <<extend>>
+UC2 ..> UC2_sub : <<include>>
+@enduml

@@ -1,0 +1,20 @@
+@startuml
+skinparam style strictuml
+actor Ciudadano as C
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+C -> FE: Abre formulario "Reportar Incidencia de Recolección"
+FE --> C: Muestra campos: tipo, descripción (min 10 chars), dirección, foto (opcional)
+C -> FE: Completa el formulario y adjunta foto (JPG/PNG)
+C -> FE: Hace clic en "Enviar Reporte"
+FE -> FE: Valida campos requeridos y longitud de descripción
+FE -> BE: POST /api/reportes/ciudadanos/ (multipart/form-data con JWT)
+BE -> BE: Validar autenticación JWT y formato de imagen
+BE -> BE: Generar código de seguimiento único (ej. REP-12345)
+BE -> DB: Guardar Reporte en la Base de datos asociado al Ciudadano
+DB --> BE: Registro guardado
+BE --> FE: HTTP 201 Created { mensaje: "Reporte registrado correctamente.", codigo: "REP-12345" }
+FE --> C: Muestra pantalla de éxito con el código de seguimiento generado
+@enduml

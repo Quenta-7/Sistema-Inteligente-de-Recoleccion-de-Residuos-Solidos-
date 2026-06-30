@@ -1,0 +1,29 @@
+@startuml
+skinparam style strictuml
+actor Ciudadano as C
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+C -> FE: Selecciona una recompensa y hace clic en "Canjear"
+FE -> FE: Valida localmente si Ecopuntos >= Costo Recompensa
+FE -> BE: POST /api/canjes/ { recompensa_id } (con JWT)
+BE -> BE: Iniciar Transacción Atómica
+BE -> DB: Consultar saldo de ecopuntos del Ciudadano
+DB --> BE: Saldo actual
+BE -> DB: Consultar stock de la Recompensa
+DB --> BE: Stock actual
+alt Saldo suficiente Y Stock > 0
+    BE -> DB: Decrementar stock de la Recompensa (stock = stock - 1)
+    BE -> DB: Restar ecopuntos del Ciudadano (ecopuntos = ecopuntos - costo)
+    BE -> DB: Registrar transacción en Tabla Canje (Estado: Completado)
+    DB --> BE: Confirmación de actualización
+    BE --> FE: HTTP 200 OK { mensaje: "Canje procesado", nuevo_saldo }
+    FE -> FE: Actualizar saldo en UI
+    FE --> C: Muestra modal de éxito con el código del canje
+else Saldo insuficiente o sin stock
+    BE -> BE: Revertir Transacción (Rollback)
+    BE --> FE: HTTP 400 Bad Request { error: "Saldo/Stock insuficiente" }
+    FE --> C: Muestra mensaje de error
+end
+@enduml

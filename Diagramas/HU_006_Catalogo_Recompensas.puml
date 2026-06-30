@@ -1,0 +1,19 @@
+@startuml
+skinparam style strictuml
+actor Ciudadano as C
+participant "Frontend (React)" as FE
+participant "Backend (Django)" as BE
+database "Base de datos (SQLite)" as DB
+
+C -> FE: Navega a la sección de Tienda/Recompensas
+FE -> BE: GET /api/recompensas/ (con JWT)
+BE -> DB: Consultar Recompensas (activas y con stock > 0)
+DB --> BE: Lista de recompensas (nombre, descripción, imagen, costo_puntos, stock)
+BE --> FE: HTTP 200 OK [lista de recompensas]
+alt Existen recompensas disponibles
+    FE -> FE: Renderizar tarjetas de recompensas con detalles y stock
+    FE --> C: Muestra el catálogo de recompensas
+else No hay recompensas
+    FE --> C: Muestra mensaje "No existen recompensas disponibles en este momento."
+end
+@enduml
