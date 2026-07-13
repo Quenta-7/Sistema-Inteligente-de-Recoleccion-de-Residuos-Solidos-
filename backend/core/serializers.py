@@ -67,16 +67,28 @@ class NotificacionSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'mensaje', 'created_at']
 
 class UsuarioSerializer(serializers.ModelSerializer):
+    foto_perfil_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Usuario
-        fields = ['id', 'email', 'dni', 'nombre_completo', 'rol', 'zona', 'telefono', 'activo', 'ecopuntos']
+        fields = ['id', 'email', 'dni', 'nombre_completo', 'rol', 'zona', 'telefono', 'activo', 'ecopuntos', 'foto_perfil', 'foto_perfil_url']
         read_only_fields = ['id', 'ecopuntos']
 
+    def get_foto_perfil_url(self, obj):
+        if obj.foto_perfil:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.foto_perfil.url)
+            return obj.foto_perfil.url
+        return None
+
 class UsuarioAdminSerializer(serializers.ModelSerializer):
+    foto_perfil_url = serializers.SerializerMethodField()
+
     class Meta:
         model = Usuario
-        fields = ['id', 'email', 'nombre_completo', 'rol', 'zona', 'telefono', 'activo', 'ecopuntos', 'acepta_terminos', 'fecha_aceptacion_terminos']
-        read_only_fields = ['id', 'email', 'fecha_aceptacion_terminos']
+        fields = ['id', 'email', 'nombre_completo', 'rol', 'zona', 'telefono', 'activo', 'ecopuntos', 'acepta_terminos', 'fecha_aceptacion_terminos', 'foto_perfil', 'foto_perfil_url']
+        read_only_fields = ['id', 'fecha_aceptacion_terminos']
 
 class RegistroSerializer(serializers.ModelSerializer):
     dni = serializers.CharField(

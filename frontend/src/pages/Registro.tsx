@@ -282,7 +282,7 @@ const Registro = () => {
                 value={zona}
                 onChange={(e) => setZona(e.target.value)}
               >
-                <option value="">Zona de residencia</option>
+                <option value="">Sector de residencia en San Jerónimo</option>
                 {zonas.map((zonaItem) => (
                   <option key={zonaItem.id} value={zonaItem.id}>
                     {zonaItem.nombre}

@@ -12,6 +12,7 @@ import PoliticaPrivacidad from './pages/PoliticaPrivacidad';
 import AdminDashboard from './pages/AdminDashboard';
 import RecolectorDashboard from './pages/RecolectorDashboard';
 import ReportesCiudadanos from './pages/ReportesCiudadanos';
+import Perfil from './pages/Perfil';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -52,6 +53,11 @@ function App() {
         <Route path="/reportes-ciudadanos" element={
           <ProtectedRoute allowedRoles={['ciudadano', 'admin']}>
             <ReportesCiudadanos />
+          </ProtectedRoute>
+        } />
+        <Route path="/perfil" element={
+          <ProtectedRoute allowedRoles={['ciudadano', 'admin']}>
+            <Perfil />
           </ProtectedRoute>
         } />
         

@@ -177,24 +177,14 @@ class EvidenciaViewSet(viewsets.ModelViewSet):
         # Si el estado cambia a 'resuelto' (aprobada por admin) y antes no lo estaba, otorgar EcoPuntos
         if evidencia.estado == 'resuelto' and estado_previo != 'resuelto':
             usuario = evidencia.usuario
-            puntos_por_tipo = {
-                'reciclable': 20,
-                'organico': 10,
-                'no_reciclable': 5,
-            }
-            puntos = puntos_por_tipo.get(evidencia.tipo_residuo.lower(), 0)
+            puntos = evidencia.ecopuntos
             usuario.ecopuntos += puntos
             usuario.save()
 
         # Si el estado cambia, crear una notificación para el ciudadano
         if evidencia.estado != estado_previo:
             if evidencia.estado == 'resuelto':
-                puntos_por_tipo = {
-                    'reciclable': 20,
-                    'organico': 10,
-                    'no_reciclable': 5,
-                }
-                puntos = puntos_por_tipo.get(evidencia.tipo_residuo.lower(), 0)
+                puntos = evidencia.ecopuntos
                 Notificacion.objects.create(
                     usuario=evidencia.usuario,
                     mensaje=f"Tu entrega de residuos ({evidencia.tipo_residuo.capitalize()}) ha sido Aprobada. ¡Has ganado {puntos} EcoPuntos!"
@@ -224,6 +214,7 @@ class PerfilView(APIView):
     """
     Endpoint para obtener el perfil del usuario autenticado
     GET /api/perfil/ - Devuelve datos del usuario actual con ecopuntos
+    PATCH /api/perfil/ - Actualiza los datos de perfil (zona, teléfono, foto_perfil)
     """
     permission_classes = [IsAuthenticated]
 
@@ -233,6 +224,21 @@ class PerfilView(APIView):
             'success': True,
             'user': usuario_serializer.data
         }, status=status.HTTP_200_OK)
+
+    def patch(self, request):
+        usuario = request.user
+        serializer = UsuarioSerializer(usuario, data=request.data, partial=True, context={'request': request})
+        if serializer.is_valid():
+            serializer.save()
+            return Response({
+                'success': True,
+                'message': 'Perfil actualizado correctamente.',
+                'user': serializer.data
+            }, status=status.HTTP_200_OK)
+        return Response({
+            'success': False,
+            'errors': serializer.errors
+        }, status=status.HTTP_400_BAD_REQUEST)
 
 
 class ConsultarDniView(APIView):

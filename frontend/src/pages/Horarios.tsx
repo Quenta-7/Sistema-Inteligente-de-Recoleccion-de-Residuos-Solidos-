@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Clock, MapPin, CalendarDays, Recycle, Trash2, Leaf, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, Clock, MapPin, CalendarDays, Truck, Sun, Moon, Info } from 'lucide-react';
 import { authedFetch } from '../api';
 
 interface Zona {
@@ -11,6 +11,7 @@ interface Zona {
 interface Horario {
   id: number;
   zona: number;
+  zona_nombre?: string;
   dia: string;
   hora_inicio: string;
   hora_fin: string;
@@ -20,7 +21,7 @@ interface Horario {
 const Horarios = () => {
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [horarios, setHorarios] = useState<Horario[]>([]);
-  const [zonaSeleccionada, setZonaSeleccionada] = useState<number | ''>('');
+  const [zonaUsuario, setZonaUsuario] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
@@ -64,7 +65,7 @@ const Horarios = () => {
           if (resPerfil.ok) {
             const dataPerfil = await resPerfil.json();
             if (dataPerfil.user && dataPerfil.user.zona) {
-              setZonaSeleccionada(Number(dataPerfil.user.zona));
+              setZonaUsuario(Number(dataPerfil.user.zona));
             }
           }
         } catch (perfilErr) {
@@ -80,9 +81,13 @@ const Horarios = () => {
     cargarDatos();
   }, []);
 
-  const horariosFiltrados = zonaSeleccionada
-    ? horarios.filter(h => h.zona === Number(zonaSeleccionada))
-    : horarios;
+  const horariosConZona = horarios.map(h => ({
+    ...h,
+    zona_nombre: zonas.find(z => z.id === h.zona)?.nombre || `Sector ${h.zona}`
+  }));
+
+  const diasOrden = ['lunes','martes','miercoles','jueves','viernes','sabado','domingo'];
+  const horariosOrdenados = [...horariosConZona].sort((a, b) => diasOrden.indexOf(a.dia) - diasOrden.indexOf(b.dia));
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 py-10 px-4 sm:px-6 lg:px-8 font-sans transition-colors duration-300">
@@ -94,7 +99,6 @@ const Horarios = () => {
             <ArrowLeft className="h-4 w-4 mr-2" />
             Volver al Panel
           </Link>
-          
           <button
             onClick={toggleTheme}
             className="p-2 text-slate-500 dark:text-slate-300 hover:text-amber-500 transition-colors bg-white dark:bg-slate-800 rounded-full border border-slate-200 dark:border-slate-700 shadow-sm"
@@ -105,8 +109,6 @@ const Horarios = () => {
         </div>
 
         <div className="glass-panel rounded-3xl p-8 sm:p-10">
-
-          {/* Loading State */}
           {loading && (
             <div className="flex justify-center items-center py-20">
               <div className="text-center">
@@ -116,47 +118,50 @@ const Horarios = () => {
             </div>
           )}
 
-          {/* Error State */}
           {error && !loading && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-sm text-red-700 font-medium">{error}</p>
             </div>
           )}
 
-          {/* Content */}
           {!loading && !error && (
             <>
-              <div className="flex flex-col md:flex-row md:items-center justify-between mb-10 gap-6">
-                <div className="flex items-center">
-                  <div className="h-14 w-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mr-5 shadow-sm">
-                    <Clock className="h-7 w-7" />
-                  </div>
-                  <div>
-                    <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                      Horarios de Recolección
-                    </h2>
-                    <p className="text-slate-505 dark:text-gray-400 font-medium mt-1">Conoce los días habilitados para sacar tu basura.</p>
-                  </div>
+              <div className="flex items-center mb-6">
+                <div className="h-14 w-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mr-5 shadow-sm">
+                  <Clock className="h-7 w-7" />
                 </div>
-
-                <div className="w-full md:w-72 relative">
-                  <label htmlFor="zona" className="sr-only">Selecciona tu Zona</label>
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <MapPin className="h-5 w-5 text-emerald-500" />
-                  </div>
-                  <select
-                    id="zona"
-                    className="block w-full pl-10 pr-10 py-3 text-base border border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 rounded-xl font-medium text-gray-700 dark:text-slate-200 transition-all appearance-none cursor-pointer"
-                    value={zonaSeleccionada}
-                    onChange={(e) => setZonaSeleccionada(e.target.value ? Number(e.target.value) : '')}
-                  >
-                    <option value="">Todas las Zonas</option>
-                    {zonas.map(z => (
-                      <option key={z.id} value={z.id}>{z.nombre}</option>
-                    ))}
-                  </select>
+                <div>
+                  <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+                    Horarios de Recolección
+                  </h2>
+                  <p className="text-slate-500 dark:text-gray-400 font-medium mt-1">Distrito de San Jerónimo, Cusco – Cronograma semanal del camión recolector.</p>
                 </div>
               </div>
+
+              {/* Aviso informativo */}
+              <div className="mb-8 p-5 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-700/30 rounded-2xl flex gap-4">
+                <div className="flex-shrink-0">
+                  <div className="h-10 w-10 bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400 rounded-xl flex items-center justify-center">
+                    <Truck className="h-5 w-5" />
+                  </div>
+                </div>
+                <div>
+                  <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">Un camión recolector cubre todo San Jerónimo</p>
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400 mt-1 font-medium leading-relaxed">
+                    El servicio de recolección opera con <strong>un camión general</strong> que recorre todos los sectores del distrito durante la semana. La recolección es de <strong>residuos generales</strong>. Saca tu basura el día y horario asignado a tu sector.
+                  </p>
+                </div>
+              </div>
+
+              {/* Nota sobre zona del usuario */}
+              {zonaUsuario && (
+                <div className="mb-6 p-4 bg-sky-50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-700/30 rounded-xl flex gap-3">
+                  <Info className="h-5 w-5 text-sky-500 flex-shrink-0 mt-0.5" />
+                  <p className="text-xs text-sky-700 dark:text-sky-300 font-medium">
+                    Tu sector está resaltado en la tabla. Recuerda sacar tu basura en el horario indicado.
+                  </p>
+                </div>
+              )}
 
               <div className="bg-white dark:bg-slate-950/80 rounded-2xl overflow-hidden shadow-sm border border-gray-100 dark:border-slate-800 transition-colors duration-300">
                 <div className="overflow-x-auto">
@@ -164,56 +169,57 @@ const Horarios = () => {
                     <thead className="bg-gray-50 dark:bg-slate-900/60">
                       <tr>
                         <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                          <div className="flex items-center"><CalendarDays className="h-4 w-4 mr-2" /> Día de la semana</div>
+                          <div className="flex items-center"><CalendarDays className="h-4 w-4 mr-2" /> Día</div>
                         </th>
                         <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                          <div className="flex items-center"><Clock className="h-4 w-4 mr-2" /> Rango Horario</div>
+                          <div className="flex items-center"><Clock className="h-4 w-4 mr-2" /> Horario</div>
                         </th>
                         <th scope="col" className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                          <div className="flex items-center"><Recycle className="h-4 w-4 mr-2" /> Tipo de Residuo</div>
+                          <div className="flex items-center"><MapPin className="h-4 w-4 mr-2" /> Sector</div>
                         </th>
                       </tr>
                     </thead>
                     <tbody className="bg-white dark:bg-slate-950/20 divide-y divide-gray-50 dark:divide-slate-800">
-                      {horariosFiltrados.map((horario) => (
-                        <tr key={horario.id} className="hover:bg-gray-55/60 dark:hover:bg-slate-900/40 transition-colors">
-                          <td className="px-6 py-5 whitespace-nowrap">
-                            <span className="text-sm font-bold text-slate-900 dark:text-white">{horario.dia}</span>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap">
-                            <span className="text-sm font-medium text-slate-600 dark:text-slate-350 bg-gray-100 dark:bg-slate-900 px-3 py-1 rounded-full">{horario.hora_inicio} - {horario.hora_fin}</span>
-                          </td>
-                          <td className="px-6 py-5 whitespace-nowrap">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              {horario.tipos_residuo && horario.tipos_residuo.map((tipo, tidx) => {
-                                const tipoLower = tipo.toLowerCase();
-                                const isOrganico = tipoLower.includes('orgánico') || tipoLower.includes('organico');
-                                const isReciclable = tipoLower.includes('reciclable') && !tipoLower.includes('no reciclable');
-                                const isNoReciclable = tipoLower.includes('no reciclable');
-
-                                return (
-                                  <span key={tidx} className={`px-3 py-1 inline-flex text-xs leading-5 font-bold rounded-full gap-1.5 items-center
-                                    ${isOrganico ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' :
-                                      isReciclable ? 'bg-blue-100 text-blue-800 border border-blue-200' :
-                                      isNoReciclable ? 'bg-gray-100 text-gray-800 border border-gray-200' :
-                                      'bg-gray-100 text-gray-800 border border-gray-200'}`}>
-                                    {isOrganico && <Leaf className="h-4 w-4" />}
-                                    {isReciclable && <Recycle className="h-4 w-4" />}
-                                    {isNoReciclable && <Trash2 className="h-4 w-4" />}
-                                    {tipo}
-                                  </span>
-                                );
-                              })}
-                            </div>
-                          </td>
-                        </tr>
-                      ))}
-                      {horariosFiltrados.length === 0 && (
+                      {horariosOrdenados.map((horario) => {
+                        const esMiZona = zonaUsuario === horario.zona;
+                        return (
+                          <tr key={horario.id} className={`transition-colors ${
+                            esMiZona
+                              ? 'bg-emerald-50/60 dark:bg-emerald-950/20'
+                              : 'hover:bg-gray-55/60 dark:hover:bg-slate-900/40'
+                          }`}>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-bold text-slate-900 dark:text-white capitalize">{horario.dia}</span>
+                                {esMiZona && (
+                                  <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full font-bold">Tu día</span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-6 py-5 whitespace-nowrap">
+                              <span className="text-sm font-medium text-slate-600 dark:text-slate-350 bg-gray-100 dark:bg-slate-900 px-3 py-1 rounded-full">
+                                {horario.hora_inicio.substring(0,5)} – {horario.hora_fin.substring(0,5)}
+                              </span>
+                            </td>
+                            <td className="px-6 py-5">
+                              <div className="flex items-center gap-2">
+                                <MapPin className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                                <span className={`text-sm font-semibold ${
+                                  esMiZona ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'
+                                }`}>
+                                  {horario.zona_nombre}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      {horariosOrdenados.length === 0 && (
                         <tr>
                           <td colSpan={3} className="px-6 py-12 text-center text-gray-500 font-medium">
                             <div className="flex flex-col items-center justify-center">
                               <MapPin className="h-10 w-10 text-gray-300 mb-3" />
-                              No hay horarios registrados para esta zona.
+                              No hay horarios registrados en el sistema.
                             </div>
                           </td>
                         </tr>
@@ -224,7 +230,6 @@ const Horarios = () => {
               </div>
             </>
           )}
-
         </div>
       </div>
     </div>

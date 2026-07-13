@@ -273,18 +273,23 @@ const Reportes = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
               <div>
-                <label htmlFor="direccion-entrega" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
-                  Ubicación / Dirección de entrega
+                <label htmlFor="punto-entrega" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+                  Punto Estratégico de Entrega
                 </label>
-                <input
-                  id="direccion-entrega"
-                  type="text"
+                <select
+                  id="punto-entrega"
                   required
                   className="block w-full border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-white transition-all"
-                  placeholder="Ej. Av. de la Cultura 1500"
                   value={direccionEntrega}
                   onChange={(e) => setDireccionEntrega(e.target.value)}
-                />
+                >
+                  <option value="">Selecciona un punto de acopio</option>
+                  <option value="Punto Acopio Central – Plaza Principal San Jerónimo">📍 Punto Central – Plaza Principal San Jerónimo</option>
+                  <option value="Punto Acopio Kennedy – Jr. Simón Bolívar s/n, Urb. Kennedy">📍 Punto Kennedy – Jr. Simón Bolívar, Urb. Kennedy</option>
+                  <option value="Punto Acopio Los Incas – Av. Principal, Urb. Los Incas">📍 Punto Los Incas – Av. Principal, Urb. Los Incas</option>
+                  <option value="Punto Acopio Mercado – Mercado San Jerónimo, Av. Evitamiento">📍 Punto Mercado – Mercado San Jerónimo, Av. Evitamiento</option>
+                </select>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">Lleva tus residuos al punto más cercano a tu domicilio antes del horario de recolección.</p>
               </div>
               <div>
                 <label htmlFor="horario-entrega" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
@@ -300,7 +305,7 @@ const Reportes = () => {
                   <option value="">Selecciona un horario</option>
                   {horarios.map((h) => (
                     <option key={h.id} value={h.id}>
-                      {h.dia.charAt(0).toUpperCase() + h.dia.slice(1)} {h.hora_inicio.substring(0, 5)} - {h.hora_fin.substring(0, 5)} ({h.tipos_residuo.join(', ')})
+                      {h.dia.charAt(0).toUpperCase() + h.dia.slice(1)} – {h.hora_inicio.substring(0, 5)} a {h.hora_fin.substring(0, 5)}
                     </option>
                   ))}
                 </select>

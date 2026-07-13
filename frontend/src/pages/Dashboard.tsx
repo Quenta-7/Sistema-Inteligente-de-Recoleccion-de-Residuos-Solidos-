@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, LogOut, Map, Bell, User, ChevronRight, Leaf, Camera, Trophy, Sun, Moon, Menu, X, AlertTriangle, Star, CheckCircle } from 'lucide-react';
+import { Calendar, LogOut, Map, Bell, User, ChevronRight, Leaf, Camera, Trophy, Sun, Moon, Menu, X, Star, CheckCircle } from 'lucide-react';
 import { authedFetch } from '../api';
 
 
@@ -21,6 +21,11 @@ const Dashboard = () => {
   const [cantidadNoLeidas, setCantidadNoLeidas] = useState(0);
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [mostrarAlertaDenegado, setMostrarAlertaDenegado] = useState(false);
+
+  // Stats reales del backend
+  const [totalEvidencias, setTotalEvidencias] = useState(0);
+  const [totalKg, setTotalKg] = useState(0);
+  const [fotoPerfilUrl, setFotoPerfilUrl] = useState<string | null>(null);
 
   // Calificar Servicio states
   const [completadasSinCalificar, setCompletadasSinCalificar] = useState<any[]>([]);
@@ -159,6 +164,7 @@ const Dashboard = () => {
           const data = await response.json();
           setEcopuntos(data.user.ecopuntos || 0);
           setNombreUsuario(data.user.nombre_completo || 'Ciudadano');
+          setFotoPerfilUrl(data.user.foto_perfil_url || null);
           
           // Cargar zonas para mapear la zona del usuario a su nombre
           const zonasResponse = await authedFetch('/api/zonas/');
@@ -175,9 +181,25 @@ const Dashboard = () => {
       }
     };
 
+    const cargarEstadisticas = async () => {
+      try {
+        const response = await authedFetch('/api/evidencias/');
+        if (response.ok) {
+          const data = await response.json();
+          const lista = Array.isArray(data) ? data : data.results || [];
+          setTotalEvidencias(lista.length);
+          const kg = lista.reduce((acc: number, e: any) => acc + parseFloat(e.cantidad || '0'), 0);
+          setTotalKg(Math.round(kg * 10) / 10);
+        }
+      } catch (err) {
+        console.error('Error cargando estadísticas:', err);
+      }
+    };
+
     cargarPerfil();
     cargarRutasCalificables();
     cargarNotificaciones();
+    cargarEstadisticas();
 
     // Polling de notificaciones cada 15 segundos
     const interval = setInterval(cargarNotificaciones, 15000);
@@ -291,9 +313,13 @@ const Dashboard = () => {
               <div className="h-8 w-px bg-gray-200 dark:bg-slate-700"></div>
               
               <div className="flex items-center space-x-3">
-                <div className="h-10 w-10 bg-sky-100 dark:bg-sky-950 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-sm">
-                  <User className="h-5 w-5 text-sky-600 dark:text-sky-400" />
-                </div>
+                <a href="/perfil" className="h-10 w-10 bg-sky-100 dark:bg-sky-950 rounded-full overflow-hidden flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-sm hover:ring-2 hover:ring-sky-400 transition-all" title="Ver mi perfil">
+                  {fotoPerfilUrl ? (
+                    <img src={fotoPerfilUrl} alt="Foto de perfil" className="h-full w-full object-cover" />
+                  ) : (
+                    <User className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+                  )}
+                </a>
                 <div className="hidden md:block">
                   <p className="text-sm font-bold text-gray-900 dark:text-white"><span>{nombreUsuario}</span></p>
                   <p className="text-xs text-gray-500 dark:text-slate-400 font-medium"><span>{nombreZona}</span></p>
@@ -345,12 +371,20 @@ const Dashboard = () => {
                 <Trophy className="h-5 w-5 text-amber-600" />
                 <span>Tienda de EcoPuntos</span>
               </Link>
+              <Link to="/perfil" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 text-gray-700 dark:text-slate-200 font-bold transition-all" onClick={() => setMenuAbierto(false)}>
+                <User className="h-5 w-5 text-sky-500" />
+                <span>Mi Perfil</span>
+              </Link>
             </div>
             
             <div className="mt-auto pt-6 border-t border-gray-150 dark:border-slate-800">
               <div className="flex items-center space-x-3 mb-4">
-                <div className="h-10 w-10 bg-sky-100 dark:bg-sky-950 rounded-full flex items-center justify-center">
-                  <User className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+                <div className="h-10 w-10 bg-sky-100 dark:bg-sky-950 rounded-full overflow-hidden flex items-center justify-center">
+                  {fotoPerfilUrl ? (
+                    <img src={fotoPerfilUrl} alt="Foto de perfil" className="h-full w-full object-cover" />
+                  ) : (
+                    <User className="h-5 w-5 text-sky-600 dark:text-sky-400" />
+                  )}
                 </div>
                 <div>
                   <p className="text-sm font-bold text-gray-900 dark:text-white">{nombreUsuario}</p>
@@ -497,24 +531,7 @@ const Dashboard = () => {
             </div>
           </Link>
 
-          {/* Card 4: Reportar Incidencia / Reportes Ciudadanos */}
-          <Link to="/reportes-ciudadanos" className="group glass-card rounded-2xl overflow-hidden fade-in-up delay-300 relative">
-            <div className="absolute top-0 right-0 p-6 opacity-10 group-hover:opacity-20 transition-opacity">
-              <AlertTriangle className="h-24 w-24 text-amber-600" />
-            </div>
-            <div className="p-8 relative z-10 h-full flex flex-col justify-between">
-              <div>
-                <div className="h-14 w-14 bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-455 rounded-2xl flex items-center justify-center mb-6 shadow-inner group-hover:scale-110 transition-transform">
-                  <AlertTriangle className="h-7 w-7" />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Reportar Incidencias</h3>
-                <p className="text-gray-500 dark:text-slate-400 text-sm mb-6 line-clamp-2">Reporta acumulación de basura, contenedores dañados o problemas con la ruta y realiza seguimiento.</p>
-              </div>
-              <div className="inline-flex items-center text-amber-700 dark:text-amber-450 font-semibold text-sm group-hover:translate-x-2 transition-transform">
-                Reportar ahora <ChevronRight className="h-4 w-4 ml-1" />
-              </div>
-            </div>
-          </Link>
+          {/* Card 4 removed */}
 
         </div>
 
@@ -530,12 +547,12 @@ const Dashboard = () => {
             </div>
             <div className="flex space-x-6">
               <div className="text-center bg-white/20 backdrop-blur-sm rounded-2xl p-4 min-w-[120px]">
-                <p className="text-4xl font-black mb-1">8</p>
+                <p className="text-4xl font-black mb-1">{totalEvidencias}</p>
                 <p className="text-sm text-amber-100 font-medium">Evidencias registradas</p>
               </div>
               <div className="text-center bg-white/20 backdrop-blur-sm rounded-2xl p-4 min-w-[120px]">
-                <p className="text-4xl font-black mb-1">32 kg</p>
-                <p className="text-sm text-amber-100 font-medium">Reciclaje acumulado</p>
+                <p className="text-4xl font-black mb-1">{totalKg} kg</p>
+                <p className="text-sm text-amber-100 font-medium">Residuos entregados</p>
               </div>
             </div>
           </div>

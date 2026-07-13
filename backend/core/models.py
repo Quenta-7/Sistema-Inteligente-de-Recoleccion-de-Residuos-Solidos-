@@ -49,6 +49,8 @@ class Usuario(AbstractUser):
     acepta_terminos = models.BooleanField(default=False)
     fecha_aceptacion_terminos = models.DateTimeField(null=True, blank=True)
     
+    foto_perfil = models.ImageField(upload_to='perfiles/', blank=True, null=True)
+
     # Configuramos el email como el campo principal para login
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['username', 'nombre_completo']

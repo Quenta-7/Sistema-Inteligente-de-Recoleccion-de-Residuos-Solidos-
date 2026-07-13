@@ -212,7 +212,7 @@ const TiendaEcoPuntos = () => {
                 Tienda EcoPuntos
               </h1>
               <p className="mt-3 text-base md:text-lg text-slate-600 dark:text-slate-400 max-w-2xl">
-                Canjea tus EcoPuntos por artículos sostenibles, experiencias locales y
+                Canjea tus EcoPuntos por artículos sostenibles y
                 beneficios que multiplican tu impacto.
               </p>
             </div>
@@ -227,48 +227,7 @@ const TiendaEcoPuntos = () => {
                 <p className="text-3xl font-black text-slate-900 dark:text-white mt-1">
                   {loadingPerfil ? '...' : ecopuntos.toLocaleString()}
                 </p>
-                <p className="text-xs text-slate-500">Nivel Verde: Explorador</p>
               </div>
-            </div>
-          </div>
-
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="glass-card rounded-2xl p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-slate-500">Puntos en transito</p>
-                  <p className="text-2xl font-bold text-slate-900">+140</p>
-                </div>
-                <BadgeCheck className="h-10 w-10 text-emerald-500" />
-              </div>
-              <p className="mt-3 text-sm text-slate-500">Se acreditan al validar evidencias.</p>
-            </div>
-            <div className="glass-card rounded-2xl p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-slate-500">Siguiente recompensa</p>
-                  <p className="text-2xl font-bold text-slate-900">1,500</p>
-                </div>
-                <Star className="h-10 w-10 text-amber-500" />
-              </div>
-              <div className="mt-4">
-                <div className="h-2 w-full rounded-full bg-emerald-100">
-                  <div className="h-2 rounded-full bg-emerald-500 w-[83%]"></div>
-                </div>
-                <p className="text-xs text-slate-500 mt-2">Te faltan 250 pts para el nivel Pro.</p>
-              </div>
-            </div>
-            <div className="glass-card rounded-2xl p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Recompensas canjeadas</p>
-                  <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                    {loadingHistorial ? '...' : historial.length}
-                  </p>
-                </div>
-                <Gift className="h-10 w-10 text-rose-500" />
-              </div>
-              <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Tu historial se actualiza en tiempo real.</p>
             </div>
           </div>
         </header>
@@ -302,24 +261,20 @@ const TiendaEcoPuntos = () => {
           })}
         </section>
 
-        <section className="mt-10 grid grid-cols-1 lg:grid-cols-[1.6fr_1fr] gap-8">
+        <section className="mt-10 grid grid-cols-1 gap-8">
           <div>
             <div className="flex items-center justify-between mb-6">
               <div>
                 <h2 className="text-2xl font-bold text-slate-900 dark:text-white">Catálogo destacado</h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400">Productos curados para tu estilo de vida sostenible.</p>
               </div>
-              <button className="hidden md:inline-flex items-center gap-2 text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-300">
-                Ver todo
-                <ArrowLeft className="h-4 w-4 rotate-180" />
-              </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {loadingProductos ? (
-                <div className="col-span-2 text-center py-10 text-slate-500">Cargando catálogo...</div>
+                <div className="col-span-3 text-center py-10 text-slate-500">Cargando catálogo...</div>
               ) : productos.length === 0 ? (
-                <div className="col-span-2 text-center py-10 text-slate-500">No hay recompensas disponibles.</div>
+                <div className="col-span-3 text-center py-10 text-slate-500">No hay recompensas disponibles.</div>
               ) : (
                 productos.map((producto) => {
                   const Icon = mapIcon(producto.imagen || '');
@@ -366,89 +321,12 @@ const TiendaEcoPuntos = () => {
               )}
             </div>
           </div>
-
-          <div className="space-y-6">
-            <div className="glass-card rounded-3xl p-6">
-              <div className="flex items-center gap-3">
-                <div className="h-11 w-11 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
-                  <Sparkles className="h-6 w-6" />
-                </div>
-                <div>
-                  <p className="text-xs uppercase font-semibold text-slate-500 dark:text-slate-400">Recompensa del mes</p>
-                  <p className="text-lg font-bold text-slate-900 dark:text-white">Kit compostaje urbano</p>
-                </div>
-              </div>
-              <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                Incluye mini compostera, guía rápida y seguimiento en la app.
-              </p>
-              <div className="mt-4 flex items-center justify-between">
-                <p className="text-xl font-black text-emerald-600 dark:text-emerald-450">650 pts</p>
-                <button className="px-4 py-2 rounded-full text-sm font-semibold border border-emerald-200 dark:border-slate-800 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-800 transition-all">
-                  Ver detalle
-                </button>
-              </div>
-            </div>
-
-            <div className="glass-card rounded-3xl p-6">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Tu nivel verde</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Explorador • {ecopuntos.toLocaleString()} pts acumulados</p>
-              <div className="mt-4">
-                <div className="h-2 w-full rounded-full bg-emerald-100 dark:bg-emerald-950/40">
-                  <div
-                    className="h-2 rounded-full bg-emerald-500"
-                    style={{ width: `${Math.min((ecopuntos / 1500) * 100, 100)}%` }}
-                  ></div>
-                </div>
-                <div className="mt-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                  <span>Explorador</span>
-                  <span>Pro (1,500 pts)</span>
-                </div>
-              </div>
-              <div className="mt-5 flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-400">
-                <BadgeCheck className="h-5 w-5" />
-                Acceso a recompensas premium
-              </div>
-            </div>
-
-            <div className="glass-card rounded-3xl p-6">
-              <h3 className="text-lg font-bold text-slate-900 dark:text-white">Retos activos</h3>
-              <div className="mt-4 space-y-3">
-                <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Recicla 3 kg esta semana</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-450">Gana +60 pts</p>
-                </div>
-                <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/20">
-                  <p className="text-sm font-semibold text-slate-900 dark:text-white">Sube 2 evidencias verificadas</p>
-                  <p className="text-xs text-slate-500 dark:text-slate-450">Gana +80 pts</p>
-                </div>
-              </div>
-            </div>
-          </div>
         </section>
 
-        <section className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-6">
+        <section className="mt-12">
           <div className="glass-card rounded-3xl p-6">
-            <h3 className="text-lg font-bold text-slate-900 dark:text-white">Cómo funciona</h3>
-            <div className="mt-4 space-y-4 text-sm text-slate-600 dark:text-slate-350">
-              <div className="flex items-start gap-3">
-                <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold">1</div>
-                <p>Sube evidencias y acumula EcoPuntos validados.</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold">2</div>
-                <p>Explora el catálogo y elige la recompensa que deseas.</p>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="h-8 w-8 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold">3</div>
-                <p>Canjea y recibe notificaciones sobre el estado de entrega.</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="glass-card rounded-3xl p-6 md:col-span-2">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-bold text-slate-900 dark:text-white">Historial de canjes</h3>
-              <button className="text-sm font-semibold text-emerald-600 hover:text-emerald-500 dark:text-emerald-400 dark:hover:text-emerald-350">Ver todo</button>
             </div>
             <div className="mt-4 space-y-3">
               {loadingHistorial ? (
@@ -477,23 +355,6 @@ const TiendaEcoPuntos = () => {
               )}
             </div>
           </div>
-        </section>
-
-        <section className="mt-12 glass-card rounded-3xl p-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="flex items-center gap-4">
-            <div className="h-14 w-14 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-450 flex items-center justify-center">
-              <ShoppingBag className="h-7 w-7" />
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-slate-900 dark:text-white">Nuevos aliados verdes</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">
-                Marcas locales se suman cada mes con recompensas exclusivas.
-              </p>
-            </div>
-          </div>
-          <button className="px-6 py-3 rounded-full text-sm font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-950 hover:bg-slate-800 dark:hover:bg-slate-105 transition-all">
-            Explorar convenios
-          </button>
         </section>
       </main>
     </div>
