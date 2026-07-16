@@ -1,74 +1,98 @@
 # Sistema Inteligente de Recolección de Residuos Sólidos - Cusco ("Te Quiero Verde Cusco")
 
-Plataforma web premium para optimizar la gestión y recolección de residuos sólidos en Cusco, promoviendo la participación ciudadana a través de incentivos (EcoPuntos) y facilitando el registro y validación de evidencias de reciclaje.
+Plataforma web premium para optimizar la gestión y recolección de residuos sólidos en Cusco, promoviendo la participación ciudadana a través de incentivos (EcoPuntos), facilitando el registro y validación de evidencias de reciclaje, y coordinando la labor logística de los camiones recolectores en tiempo real.
 
 ---
 
-## 🚀 Historias de Usuario Implementadas (HU-001 a HU-004)
+## 🚀 Historias de Usuario Implementadas
 
-El sistema cuenta con las primeras 4 Historias de Usuario completamente desarrolladas y funcionales a nivel de frontend, backend y base de datos:
+El sistema cuenta con un abanico completo de Historias de Usuario desarrolladas y funcionales a nivel de frontend, backend y base de datos:
 
-### 1. HU-001: Autenticación de Usuarios y Gestión de Sesiones
-* **Registro y Login:** Formulario de creación de cuenta y acceso con autenticación basada en tokens seguros (DRF Token Auth).
-* **Cierre de Sesión Seguro:** Endpoint `/api/auth/logout/` que invalida y elimina el token de autenticación activo en el servidor.
-* **Seguridad de Contraseñas:** Validación de complejidad de contraseñas tanto en el frontend como en el backend (mínimo 8 caracteres, al menos una mayúscula, una minúscula, un número y un carácter especial).
-* **Recuperación de Contraseña:** Flujo conectado a un endpoint mock para simular el envío de correos de restablecimiento.
+### 🔑 Autenticación, Seguridad y Registro
+* **HU-001: Autenticación de Usuarios y Gestión de Sesiones:** Formulario de acceso con seguridad basada en tokens JWT (SimpleJWT). Encriptación de contraseñas mediante **BCrypt**.
+* **HU-002: Registro Automatizado mediante Consulta de DNI (RENIEC):** Integración real y proxy seguro (backend) con el servicio de DNI de *Decolecta*. Los nombres y apellidos del ciudadano se completan y bloquean en modo solo lectura al consultar un DNI válido.
+* **HU-003: Control de Acceso y Roles (Route Guards):** Protección de rutas a nivel cliente con `ProtectedRoute.tsx`. Redirección y banner animado si un usuario intenta saltar roles.
 
-### 2. HU-002: Registro Automatizado mediante Consulta de DNI (RENIEC)
-* **Integración con API Decolecta:** Conexión real con el servicio externo de Decolecta para consultar los datos de la RENIEC usando Bearer Authentication (`sk_14327...`).
-* **Autocompletado y Bloqueo:** Al ingresar un DNI válido de 8 dígitos en el formulario de registro, el sistema consulta el backend y este a su vez a la API de Decolecta. Los nombres y apellidos del ciudadano se completan automáticamente y el campo se bloquea en modo **Solo Lectura** (`readOnly`) para asegurar la veracidad de la identidad.
-* **Seguridad CORS:** El backend actúa como proxy seguro para evitar la exposición del token API de Decolecta en el navegador.
+### ♻️ Gestión de Residuos y EcoPuntos
+* **HU-004 y HU-008: Reporte y Validación de Evidencias:** Los ciudadanos registran sus evidencias de reciclaje (tipo de residuo, cantidad en kg, fotos y dirección). El administrador puede revisar, aprobar o rechazar estos reportes desde su panel dedicado, lo que desencadena notificaciones automáticas y asignación de EcoPuntos.
+* **HU-005 y HU-009: Saldo de EcoPuntos e Historial:** Panel del ciudadano con la visualización en tiempo real de su saldo acumulado y la lista interactiva de sus reportes históricos.
+* **HU-006 y HU-007: Tienda de Premios (Canjes):** Catálogo interactivo de premios y recompensas eco-amigables clasificadas por categorías. El usuario puede canjear sus EcoPuntos por recompensas reales, validando el stock disponible.
 
-### 3. HU-003: Control de Acceso y Roles (Route Guards)
-* **Protección de Rutas:** Filtros de ruta en React (`ProtectedRoute.tsx`) para asegurar que solo los usuarios con rol de administrador puedan acceder al panel de control `/admin-dashboard`.
-* **Redirección Amigable y Alertas:** Si un ciudadano intenta forzar la entrada a una ruta administrativa, es redirigido automáticamente a su panel de ciudadano (`/dashboard`) y se le presenta un banner de advertencia animado mediante el parámetro `?denied=true`.
+### 📅 Horarios y Sectores
+* **HU-010 y HU-012: Horarios de Recolección por Sector:** Calendario interactivo semanal que resalta dinámicamente el día y horario del recolector que le corresponde al ciudadano según el sector de residencia registrado (San Jerónimo).
 
-### 4. HU-004: Registro de Evidencias, Horarios de Zona y Notificaciones
-* **Registro Completo de Evidencia:** El ciudadano puede reportar residuos indicando tipo, cantidad, descripción, cargando una fotografía y especificando de manera obligatoria la **dirección de entrega** y el **horario de recolección**.
-* **Filtro Dinámico de Horarios:** Los horarios de entrega disponibles se listan dinámicamente basándose en la zona residencial seleccionada por el usuario al registrarse.
-* **Campanita de Notificaciones Interactiva:** Implementación de un buzón de alertas con un dropdown animado en el dashboard del ciudadano. Cuando un administrador cambia el estado de un reporte a **Aprobado** (`resuelto`) o **Rechazado** (`rechazado`), se genera una notificación en tiempo real. El ciudadano puede ver los detalles del cambio y marcar las alertas como leídas.
-* **EcoPuntos:** Al aprobarse un reporte, se calculan y suman automáticamente los EcoPuntos al perfil del ciudadano.
+### 🚛 Logística de Recolectores
+* **HU-011 y HU-015: Panel y Cumplimiento del Recolector:** El recolector inicia sesión y visualiza su lista de rutas asignadas para el día, pudiendo reportar el cumplimiento final de la jornada (Completada, Parcialmente Completada, etc.) con comentarios y bitácora.
+* **HU-013 y HU-014: Mapa en Vivo y Simulación de Ruta:** Mapa interactivo basado en Leaflet para visualizar la trayectoria y simulación GPS del camión de basura en tiempo real. Cuenta con soporte para alertas de proximidad y bocina acústica.
 
 ---
 
 ## 🛠️ Stack Tecnológico
 
-* **Backend:** Django 5.x, Django REST Framework (DRF), SQLite.
-* **Frontend:** React 18, Vite, TypeScript, Tailwind CSS, Lucide React (Iconografía).
+* **Backend:** Django 5.x, Django REST Framework (DRF), SimpleJWT, SQLite.
+* **Frontend:** React 18, Vite, TypeScript, Tailwind CSS, Lucide React (iconografía).
+* **Mapas:** Leaflet.js para renderizado de mapas interactivos.
 * **APIs de Integración:** API de Consulta RENIEC (Decolecta).
 * **Entornos de Ejecución:** Node.js (v18+), Python (v3.10+).
 
 ---
 
-## 📂 Estructura del Proyecto y Base de Datos
+## 📂 Estructura del Proyecto
+
+La estructura actual del repositorio se describe a continuación:
 
 ```
 ├── backend/
-│   ├── config/             # Configuración del proyecto Django (settings, urls)
+│   ├── config/             # Configuración del proyecto Django (settings, urls, views)
 │   ├── core/               # App principal del backend (modelos, vistas, serializadores)
+│   │   ├── management/     # Comandos de gestión personalizados de Django
+│   │   │   └── commands/   # Comandos de consola
+│   │   │       └── seed_db.py # Semilla para poblar la base de datos (Sectores de Cusco)
 │   │   ├── migrations/     # Migraciones de base de datos
-│   │   ├── models.py       # Definición de Usuario (con DNI), Evidencia y Notificacion
-│   │   ├── serializers.py  # Serialización y validaciones de datos
-│   │   └── views.py        # Lógica de negocio (Login, Registro, Consulta DNI, Notificaciones)
-│   ├── manage.py
+│   │   ├── admin.py        # Configuración del panel de administración Django
+│   │   ├── models.py       # Modelos de base de datos (Usuario, Zona, Horario, Evidencia, Ruta, etc.)
+│   │   ├── serializers.py  # Serializadores y lógica de validación de datos
+│   │   └── views.py        # Endpoints y lógica de negocio (Login, Consulta DNI, CRUDs)
+│   ├── manage.py           # Utilidad de línea de comandos de Django
 │   ├── requirements.txt    # Dependencias de Python
 │   └── db.sqlite3          # Base de datos SQLite
 ├── frontend/
 │   ├── src/
-│   │   ├── assets/         # Recursos gráficos (logos, fondos)
-│   │   ├── components/     # Componentes compartidos y Layouts
-│   │   ├── pages/          # Vistas (Login, Registro, Dashboard, Reportes, etc.)
-│   │   ├── ProtectedRoute.tsx # Guardián de rutas y roles
-│   │   └── App.tsx         # Enrutamiento principal
-│   ├── package.json        # Dependencias de Node
-│   └── tailwind.config.js  # Configuración de Tailwind CSS
-└── run-project.ps1         # Script de automatización para Windows
+│   │   ├── assets/         # Recursos estáticos y gráficos (logos, fondos)
+│   │   ├── components/     # Componentes compartidos
+│   │   │   └── ProtectedRoute.tsx # Route Guard para control de acceso y roles
+│   │   ├── pages/          # Páginas y vistas del sistema
+│   │   │   ├── AdminDashboard.tsx      # Dashboard del Administrador
+│   │   │   ├── Dashboard.tsx           # Dashboard del Ciudadano
+│   │   │   ├── Horarios.tsx            # Horarios de Recolección
+│   │   │   ├── Login.tsx               # Inicio de sesión con soporte Light/Dark Mode
+│   │   │   ├── MapaEnVivo.tsx          # Mapa interactivo y simulación GPS para Ciudadanos
+│   │   │   ├── Perfil.tsx              # Perfil de usuario y foto
+│   │   │   ├── PoliticaPrivacidad.tsx  # Aspectos legales de privacidad
+│   │   │   ├── RecolectorDashboard.tsx # Dashboard de simulación del Recolector
+│   │   │   ├── RecuperarContrasena.tsx # Recuperación de contraseña con soporte Light/Dark
+│   │   │   ├── Registro.tsx            # Registro con consulta DNI RENIEC y soporte Light/Dark
+│   │   │   ├── Reportes.tsx            # Formulario de envío de evidencias
+│   │   │   ├── ReportesCiudadanos.tsx  # Validación de evidencias para Administrador
+│   │   │   ├── TerminosCondiciones.tsx # Términos legales del servicio
+│   │   │   └── TiendaEcoPuntos.tsx     # Catálogo y canje de premios
+│   │   ├── utils/          # Utilidades y funciones auxiliares
+│   │   │   └── theme.ts    # Configuración de tema/paleta de colores
+│   │   ├── App.css         # Estilos específicos de la app
+│   │   ├── App.tsx         # Componente principal de enrutamiento (React Router)
+│   │   ├── api.ts          # Configuración del fetch autenticado (authedFetch)
+│   │   ├── index.css       # Configuración e importación de Tailwind CSS
+│   │   └── main.tsx        # Punto de entrada de React
+│   ├── package.json        # Dependencias y scripts de Node.js
+│   ├── package-lock.json   # Lockfile de dependencias npm
+│   ├── tsconfig.json       # Configuración de TypeScript
+│   └── vite.config.ts      # Configuración de Vite
+├── Diagramas/              # Diagramas de Casos de Uso, Clases y Secuencias (PUML/PNG)
+├── run-project.ps1         # Script de automatización de entorno para Windows (PowerShell)
+├── run.bat                 # Lanzador rápido por lotes para Windows
+├── HU.txt                  # Lista de historias de usuario (Backlog)
+└── historias_de_usuario.txt # Detalles técnicos y criterios de aceptación de las historias
 ```
-
-### 🗄️ Modelos de Base de Datos Principales
-* **Usuario (AbstractUser):** Añadidos los campos `dni` (único, 8 dígitos), `zona` (relación ForeignKey) y `ecopuntos`.
-* **Evidencia:** Añadidos los campos `direccion_entrega`, `horario_entrega` (ForeignKey al horario de la zona) y estados traducidos.
-* **Notificacion:** Modelo creado para almacenar mensajes personalizados dirigidos a los ciudadanos sobre el estado de sus evidencias (`leida`, `mensaje`, `usuario`, `fecha_creacion`).
 
 ---
 
@@ -81,36 +105,11 @@ VITE_API_BASE_URL=http://127.0.0.1:8000
 ```
 
 ### 🚀 Ejecución Rápida (Recomendado para Windows)
-Desde la raíz del proyecto, abre una terminal de PowerShell como administrador y ejecuta:
+Desde la raíz del proyecto, abre una terminal de PowerShell y ejecuta:
 ```powershell
-.\run-project.ps1
+.\run.bat
 ```
-*Este script instalará las dependencias necesarias (`node_modules` y entorno virtual `.venv`), aplicará las migraciones de Django, precargará la base de datos con zonas y horarios iniciales, y levantará los servidores backend (puerto 8000) y frontend (puerto 5173).*
-
-### 🛠️ Ejecución Manual
-
-#### 1. Levantar el Backend (Django)
-```bash
-cd backend
-python -m venv .venv
-# Windows:
-.\.venv\Scripts\activate
-# macOS/Linux:
-source .venv/bin/activate
-
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py seed_db
-python manage.py runserver
-```
-
-#### 2. Levantar el Frontend (Vite + React)
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Accede a la aplicación a través de: [http://localhost:5173](http://localhost:5173)
+*Este comando automatiza la verificación del entorno, crea el virtual environment en Python, instala dependencias frontend y backend, ejecuta las migraciones, realiza la siembra inicial (seed) y levanta los servidores localmente.*
 
 ---
 
@@ -119,9 +118,14 @@ Accede a la aplicación a través de: [http://localhost:5173](http://localhost:5
 | Método | Endpoint | Descripción | Requiere Autenticación |
 | :--- | :--- | :--- | :--- |
 | `POST` | `/api/register/` | Registra un nuevo ciudadano (valida DNI y contraseña fuerte) | No |
-| `POST` | `/api/login/` | Inicia sesión y retorna Token DRF e información del rol | No |
-| `POST` | `/api/auth/logout/` | Invalida y elimina el token del usuario en el servidor | Sí |
+| `POST` | `/api/auth/login/` | Inicia sesión y retorna tokens JWT (SimpleJWT) | No |
+| `POST` | `/api/auth/logout/` | Invalida y elimina el token de sesión en el servidor | Sí |
 | `GET` | `/api/consultar-dni/<dni>/` | Consulta de forma segura la API de Decolecta (RENIEC) | No |
+| `GET` | `/api/perfil/` | Obtiene el perfil y los EcoPuntos del usuario logueado | Sí |
 | `GET` | `/api/notificaciones/` | Lista las notificaciones del ciudadano autenticado | Sí |
-| `POST` | `/api/notificaciones/<id>/marcar_leida/` | Marca una notificación específica como leída | Sí |
-| `POST` | `/api/auth/recuperar-contrasena/` | Simula el restablecimiento de contraseñas | No |
+| `POST` | `/api/auth/recuperar-contrasena/` | Simula el envío de restablecimiento de contraseña | No |
+| `GET` | `/api/zonas/` | Devuelve el catálogo de sectores/zonas registradas | Sí |
+| `GET` | `/api/horarios/` | Devuelve el catálogo de horarios de recolección | Sí |
+| `GET` | `/api/recompensas/` | Listado de recompensas en la Tienda | Sí |
+| `POST` | `/api/canjes/` | Registra un canje de premio descontando EcoPuntos | Sí |
+| `GET` | `/api/rutas/` | Devuelve las rutas asignadas del recolector | Sí |
