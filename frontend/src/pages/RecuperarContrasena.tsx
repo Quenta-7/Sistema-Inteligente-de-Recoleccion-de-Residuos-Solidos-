@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Leaf, Mail, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Leaf, Mail, ArrowRight, CheckCircle2, AlertCircle, Sun, Moon } from 'lucide-react';
 import CuscoImagen from '../assets/Cusco_imagen.png';
 
 const RecuperarContrasena = () => {
@@ -8,6 +8,19 @@ const RecuperarContrasena = () => {
   const [enviado, setEnviado] = useState(false);
   const [cargando, setCargando] = useState(false);
   const [error, setError] = useState('');
+
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('color-theme') as 'light' | 'dark') || 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +61,22 @@ const RecuperarContrasena = () => {
         backgroundAttachment: 'fixed'
       }}
     >
+      
+      {/* Botón de tema flotante */}
+      <div className="absolute top-4 right-4 z-20">
+        <button
+          onClick={() => {
+            const nextTheme = theme === 'light' ? 'dark' : 'light';
+            setThemeState(nextTheme);
+            localStorage.setItem('color-theme', nextTheme);
+          }}
+          className="p-2 text-slate-500 dark:text-slate-350 hover:text-amber-500 transition-colors bg-white/90 dark:bg-slate-800/90 rounded-full border border-slate-200 dark:border-slate-700 shadow-md backdrop-blur-sm"
+          title={theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}
+        >
+          {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-amber-400" />}
+        </button>
+      </div>
+
       <div className="absolute top-0 left-0 w-96 h-96 bg-white opacity-10 rounded-full mix-blend-overlay filter blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-300 opacity-20 rounded-full mix-blend-overlay filter blur-3xl transform translate-x-1/3 translate-y-1/3"></div>
 
@@ -56,23 +85,23 @@ const RecuperarContrasena = () => {
           <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-400 to-teal-500 shadow-lg mb-6 transform transition hover:scale-110">
             <Leaf className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">Recuperar contrasena</h2>
-          <p className="mt-3 text-sm text-gray-600 font-medium">
+          <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">Recuperar contrasena</h2>
+          <p className="mt-3 text-sm text-gray-600 dark:text-gray-300 font-medium">
             Ingresa tu correo y te enviaremos un enlace de recuperacion
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/55 rounded-lg flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
 
         {enviado && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3">
+          <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/55 rounded-lg flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-emerald-700">
+            <p className="text-sm text-emerald-700 dark:text-emerald-300">
               Si el correo existe, recibiras un enlace para restablecer tu contrasena.
             </p>
           </div>
@@ -89,7 +118,7 @@ const RecuperarContrasena = () => {
               type="email"
               required
               disabled={cargando}
-              className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
+              className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm disabled:opacity-60 disabled:cursor-not-allowed"
               placeholder="Correo electronico"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -107,9 +136,9 @@ const RecuperarContrasena = () => {
             </button>
           </div>
 
-          <p className="text-center text-sm text-gray-600 mt-4">
+          <p className="text-center text-sm text-gray-650 dark:text-gray-400 mt-4">
             Volver a{' '}
-            <Link to="/login" className="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors">
+            <Link to="/login" className="font-semibold text-emerald-600 dark:text-emerald-450 hover:text-emerald-500 dark:hover:text-emerald-350 transition-colors">
               inicio de sesion
             </Link>
           </p>

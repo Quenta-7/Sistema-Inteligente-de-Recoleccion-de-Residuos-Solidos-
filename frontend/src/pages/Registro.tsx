@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Leaf, Mail, Lock, User, MapPin, ArrowRight, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Leaf, Mail, Lock, User, MapPin, ArrowRight, CheckCircle2, AlertCircle, Sun, Moon } from 'lucide-react';
 import CuscoImagen from '../assets/Cusco_imagen.png';
 
 type Zona = {
@@ -25,6 +25,19 @@ const Registro = () => {
   const [cargandoZonas, setCargandoZonas] = useState(false);
   const [errorZonas, setErrorZonas] = useState('');
   const [aceptaTerminos, setAceptaTerminos] = useState(false);
+
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('color-theme') as 'light' | 'dark') || 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
 
   useEffect(() => {
     const cargarZonas = async () => {
@@ -67,22 +80,19 @@ const Registro = () => {
           setNombre(data.nombre_completo);
           setNombreReadOnly(true);
         } else {
-          setError(data.message || 'El DNI no se encuentra registrado en RENIEC.');
           setNombre('');
           setNombreReadOnly(false);
+          setError(data.message || 'No se encontraron datos para el DNI ingresado. Por favor, digitelo manualmente.');
         }
       } catch (err) {
-        setError('Error al consultar el servicio de DNI.');
-        setNombre('');
+        setError('Error al consultar DNI. Digite su nombre manualmente.');
         setNombreReadOnly(false);
       } finally {
         setBuscandoDni(false);
       }
     } else {
-      if (nombreReadOnly) {
-        setNombre('');
-        setNombreReadOnly(false);
-      }
+      setNombre('');
+      setNombreReadOnly(false);
     }
   };
 
@@ -92,21 +102,16 @@ const Registro = () => {
     setEnviado(false);
 
     if (dni.length !== 8) {
-      setError('El DNI debe contener exactamente 8 dígitos.');
-      return;
-    }
-
-    if (!nombre) {
-      setError('Por favor, ingresa un DNI válido.');
+      setError('El DNI debe tener 8 digitos.');
       return;
     }
 
     if (password !== confirmacion) {
-      setError('Las contraseñas no coinciden');
+      setError('Las contraseñas no coinciden.');
       return;
     }
 
-    // Validar fuerza de contraseña en el frontend
+    // Validar contraseña fuerte
     const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&._\-#])[A-Za-z\d@$!%*?&._\-#]{8,}$/;
     if (!strongPasswordRegex.test(password)) {
       setError('La contraseña debe cumplir con todos los criterios de seguridad (mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial).');
@@ -175,6 +180,22 @@ const Registro = () => {
         backgroundAttachment: 'fixed'
       }}
     >
+      
+      {/* Botón de tema flotante */}
+      <div className="absolute top-4 right-4 z-20">
+        <button
+          onClick={() => {
+            const nextTheme = theme === 'light' ? 'dark' : 'light';
+            setThemeState(nextTheme);
+            localStorage.setItem('color-theme', nextTheme);
+          }}
+          className="p-2 text-slate-500 dark:text-slate-350 hover:text-amber-500 transition-colors bg-white/90 dark:bg-slate-800/90 rounded-full border border-slate-200 dark:border-slate-700 shadow-md backdrop-blur-sm"
+          title={theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}
+        >
+          {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-amber-400" />}
+        </button>
+      </div>
+
       <div className="absolute top-0 left-0 w-96 h-96 bg-white opacity-10 rounded-full mix-blend-overlay filter blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-300 opacity-20 rounded-full mix-blend-overlay filter blur-3xl transform translate-x-1/3 translate-y-1/3"></div>
 
@@ -183,23 +204,23 @@ const Registro = () => {
           <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-400 to-teal-500 shadow-lg mb-6 transform transition hover:scale-110">
             <Leaf className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">Registro</h2>
-          <p className="mt-3 text-sm text-gray-600 font-medium">
+          <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">Registro</h2>
+          <p className="mt-3 text-sm text-gray-600 dark:text-gray-300 font-medium">
             Crea tu cuenta y empieza a sumar EcoPuntos
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/55 rounded-lg flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
 
         {enviado && (
-          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-lg flex items-start gap-3">
-            <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-emerald-700">
+          <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/55 rounded-lg flex items-start gap-3">
+            <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+            <p className="text-sm text-emerald-700 dark:text-emerald-300">
               Registro exitoso. Ya puedes iniciar sesion.
             </p>
           </div>
@@ -219,7 +240,7 @@ const Registro = () => {
                 type="text"
                 required
                 disabled={cargando || buscandoDni}
-                className="block w-full pl-12 pr-10 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
+                className="block w-full pl-12 pr-10 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
                 placeholder="Número de DNI (8 dígitos)"
                 value={dni}
                 onChange={handleDniChange}
@@ -243,8 +264,8 @@ const Registro = () => {
                 required
                 readOnly={nombreReadOnly}
                 disabled={cargando || buscandoDni}
-                className={`block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-450 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm ${
-                  nombreReadOnly ? 'bg-gray-50 text-gray-500 cursor-not-allowed font-medium' : ''
+                className={`block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-450 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm ${
+                  nombreReadOnly ? 'bg-gray-50 dark:bg-slate-800/90 text-gray-500 dark:text-gray-400 cursor-not-allowed font-medium' : ''
                 }`}
                 placeholder="Nombre completo"
                 value={nombre}
@@ -262,7 +283,7 @@ const Registro = () => {
                 type="email"
                 required
                 disabled={cargando}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
                 placeholder="Correo electronico"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -278,22 +299,22 @@ const Registro = () => {
                 name="zona"
                 required
                 disabled={cargando || cargandoZonas}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 text-gray-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
                 value={zona}
                 onChange={(e) => setZona(e.target.value)}
               >
-                <option value="">Sector de residencia en San Jerónimo</option>
+                <option value="" className="text-gray-900 dark:text-white dark:bg-slate-900">Sector de residencia en San Jerónimo</option>
                 {zonas.map((zonaItem) => (
-                  <option key={zonaItem.id} value={zonaItem.id}>
+                  <option key={zonaItem.id} value={zonaItem.id} className="text-gray-900 dark:text-white dark:bg-slate-900">
                     {zonaItem.nombre}
                   </option>
                 ))}
               </select>
               {cargandoZonas && (
-                <p className="text-xs text-gray-500 mt-2">Cargando zonas...</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Cargando zonas...</p>
               )}
               {errorZonas && (
-                <p className="text-xs text-red-600 mt-2">{errorZonas}</p>
+                <p className="text-xs text-red-650 mt-2">{errorZonas}</p>
               )}
             </div>
 
@@ -307,7 +328,7 @@ const Registro = () => {
                 type="password"
                 required
                 disabled={cargando}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
                 placeholder="Contrasena"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -315,23 +336,23 @@ const Registro = () => {
             </div>
 
             {password && (
-              <div className="p-3.5 bg-white bg-opacity-70 border border-gray-150 rounded-xl text-[11px] space-y-1.5 shadow-sm">
-                <p className="font-bold text-gray-700">La contraseña debe tener:</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-gray-600 font-medium">
-                  <p className={password.length >= 8 ? "text-emerald-600 flex items-center gap-1 font-bold" : "text-gray-500 flex items-center gap-1"}>
+              <div className="p-3.5 bg-white dark:bg-slate-900 bg-opacity-70 dark:bg-opacity-75 border border-gray-150 dark:border-slate-800 rounded-xl text-[11px] space-y-1.5 shadow-sm">
+                <p className="font-bold text-gray-700 dark:text-gray-300">La contraseña debe tener:</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1 text-gray-650 dark:text-gray-400 font-medium">
+                  <p className={password.length >= 8 ? "text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold" : "text-gray-500 dark:text-gray-500 flex items-center gap-1"}>
                     <span className="text-xs">{password.length >= 8 ? "✓" : "○"}</span> Mínimo 8 caracteres
                   </p>
-                  <p className={/[A-Z]/.test(password) ? "text-emerald-600 flex items-center gap-1 font-bold" : "text-gray-500 flex items-center gap-1"}>
+                  <p className={/[A-Z]/.test(password) ? "text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold" : "text-gray-500 dark:text-gray-500 flex items-center gap-1"}>
                     <span className="text-xs">{/[A-Z]/.test(password) ? "✓" : "○"}</span> Una letra mayúscula
                   </p>
-                  <p className={/[a-z]/.test(password) ? "text-emerald-600 flex items-center gap-1 font-bold" : "text-gray-500 flex items-center gap-1"}>
+                  <p className={/[a-z]/.test(password) ? "text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold" : "text-gray-500 dark:text-gray-500 flex items-center gap-1"}>
                     <span className="text-xs">{/[a-z]/.test(password) ? "✓" : "○"}</span> Una letra minúscula
                   </p>
-                  <p className={/[0-9]/.test(password) ? "text-emerald-600 flex items-center gap-1 font-bold" : "text-gray-500 flex items-center gap-1"}>
+                  <p className={/[0-9]/.test(password) ? "text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold" : "text-gray-500 dark:text-gray-500 flex items-center gap-1"}>
                     <span className="text-xs">{/[0-9]/.test(password) ? "✓" : "○"}</span> Un número
                   </p>
-                  <p className={/[@$!%*?&._\-#]/.test(password) ? "text-emerald-600 flex items-center gap-1 font-bold" : "text-gray-500 flex items-center gap-1"}>
-                    <span className="text-xs">{/[@$!%*?&._\-#]/.test(password) ? "✓" : "○"}</span> Carácter especial (@$!%*?&._-#)
+                  <p className={/[@$!%*?&._\-#]/.test(password) ? "text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold" : "text-gray-500 dark:text-gray-500 flex items-center gap-1"}>
+                    <span className="text-xs">{/[@$!%*?&._\-#]/.test(password) ? "✓" : "○"}</span> Carácter especial
                   </p>
                 </div>
               </div>
@@ -347,7 +368,7 @@ const Registro = () => {
                 type="password"
                 required
                 disabled={cargando}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
                 placeholder="Confirmar contrasena"
                 value={confirmacion}
                 onChange={(e) => setConfirmacion(e.target.value)}
@@ -369,13 +390,13 @@ const Registro = () => {
               />
             </div>
             <div className="ml-3 text-xs">
-              <label htmlFor="acepta-terminos" className="font-medium text-gray-700 cursor-pointer">
+              <label htmlFor="acepta-terminos" className="font-medium text-gray-700 dark:text-gray-300 cursor-pointer">
                 Acepto los{' '}
-                <Link to="/terminos-condiciones" target="_blank" className="font-semibold text-emerald-600 hover:text-emerald-500 underline">
+                <Link to="/terminos-condiciones" target="_blank" className="font-semibold text-emerald-600 dark:text-emerald-450 hover:text-emerald-500 dark:hover:text-emerald-350 underline">
                   Términos y Condiciones
                 </Link>{' '}
                 y la{' '}
-                <Link to="/politica-privacidad" target="_blank" className="font-semibold text-emerald-600 hover:text-emerald-500 underline">
+                <Link to="/politica-privacidad" target="_blank" className="font-semibold text-emerald-600 dark:text-emerald-450 hover:text-emerald-500 dark:hover:text-emerald-350 underline">
                   Política de Privacidad
                 </Link>{' '}
                 bajo la Ley N° 29733 de Protección de Datos Personales del Perú.
@@ -394,9 +415,9 @@ const Registro = () => {
             </button>
           </div>
 
-          <p className="text-center text-sm text-gray-600 mt-4">
+          <p className="text-center text-sm text-gray-650 dark:text-gray-400 mt-4">
             Ya tienes cuenta?{' '}
-            <Link to="/login" className="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors">
+            <Link to="/login" className="font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-350 transition-colors">
               Inicia sesion
             </Link>
           </p>

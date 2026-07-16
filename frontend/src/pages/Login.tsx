@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Leaf, Mail, Lock, ArrowRight, AlertCircle, Loader } from 'lucide-react';
+import { Leaf, Mail, Lock, ArrowRight, AlertCircle, Loader, Sun, Moon } from 'lucide-react';
 import CuscoImagen from '../assets/Cusco_imagen.png';
 
 const Login = () => {
@@ -10,6 +10,19 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
+
+  const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('color-theme') as 'light' | 'dark') || 'light';
+  });
+
+  useEffect(() => {
+    const root = window.document.documentElement;
+    if (theme === 'dark') {
+      root.classList.add('dark');
+    } else {
+      root.classList.remove('dark');
+    }
+  }, [theme]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,6 +97,21 @@ const Login = () => {
       }}
     >
       
+      {/* Botón de tema flotante */}
+      <div className="absolute top-4 right-4 z-20">
+        <button
+          onClick={() => {
+            const nextTheme = theme === 'light' ? 'dark' : 'light';
+            setThemeState(nextTheme);
+            localStorage.setItem('color-theme', nextTheme);
+          }}
+          className="p-2 text-slate-500 dark:text-slate-350 hover:text-amber-500 transition-colors bg-white/90 dark:bg-slate-800/90 rounded-full border border-slate-200 dark:border-slate-700 shadow-md backdrop-blur-sm"
+          title={theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}
+        >
+          {theme === 'light' ? <Moon className="h-5 w-5" /> : <Sun className="h-5 w-5 text-amber-400" />}
+        </button>
+      </div>
+
       {/* Decorative Circles */}
       <div className="absolute top-0 left-0 w-96 h-96 bg-white opacity-10 rounded-full mix-blend-overlay filter blur-3xl transform -translate-x-1/2 -translate-y-1/2"></div>
       <div className="absolute bottom-0 right-0 w-96 h-96 bg-emerald-300 opacity-20 rounded-full mix-blend-overlay filter blur-3xl transform translate-x-1/3 translate-y-1/3"></div>
@@ -93,19 +121,19 @@ const Login = () => {
           <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-400 to-teal-500 shadow-lg mb-6 transform transition hover:scale-110">
             <Leaf className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">
+          <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">
             Te Quiero Verde Cusco
           </h2>
-          <p className="mt-3 text-sm text-gray-600 font-medium">
+          <p className="mt-3 text-sm text-gray-600 dark:text-gray-300 font-medium">
             Sistema Inteligente de Recolección de Residuos
           </p>
         </div>
         
         {/* Mostrar mensaje de error si existe */}
         {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
+          <div className="mb-6 p-4 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800/55 rounded-lg flex items-start gap-3">
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-red-700">{error}</p>
+            <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
         
@@ -121,7 +149,7 @@ const Login = () => {
                 type="email"
                 required
                 disabled={loading}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm disabled:opacity-60"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm disabled:opacity-60"
                 placeholder="Correo electrónico"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -137,7 +165,7 @@ const Login = () => {
                 type="password"
                 required
                 disabled={loading}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white bg-opacity-80 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm disabled:opacity-60"
+                className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm disabled:opacity-60"
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
@@ -156,12 +184,12 @@ const Login = () => {
                 onChange={(e) => setRecordarme(e.target.checked)}
                 className="h-4 w-4 text-emerald-600 focus:ring-emerald-500 border-gray-300 rounded cursor-pointer disabled:opacity-60"
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 cursor-pointer">
+              <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
                 Recordarme
               </label>
             </div>
             <div className="text-sm">
-              <Link to="/recuperar-contrasena" className="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors">
+              <Link to="/recuperar-contrasena" className="font-semibold text-emerald-600 dark:text-emerald-450 hover:text-emerald-500 dark:hover:text-emerald-350 transition-colors">
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
@@ -187,31 +215,31 @@ const Login = () => {
             </button>
           </div>
           
-          <p className="text-center text-sm text-gray-600 mt-4">
+          <p className="text-center text-sm text-gray-650 dark:text-gray-400 mt-4">
             ¿No tienes cuenta?{' '}
-            <Link to="/registro" className="font-semibold text-emerald-600 hover:text-emerald-500 transition-colors">
+            <Link to="/registro" className="font-semibold text-emerald-600 dark:text-emerald-400 hover:text-emerald-500 dark:hover:text-emerald-350 transition-colors">
               Regístrate aquí
             </Link>
           </p>
         </form>
 
         {/* Credenciales de prueba */}
-        <div className="mt-8 pt-6 border-t border-gray-200">
-          <p className="text-xs text-gray-500 mb-2 font-semibold">Credenciales de prueba:</p>
-          <div className="space-y-1 text-xs text-gray-600">
-            <p>Ciudadano: <span className="font-mono bg-gray-100 px-2 py-1 rounded font-semibold text-emerald-700">ciudadano1@residuos.com</span> (pass123)</p>
-            <p className="mt-1">Recolector: <span className="font-mono bg-gray-100 px-2 py-1 rounded font-semibold text-amber-700">recolector@residuos.com</span> (pass123)</p>
-            <p className="mt-1">Administrador: <span className="font-mono bg-gray-100 px-2 py-1 rounded font-semibold text-sky-700">admin@residuos.com</span> (admin123)</p>
+        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-slate-800">
+          <p className="text-xs text-gray-500 dark:text-gray-450 mb-2 font-semibold">Credenciales de prueba:</p>
+          <div className="space-y-1 text-xs text-gray-650 dark:text-gray-400">
+            <p>Ciudadano: <span className="font-mono bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded font-semibold text-emerald-700 dark:text-emerald-400">ciudadano1@residuos.com</span> (pass123)</p>
+            <p className="mt-1">Recolector: <span className="font-mono bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded font-semibold text-amber-750 dark:text-amber-400">recolector@residuos.com</span> (pass123)</p>
+            <p className="mt-1">Administrador: <span className="font-mono bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded font-semibold text-sky-700 dark:text-sky-400">admin@residuos.com</span> (admin123)</p>
           </div>
         </div>
 
         {/* Enlaces Legales */}
-        <div className="mt-6 pt-4 border-t border-gray-150 flex justify-center gap-4 text-xs text-gray-500 font-semibold">
-          <Link to="/terminos-condiciones" target="_blank" className="hover:text-emerald-600 transition-colors underline">
+        <div className="mt-6 pt-4 border-t border-gray-150 dark:border-slate-850 flex justify-center gap-4 text-xs text-gray-500 dark:text-gray-450 font-semibold">
+          <Link to="/terminos-condiciones" target="_blank" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors underline">
             Términos y Condiciones
           </Link>
           <span>•</span>
-          <Link to="/politica-privacidad" target="_blank" className="hover:text-emerald-600 transition-colors underline">
+          <Link to="/politica-privacidad" target="_blank" className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors underline">
             Política de Privacidad
           </Link>
         </div>
