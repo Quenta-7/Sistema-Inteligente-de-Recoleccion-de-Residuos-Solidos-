@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Camera, UploadCloud, CheckCircle2, Recycle, AlertCircle, Loader, Sun, Moon, MapPin } from 'lucide-react';
+import { ArrowLeft, Camera, UploadCloud, CheckCircle2, Recycle, AlertCircle, Loader, Sun, Moon, MapPin, Trophy } from 'lucide-react';
 import { authedFetch } from '../api';
 
 const Reportes = () => {
@@ -20,6 +20,8 @@ const Reportes = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [evidencias, setEvidencias] = useState<any[]>([]);
+  const [loadingEvidencias, setLoadingEvidencias] = useState(false);
+
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('color-theme') as 'light' | 'dark') || 'light';
   });
@@ -38,7 +40,6 @@ const Reportes = () => {
     setThemeState(nextTheme);
     localStorage.setItem('color-theme', nextTheme);
   };
-  const [loadingEvidencias, setLoadingEvidencias] = useState(false);
 
   const capturarUbicacionGps = () => {
     if (!('geolocation' in navigator)) {
@@ -74,22 +75,14 @@ const Reportes = () => {
 
   const cargarHorariosZona = async () => {
     try {
-      const perfilResponse = await authedFetch('/api/perfil/');
-      if (perfilResponse.ok) {
-        const perfilData = await perfilResponse.json();
-        const user = perfilData.user;
-        if (user.zona) {
-          const horariosResponse = await authedFetch('/api/horarios/');
-          if (horariosResponse.ok) {
-            const horariosData = await horariosResponse.json();
-            const list = Array.isArray(horariosData) ? horariosData : horariosData.results || [];
-            const filtered = list.filter((h: any) => h.zona === user.zona);
-            setHorarios(filtered);
-          }
-        }
+      const horariosResponse = await authedFetch('/api/horarios/');
+      if (horariosResponse.ok) {
+        const horariosData = await horariosResponse.json();
+        const list = Array.isArray(horariosData) ? horariosData : horariosData.results || [];
+        setHorarios(list);
       }
     } catch (err) {
-      console.error('Error cargando horarios de la zona:', err);
+      console.error('Error cargando horarios:', err);
     }
   };
 
@@ -108,6 +101,12 @@ const Reportes = () => {
     }
   };
 
+  const calcularPuntosEstimados = (valKg: string) => {
+    const num = parseFloat(valKg);
+    if (isNaN(num) || num <= 0) return 0;
+    return Math.max(10, Math.round(num * 20));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -118,14 +117,20 @@ const Reportes = () => {
       formData.append('tipo_residuo', tipoResiduo);
       formData.append('descripcion', descripcion);
       formData.append('cantidad', cantidad);
-      formData.append('direccion_entrega', direccionEntrega);
-      if (latitud !== null) formData.append('latitud', String(latitud));
-      if (longitud !== null) formData.append('longitud', String(longitud));
+
+      // Si se usa GPS satelital, la dirección física es opcional y se auto-asigna por coordenadas
+      if (latitud !== null && longitud !== null) {
+        formData.append('latitud', String(latitud));
+        formData.append('longitud', String(longitud));
+        formData.append('direccion_entrega', direccionEntrega || `Ubicación GPS Satelital (Lat: ${latitud.toFixed(5)}, Lng: ${longitud.toFixed(5)})`);
+      } else {
+        formData.append('direccion_entrega', direccionEntrega);
+      }
+
       if (horarioEntrega) {
         formData.append('horario_entrega', horarioEntrega);
       }
       
-      // Obtener zona del usuario de localStorage o sessionStorage
       const userData = localStorage.getItem('user_data') ?? sessionStorage.getItem('user_data');
       if (userData) {
         const user = JSON.parse(userData);
@@ -153,17 +158,13 @@ const Reportes = () => {
         setFileName('');
         setFile(null);
         
-        // Recargar evidencias
         await cargarEvidencias();
         
-        // Actualizar perfil del usuario (para sincronizar ecopuntos)
         try {
           const perfilResponse = await authedFetch('/api/perfil/');
           if (perfilResponse.ok) {
             const perfilData = await perfilResponse.json();
             const updatedUser = perfilData.user;
-            
-            // Actualizar el storage correspondiente (local o session)
             const isLocal = localStorage.getItem('auth_token') !== null;
             const storage = isLocal ? localStorage : sessionStorage;
             storage.setItem('user_data', JSON.stringify(updatedUser));
@@ -172,7 +173,6 @@ const Reportes = () => {
           console.error('Error actualizando perfil:', err);
         }
         
-        // Resetear mensaje de éxito después de 3 segundos
         setTimeout(() => {
           setEnviado(false);
         }, 3500);
@@ -242,7 +242,7 @@ const Reportes = () => {
               <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
                 Evidencias de Reciclaje
               </h2>
-              <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Registra tu reciclaje y suma EcoPuntos con cada evidencia.</p>
+              <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">Registra tu reciclaje y suma EcoPuntos proporcionales al peso entregado.</p>
             </div>
           </div>
 
@@ -251,7 +251,7 @@ const Reportes = () => {
               <CheckCircle2 className="h-6 w-6 text-emerald-500 mr-3 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="text-sm font-bold text-emerald-800">¡Evidencia registrada con éxito!</h3>
-                <p className="text-sm text-emerald-600 mt-1">Sumaste 50 EcoPuntos. Seguimos mejorando la recolección contigo.</p>
+                <p className="text-sm text-emerald-600 mt-1">Tu evidencia fue registrada. Los EcoPuntos calculados se abonarán a tu cuenta al ser aprobada.</p>
               </div>
             </div>
           )}
@@ -292,7 +292,7 @@ const Reportes = () => {
                 <input
                   id="cantidad"
                   type="number"
-                  min="0"
+                  min="0.1"
                   step="0.1"
                   required
                   className="block w-full border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-white transition-all"
@@ -300,6 +300,13 @@ const Reportes = () => {
                   value={cantidad}
                   onChange={(e) => setCantidad(e.target.value)}
                 />
+                {cantidad && parseFloat(cantidad) > 0 && (
+                  <div className="mt-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-xl border border-emerald-500/20">
+                    <Trophy className="h-4 w-4 text-amber-500" />
+                    <span>¡Ganarás ~{calcularPuntosEstimados(cantidad)} EcoPuntos!</span>
+                    <span className="text-[10px] text-slate-400 font-normal opacity-80">(20 pts por cada 1.0 kg)</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -308,10 +315,10 @@ const Reportes = () => {
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <label className="block text-sm font-bold text-slate-800 dark:text-white">
-                    Ubicación GPS Real del Registro
+                    Ubicación GPS Satelital Real
                   </label>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    Registra tu posición geográfica satelital exacta al entregar la evidencia.
+                    Al activar tu GPS satelital, no es necesario seleccionar un punto físico de entrega.
                   </p>
                 </div>
                 <button
@@ -332,28 +339,43 @@ const Reportes = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div>
-                <label htmlFor="punto-entrega" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
-                  Punto Estratégico de Entrega
-                </label>
-                <select
-                  id="punto-entrega"
-                  required
-                  className="block w-full border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-white transition-all"
-                  value={direccionEntrega}
-                  onChange={(e) => setDireccionEntrega(e.target.value)}
-                >
-                  <option value="">Selecciona un punto de acopio</option>
-                  <option value="Punto Acopio Central – Plaza Principal San Jerónimo">📍 Punto Central – Plaza Principal San Jerónimo</option>
-                  <option value="Punto Acopio Kennedy – Jr. Simón Bolívar s/n, Urb. Kennedy">📍 Punto Kennedy – Jr. Simón Bolívar, Urb. Kennedy</option>
-                  <option value="Punto Acopio Los Incas – Av. Principal, Urb. Los Incas">📍 Punto Los Incas – Av. Principal, Urb. Los Incas</option>
-                  <option value="Punto Acopio Mercado – Mercado San Jerónimo, Av. Evitamiento">📍 Punto Mercado – Mercado San Jerónimo, Av. Evitamiento</option>
-                </select>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1.5">Lleva tus residuos al punto más cercano a tu domicilio antes del horario de recolección.</p>
-              </div>
+              {latitud !== null && longitud !== null ? (
+                <div className="bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-500/30 p-4 rounded-2xl flex items-center gap-3">
+                  <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0" />
+                  <div>
+                    <p className="text-xs font-bold text-emerald-800 dark:text-emerald-300">
+                      Ubicación GPS Satelital Fijada
+                    </p>
+                    <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                      No se requiere punto estratégico. El camión ubicará tus coordenadas directamente ({latitud.toFixed(4)}, {longitud.toFixed(4)}).
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div>
+                  <label htmlFor="punto-entrega" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
+                    Punto Estratégico de Entrega
+                  </label>
+                  <select
+                    id="punto-entrega"
+                    required={latitud === null}
+                    className="block w-full border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-white transition-all"
+                    value={direccionEntrega}
+                    onChange={(e) => setDireccionEntrega(e.target.value)}
+                  >
+                    <option value="">Selecciona un punto de acopio</option>
+                    <option value="Punto Acopio Cuadrante Este – Av. Larapa / Larapa Residencial">📍 Punto Cuadrante Este – Av. Larapa / Larapa Residencial</option>
+                    <option value="Punto Acopio Cuadrante Noreste – Urb. Versalles / Huayna Picol">📍 Punto Cuadrante Noreste – Urb. Versalles / Huayna Picol</option>
+                    <option value="Punto Acopio Cuadrante Noroeste – Santa Rosa Alta / Mirador">📍 Punto Cuadrante Noroeste – Santa Rosa Alta / Mirador</option>
+                    <option value="Punto Acopio Cuadrante Suroeste – Chimpahuaylla Sur / Retamales">📍 Punto Cuadrante Suroeste – Chimpahuaylla Sur / Retamales</option>
+                    <option value="Base Operativa Municipal – Vía de Evitamiento San Jerónimo">🚩 Base Operativa Municipal – Vía de Evitamiento</option>
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label htmlFor="horario-entrega" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
-                  Horario de entrega programado
+                  Horario de entrega definido
                 </label>
                 <select
                   id="horario-entrega"
@@ -362,10 +384,10 @@ const Reportes = () => {
                   value={horarioEntrega}
                   onChange={(e) => setHorarioEntrega(e.target.value)}
                 >
-                  <option value="">Selecciona un horario</option>
+                  <option value="">Selecciona un horario programado</option>
                   {horarios.map((h) => (
                     <option key={h.id} value={h.id}>
-                      {h.dia.charAt(0).toUpperCase() + h.dia.slice(1)} – {h.hora_inicio.substring(0, 5)} a {h.hora_fin.substring(0, 5)}
+                      📅 {h.dia.charAt(0).toUpperCase() + h.dia.slice(1)} — {h.hora_inicio.substring(0, 5)} a {h.hora_fin.substring(0, 5)}
                     </option>
                   ))}
                 </select>
@@ -381,7 +403,7 @@ const Reportes = () => {
                 rows={5}
                 required
                 className="block w-full border border-gray-200 dark:border-slate-800 rounded-xl shadow-sm py-3 px-4 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 sm:text-sm bg-white/80 dark:bg-slate-900/80 text-slate-800 dark:text-white transition-all resize-none"
-                placeholder="Ej. Entregué botellas y cartón en el punto de acopio del barrio..."
+                placeholder="Ej. Entregué botellas de plástico y cartón doblado..."
                 value={descripcion}
                 onChange={(e) => setDescripcion(e.target.value)}
               />
@@ -439,7 +461,7 @@ const Reportes = () => {
 
           {/* Mis evidencias */}
           <div className="mt-16 pt-10 border-t border-gray-200">
-            <h3 className="text-2xl font-extrabold text-gray-900 mb-8">Mis Evidencias</h3>
+            <h3 className="text-2xl font-extrabold text-gray-900 dark:text-white mb-8">Mis Evidencias Registradas</h3>
             
             {loadingEvidencias ? (
               <div className="flex justify-center items-center py-12">
@@ -449,14 +471,14 @@ const Reportes = () => {
                 </div>
               </div>
             ) : evidencias.length === 0 ? (
-              <div className="text-center py-12 bg-gray-50 rounded-2xl">
-                <Recycle className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 font-medium">Aún no has registrado ninguna evidencia</p>
+              <div className="text-center py-12 bg-gray-50 dark:bg-slate-900/50 rounded-2xl">
+                <Recycle className="h-12 w-12 text-gray-300 dark:text-slate-700 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-slate-400 font-medium">Aún no has registrado ninguna evidencia</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {evidencias.map((evidencia) => (
-                  <div key={evidencia.id} className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:shadow-md transition-shadow">
+                  <div key={evidencia.id} className="bg-white dark:bg-slate-950 rounded-xl border border-gray-100 dark:border-slate-800 overflow-hidden hover:shadow-md transition-shadow">
                     {evidencia.foto_url && (
                       <img 
                         src={evidencia.foto_url} 
@@ -466,7 +488,7 @@ const Reportes = () => {
                     )}
                     <div className="p-4">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="text-xs font-bold text-gray-500 uppercase">
+                        <span className="text-xs font-bold text-gray-500 dark:text-slate-400 uppercase">
                           {evidencia.tipo_residuo}
                         </span>
                         <span className={`px-2 py-1 text-xs leading-5 font-bold rounded-full ${getEstadoBadge(evidencia.estado)}`}>
@@ -477,20 +499,20 @@ const Reportes = () => {
                            evidencia.estado}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-700 font-medium mb-2">{evidencia.descripcion}</p>
+                      <p className="text-sm text-gray-700 dark:text-slate-200 font-medium mb-2">{evidencia.descripcion}</p>
                       {evidencia.direccion_entrega && (
-                        <p className="text-xs text-gray-500 mb-1">
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mb-1">
                           <span className="font-bold">Ubicación:</span> {evidencia.direccion_entrega}
                         </p>
                       )}
                       {evidencia.horario_entrega_detalle && (
-                        <p className="text-xs text-gray-500 mb-2">
+                        <p className="text-xs text-gray-500 dark:text-slate-400 mb-2">
                           <span className="font-bold">Horario:</span> {evidencia.horario_entrega_detalle}
                         </p>
                       )}
-                      <div className="flex items-center justify-between text-xs text-gray-650">
+                      <div className="flex items-center justify-between text-xs text-gray-650 dark:text-slate-300">
                         <span>{evidencia.cantidad} kg</span>
-                        <span className="font-bold text-emerald-600">+{evidencia.ecopuntos} pts</span>
+                        <span className="font-bold text-emerald-600 dark:text-emerald-400">+{evidencia.ecopuntos} pts</span>
                       </div>
                       <p className="text-xs text-gray-400 mt-2">
                         {new Date(evidencia.created_at).toLocaleDateString('es-PE')}

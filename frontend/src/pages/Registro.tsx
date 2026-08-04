@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Leaf, Mail, Lock, User, MapPin, ArrowRight, CheckCircle2, AlertCircle, Sun, Moon } from 'lucide-react';
+import { Leaf, Mail, Lock, User, MapPin, ArrowRight, CheckCircle2, AlertCircle, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import CuscoImagen from '../assets/Cusco_imagen.png';
 
 type Zona = {
@@ -18,6 +18,8 @@ const Registro = () => {
   const [zona, setZona] = useState('');
   const [password, setPassword] = useState('');
   const [confirmacion, setConfirmacion] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
+  const [mostrarConfirmacion, setMostrarConfirmacion] = useState(false);
   const [enviado, setEnviado] = useState(false);
   const [error, setError] = useState('');
   const [zonas, setZonas] = useState<Zona[]>([]);
@@ -112,7 +114,7 @@ const Registro = () => {
     }
 
     // Validar contraseña fuerte
-    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&._\-#])[A-Za-z\d@$!%*?&._\-#]{8,}$/;
+    const strongPasswordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{8,}$/;
     if (!strongPasswordRegex.test(password)) {
       setError('La contraseña debe cumplir con todos los criterios de seguridad (mínimo 8 caracteres, una mayúscula, una minúscula, un número y un carácter especial).');
       return;
@@ -325,14 +327,23 @@ const Registro = () => {
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={mostrarPassword ? 'text' : 'password'}
                 required
                 disabled={cargando}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
-                placeholder="Contrasena"
+                className="block w-full pl-10 pr-10 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
+                placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <button
+                type="button"
+                onClick={() => setMostrarPassword(!mostrarPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 focus:outline-none transition-colors"
+                tabIndex={-1}
+                title={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {mostrarPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </div>
 
             {password && (
@@ -351,8 +362,8 @@ const Registro = () => {
                   <p className={/[0-9]/.test(password) ? "text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold" : "text-gray-500 dark:text-gray-500 flex items-center gap-1"}>
                     <span className="text-xs">{/[0-9]/.test(password) ? "✓" : "○"}</span> Un número
                   </p>
-                  <p className={/[@$!%*?&._\-#]/.test(password) ? "text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold" : "text-gray-500 dark:text-gray-500 flex items-center gap-1"}>
-                    <span className="text-xs">{/[@$!%*?&._\-#]/.test(password) ? "✓" : "○"}</span> Carácter especial
+                  <p className={/[^A-Za-z0-9]/.test(password) ? "text-emerald-600 dark:text-emerald-400 flex items-center gap-1 font-bold" : "text-gray-500 dark:text-gray-500 flex items-center gap-1"}>
+                    <span className="text-xs">{/[^A-Za-z0-9]/.test(password) ? "✓" : "○"}</span> Carácter especial
                   </p>
                 </div>
               </div>
@@ -365,14 +376,23 @@ const Registro = () => {
               <input
                 id="confirmacion"
                 name="confirmacion"
-                type="password"
+                type={mostrarConfirmacion ? 'text' : 'password'}
                 required
                 disabled={cargando}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
-                placeholder="Confirmar contrasena"
+                className="block w-full pl-10 pr-10 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm"
+                placeholder="Confirmar contraseña"
                 value={confirmacion}
                 onChange={(e) => setConfirmacion(e.target.value)}
               />
+              <button
+                type="button"
+                onClick={() => setMostrarConfirmacion(!mostrarConfirmacion)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 focus:outline-none transition-colors"
+                tabIndex={-1}
+                title={mostrarConfirmacion ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {mostrarConfirmacion ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </div>
           </div>
 

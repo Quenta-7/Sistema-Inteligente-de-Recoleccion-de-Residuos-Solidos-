@@ -334,31 +334,30 @@ export default function RecolectorDashboard() {
         const coords = nodes.map(n => [n.lat, n.lng] as [number, number]);
         const poly = L.polyline(coords, {
           color: '#10b981',
-          weight: 6,
-          opacity: 0.9,
+          weight: 3.5,
+          opacity: 0.95,
+          dashArray: '14, 10',
           lineJoin: 'round',
           lineCap: 'round'
         }).addTo(map);
         polylineRef.current = poly;
         map.fitBounds(poly.getBounds(), { padding: [30, 30] });
 
-        // If nodes has fewer than 10 points, calculate OSRM street path asynchronously
-        if (nodes.length < 10) {
-          fetchStreetRoute(nodes).then((streetCoords) => {
-            if (!mapRef.current) return;
-            if (polylineRef.current) polylineRef.current.remove();
-            
-            const streetPoly = L.polyline(streetCoords, {
-              color: '#10b981',
-              weight: 6,
-              opacity: 0.9,
-              lineJoin: 'round',
-              lineCap: 'round'
-            }).addTo(mapRef.current);
-            polylineRef.current = streetPoly;
-            mapRef.current.fitBounds(streetPoly.getBounds(), { padding: [30, 30] });
-          });
-        }
+        fetchStreetRoute(nodes).then((streetCoords) => {
+          if (!mapRef.current) return;
+          if (polylineRef.current) polylineRef.current.remove();
+          
+          const streetPoly = L.polyline(streetCoords, {
+            color: '#10b981',
+            weight: 3.5,
+            opacity: 0.95,
+            dashArray: '14, 10',
+            lineJoin: 'round',
+            lineCap: 'round'
+          }).addTo(mapRef.current);
+          polylineRef.current = streetPoly;
+          mapRef.current.fitBounds(streetPoly.getBounds(), { padding: [30, 30] });
+        });
       }
     }
 

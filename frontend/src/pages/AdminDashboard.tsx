@@ -19,7 +19,8 @@ import {
   Map,
   Star,
   MessageSquare,
-  Send
+  Send,
+  Truck
 } from 'lucide-react';
 import { authedFetch } from '../api';
 import { fetchStreetRoute } from '../utils/routing';
@@ -33,44 +34,49 @@ type Evidencia = {
   zona_nombre: string;
   tipo_residuo: string;
   descripcion: string;
-  foto_url: string | null;
-  cantidad: string;
+  foto_url?: string;
+  cantidad?: number;
   ecopuntos: number;
   estado: string;
-  created_at: string;
+  direccion_entrega?: string;
+  latitud?: number;
+  longitud?: number;
+  horario_entrega?: number;
+  horario_entrega_detalle?: string;
   validador?: number;
   validador_nombre?: string;
   fecha_validacion?: string;
+  created_at: string;
+  updated_at: string;
 };
 
 type Usuario = {
   id: number;
   email: string;
+  dni?: string;
   nombre_completo: string;
   rol: string;
-  zona: number | null;
-  telefono: string;
+  zona?: number;
+  zona_nombre?: string;
+  telefono?: string;
   activo: boolean;
   ecopuntos: number;
-  acepta_terminos: boolean;
-  fecha_aceptacion_terminos: string | null;
-  foto_perfil_url?: string | null;
 };
 
 type Zona = {
   id: number;
   nombre: string;
   codigo: string;
-  descripcion: string | null;
+  descripcion?: string;
   activa: boolean;
 };
 
 type Ruta = {
   id: number;
   recolector: number;
-  recolector_nombre?: string;
+  recolector_nombre: string;
   zona: number;
-  zona_nombre?: string;
+  zona_nombre: string;
   fecha: string;
   hora_inicio: string;
   hora_fin_estimada: string;
@@ -110,7 +116,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [adminName, setAdminName] = useState('Administrador');
-  const [activeTab, setActiveTab] = useState<'stats' | 'evidencias' | 'usuarios' | 'zonas' | 'rutas' | 'monitoreo' | 'incidencias' | 'calificaciones'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'evidencias' | 'usuarios' | 'recolectores' | 'zonas' | 'rutas' | 'monitoreo' | 'incidencias' | 'calificaciones'>('stats');
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('color-theme') as 'light' | 'dark') || 'light';
   });
@@ -609,6 +615,52 @@ const AdminDashboard = () => {
     };
   }, [activeTab]);
 
+  const getGeometriaParaRuta = (ruta: any) => {
+    if (ruta?.geometria_ruta && Array.isArray(ruta.geometria_ruta) && ruta.geometria_ruta.length > 0) {
+      return ruta.geometria_ruta;
+    }
+    
+    const idStr = String(ruta?.id || '');
+    const nombreStr = (ruta?.zona_nombre || '').toLowerCase();
+    
+    if (idStr === '1' || nombreStr.includes('este') || nombreStr.includes('sje001') || nombreStr.includes('larapa')) {
+      return [
+        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Partida' },
+        { lat: -13.5525, lng: -71.8705, nombre: 'Urb. Larapa Residencial' },
+        { lat: -13.5515, lng: -71.8680, nombre: 'Av. Larapa Central' },
+        { lat: -13.5525, lng: -71.8655, nombre: 'Urb. Larapa Grande' },
+        { lat: -13.5545, lng: -71.8620, nombre: 'Sector Pata Pata' },
+        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Retorno' }
+      ];
+    }
+    if (idStr === '2' || nombreStr.includes('noreste') || nombreStr.includes('sje002') || nombreStr.includes('versalles')) {
+      return [
+        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Partida' },
+        { lat: -13.5480, lng: -71.8710, nombre: 'Urb. Versalles' },
+        { lat: -13.5450, lng: -71.8680, nombre: 'Sector Kantu de Larapa' },
+        { lat: -13.5420, lng: -71.8640, nombre: 'APV Huayna Picol Norte' },
+        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Retorno' }
+      ];
+    }
+    if (idStr === '3' || nombreStr.includes('noroeste') || nombreStr.includes('laderas') || nombreStr.includes('sje003')) {
+      return [
+        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Partida' },
+        { lat: -13.5460, lng: -71.8840, nombre: 'Urb. Santa Rosa Alta' },
+        { lat: -13.5420, lng: -71.8880, nombre: 'APV Pampa Chanca Alta' },
+        { lat: -13.5390, lng: -71.8920, nombre: 'APV Mirador San Jerónimo' },
+        { lat: -13.5360, lng: -71.8950, nombre: 'Conchacalla Alta' },
+        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Retorno' }
+      ];
+    }
+    return [
+      { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Partida' },
+      { lat: -13.5560, lng: -71.8820, nombre: 'Pillao Matao Sur' },
+      { lat: -13.5600, lng: -71.8870, nombre: 'Sector Chimpahuaylla Sur' },
+      { lat: -13.5640, lng: -71.8920, nombre: 'APV Los Retamales Sur' },
+      { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Retorno' }
+    ];
+  };
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map || activeTab !== 'monitoreo') return;
@@ -617,18 +669,14 @@ const AdminDashboard = () => {
     stopMarkersRef.current = [];
     if (polylineRef.current) polylineRef.current.remove();
 
-    const pts = activeRealRuta?.geometria_ruta || [
-      { lat: -13.5485, lng: -71.8772, nombre: 'Plaza Principal' },
-      { lat: -13.5518, lng: -71.8730, nombre: 'Mercado San Jerónimo' },
-      { lat: -13.5535, lng: -71.8705, nombre: 'Urb. Kennedy' }
-    ];
+    const pts = getGeometriaParaRuta(activeRealRuta);
 
     const latLngs = pts.map((p: any) => [p.lat, p.lng] as [number, number]);
     const polyline = L.polyline(latLngs, {
-      color: '#0284c7',
-      weight: 6,
-      opacity: 0.85,
-      dashArray: '10, 8'
+      color: '#059669',
+      weight: 3.5,
+      opacity: 0.95,
+      dashArray: '14, 10'
     }).addTo(map);
     polylineRef.current = polyline;
 
@@ -638,9 +686,10 @@ const AdminDashboard = () => {
       if (!mapRef.current) return;
       if (polylineRef.current) polylineRef.current.remove();
       const poly = L.polyline(streetCoords, {
-        color: '#0284c7',
-        weight: 6,
-        opacity: 0.9,
+        color: '#059669',
+        weight: 3.5,
+        opacity: 0.95,
+        dashArray: '14, 10',
         lineJoin: 'round',
         lineCap: 'round'
       }).addTo(mapRef.current);
@@ -750,7 +799,7 @@ const AdminDashboard = () => {
   const residuosMap: Record<string, number> = {};
   evidencias.forEach(ev => {
     const t = ev.tipo_residuo ? ev.tipo_residuo.toUpperCase() : 'RECICLABLE';
-    residuosMap[t] = (residuosMap[t] || 0) + (parseFloat(ev.cantidad) || 5);
+    residuosMap[t] = (residuosMap[t] || 0) + (Number(ev.cantidad) || 5);
   });
   if (Object.keys(residuosMap).length === 0) {
     residuosMap['PLÁSTICO'] = 145;
@@ -776,11 +825,10 @@ const AdminDashboard = () => {
     ecoPuntosZonaMap[z.nombre] = totalPts > 0 ? totalPts : Math.floor(Math.random() * 150 + 100);
   });
   if (Object.keys(ecoPuntosZonaMap).length === 0) {
-    ecoPuntosZonaMap['Sector Central'] = 350;
-    ecoPuntosZonaMap['Urb. Kennedy'] = 280;
-    ecoPuntosZonaMap['Urb. Los Incas'] = 210;
-    ecoPuntosZonaMap['Pillao Matao'] = 190;
-    ecoPuntosZonaMap['Urb. Santa Rosa'] = 160;
+    ecoPuntosZonaMap['Cuadrante Este – Larapa & Pata Pata'] = 350;
+    ecoPuntosZonaMap['Cuadrante Noreste – Versalles & Kantu'] = 280;
+    ecoPuntosZonaMap['Cuadrante Noroeste – Santa Rosa & Mirador'] = 210;
+    ecoPuntosZonaMap['Cuadrante Suroeste – Pillao Matao & Chimpahuaylla'] = 190;
   }
   const datosEcoPuntosPorSector = Object.entries(ecoPuntosZonaMap).map(([sector, ecopuntos]) => ({ sector, ecopuntos }));
 
@@ -868,6 +916,13 @@ const AdminDashboard = () => {
             >
               <Users className="h-4 w-4" />
               Gestión de Usuarios
+            </button>
+            <button
+              onClick={() => setActiveTab('recolectores')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all text-left ${activeTab === 'recolectores' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-605 dark:text-slate-300 hover:bg-slate-105 dark:hover:bg-slate-805'}`}
+            >
+              <Truck className="h-4 w-4 text-emerald-400" />
+              Gestión de Recolectores
             </button>
             <button
               onClick={() => setActiveTab('zonas')}
@@ -1338,6 +1393,129 @@ const AdminDashboard = () => {
             </div>
           )}
 
+          {/* Tab: Gestión de Recolectores */}
+          {activeTab === 'recolectores' && (
+            <div className="space-y-6 fade-in-up">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white flex items-center gap-3">
+                    <Truck className="h-7 w-7 text-emerald-500" />
+                    Gestión de Recolectores
+                  </h1>
+                  <p className="text-slate-650 dark:text-slate-400 text-sm mt-1">
+                    Administra los recolectores autorizados en San Jerónimo, sus placas vehiculares y asignaciones.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setUserForm({
+                      email: '',
+                      nombre_completo: 'Recolector 05 – (Placa: E5M-000)',
+                      rol: 'recolector',
+                      zona: zonas[0]?.id ? String(zonas[0].id) : '',
+                      telefono: '',
+                      activo: true,
+                      ecopuntos: 0,
+                      password: ''
+                    });
+                    setEditingUser(null);
+                    setShowUserModal(true);
+                  }}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                >
+                  <Plus className="h-4 w-4" /> Nuevo Recolector
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
+                  <p className="text-xs font-bold text-slate-400 uppercase">Total Recolectores</p>
+                  <p className="text-3xl font-black text-slate-900 dark:text-white mt-1 font-mono">
+                    {usuarios.filter(u => u.rol === 'recolector').length}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
+                  <p className="text-xs font-bold text-slate-400 uppercase">Recolectores Activos</p>
+                  <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-1 font-mono">
+                    {usuarios.filter(u => u.rol === 'recolector' && u.activo).length}
+                  </p>
+                </div>
+                <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-5 rounded-2xl shadow-sm">
+                  <p className="text-xs font-bold text-slate-400 uppercase">Sectores Cubiertos</p>
+                  <p className="text-3xl font-black text-sky-600 dark:text-sky-400 mt-1 font-mono">
+                    4 / 4 Sectores
+                  </p>
+                </div>
+              </div>
+
+              {loadingUsuarios ? (
+                <p className="text-center py-20 text-slate-500">Cargando equipo de recolectores...</p>
+              ) : (
+                <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-sm">
+                  <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
+                    <thead className="bg-slate-100 dark:bg-slate-950">
+                      <tr>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Chofer & Identificador (Placa)</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Correo de Acceso</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Teléfono</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Estado Operativo</th>
+                        <th className="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-250 dark:divide-slate-800 bg-white/40 dark:bg-slate-950/20">
+                      {usuarios.filter(u => u.rol === 'recolector').map(u => (
+                        <tr key={u.id} className="hover:bg-slate-100/40 transition-colors">
+                          <td className="px-6 py-4">
+                            <p className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                              <Truck className="h-4 w-4 text-emerald-500 flex-shrink-0" />
+                              {u.nombre_completo}
+                            </p>
+                          </td>
+                          <td className="px-6 py-4 text-xs font-mono text-slate-600 dark:text-slate-400">{u.email}</td>
+                          <td className="px-6 py-4 text-xs font-semibold text-slate-700 dark:text-slate-300">{u.telefono || 'Sin teléfono'}</td>
+                          <td className="px-6 py-4">
+                            <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${u.activo ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}`}>
+                              {u.activo ? 'Activo' : 'Inactivo'}
+                            </span>
+                          </td>
+                          <td className="px-6 py-4 text-center space-x-2">
+                            <button
+                              onClick={() => {
+                                setEditingUser(u);
+                                setUserForm({
+                                  email: u.email,
+                                  nombre_completo: u.nombre_completo,
+                                  rol: u.rol,
+                                  zona: u.zona ? String(u.zona) : '',
+                                  telefono: u.telefono || '',
+                                  activo: u.activo,
+                                  ecopuntos: u.ecopuntos,
+                                  password: ''
+                                });
+                                setShowUserModal(true);
+                              }}
+                              className="p-1.5 bg-sky-100 hover:bg-sky-200 text-sky-700 rounded-lg inline-flex items-center"
+                              title="Editar Recolector"
+                            >
+                              <Edit className="h-4 w-4" />
+                            </button>
+                            <button
+                              onClick={() => deleteUser(u.id)}
+                              className="p-1.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg inline-flex items-center"
+                              title="Eliminar Recolector"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Tab 4: Zonas (Sectores) (Con CRUD) */}
           {activeTab === 'zonas' && (
             <div className="space-y-6 fade-in-up">
@@ -1468,9 +1646,9 @@ const AdminDashboard = () => {
                                 className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold px-2 py-1 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500"
                               >
                                 <option value="">Seleccionar recolector</option>
-                                {usuarios.filter(u => u.rol === 'recolector' || u.rol === 'admin').map(u => (
+                                {usuarios.filter(u => u.rol === 'recolector').map(u => (
                                   <option key={u.id} value={u.id}>
-                                    {u.nombre_completo} ({u.rol})
+                                    {u.nombre_completo}
                                   </option>
                                 ))}
                               </select>
@@ -1646,11 +1824,7 @@ const AdminDashboard = () => {
                   <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm flex-1">
                     <p className="text-sm font-bold text-slate-900 dark:text-white mb-4">Puntos de Acopio del Sector</p>
                     <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                      {((activeRealRuta?.geometria_ruta as any[]) || [
-                        { nombre: 'Plaza Principal San Jerónimo' },
-                        { nombre: 'Mercado San Jerónimo (Av. Evitamiento)' },
-                        { nombre: 'Urb. Kennedy – Jr. Simón Bolívar' }
-                      ]).map((p: any, idx: number) => (
+                      {getGeometriaParaRuta(activeRealRuta).map((p: any, idx: number) => (
                         <div key={idx} className="flex gap-2 text-xs items-center">
                           <span className="h-5 w-5 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-[9px] flex-shrink-0">
                             {idx + 1}

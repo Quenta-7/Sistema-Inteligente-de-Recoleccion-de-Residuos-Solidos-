@@ -68,6 +68,8 @@ const Dashboard = () => {
   };
 
   const cargarNotificaciones = async () => {
+    const token = localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token');
+    if (!token) return;
     try {
       const response = await authedFetch('/api/notificaciones/');
       if (response.ok) {

@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Leaf, Mail, Lock, ArrowRight, AlertCircle, Loader, Sun, Moon } from 'lucide-react';
+import { Leaf, Mail, Lock, ArrowRight, AlertCircle, Loader, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import CuscoImagen from '../assets/Cusco_imagen.png';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [mostrarPassword, setMostrarPassword] = useState(false);
   const [recordarme, setRecordarme] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -162,14 +163,23 @@ const Login = () => {
               <input
                 id="password"
                 name="password"
-                type="password"
+                type={mostrarPassword ? 'text' : 'password'}
                 required
                 disabled={loading}
-                className="block w-full pl-10 pr-3 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm disabled:opacity-60"
+                className="block w-full pl-10 pr-10 py-3 border border-gray-200 dark:border-slate-700 rounded-xl leading-5 bg-white dark:bg-slate-900/80 bg-opacity-80 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all shadow-sm disabled:opacity-60"
                 placeholder="Contraseña"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+              <button
+                type="button"
+                onClick={() => setMostrarPassword(!mostrarPassword)}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-emerald-500 dark:hover:text-emerald-400 focus:outline-none transition-colors"
+                tabIndex={-1}
+                title={mostrarPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
+              >
+                {mostrarPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
             </div>
           </div>
 

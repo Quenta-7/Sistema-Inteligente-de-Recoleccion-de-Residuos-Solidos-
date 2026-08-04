@@ -27,79 +27,173 @@ type RutaDetalle = {
   paradas: { nombre: string; hora: string; progressPercent: number }[];
 };
 
-// Rutas reales en el distrito de San Jerónimo, Cusco
-// Coordenadas aproximadas centradas en San Jerónimo (-13.548, -71.878)
+// Coordenadas reales del contorno del Distrito de San Jerónimo, Cusco
+const SAN_JERONIMO_BOUNDARY: [number, number][] = [
+  [-13.5220, -71.8750], // Norte (Montañas hacia Taray)
+  [-13.5280, -71.8580], // Noreste
+  [-13.5380, -71.8480], // Este (Límite con Saylla)
+  [-13.5520, -71.8430], // Sureste (Valle de Saylla)
+  [-13.5680, -71.8530], // Sur (Cerros de Yaurisque)
+  [-13.5780, -71.8680], // Suroeste
+  [-13.5680, -71.8840], // Oeste (Límite con San Sebastián)
+  [-13.5500, -71.8920], // Noroeste urbano (Vía Evitamiento / San Sebastián)
+  [-13.5350, -71.8850], // Alto Noroeste
+  [-13.5220, -71.8750]  // Cierre del polígono
+];
+
+const WORLD_OUTER_RING: [number, number][] = [
+  [-90, -180],
+  [-90, 180],
+  [90, 180],
+  [90, -180],
+  [-90, -180]
+];
+
+// Función helper para calcular el ángulo de rumbo (bearing) entre dos puntos geográficos
+function calculateBearing(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const dLng = (lng2 - lng1) * (Math.PI / 180);
+  const y = Math.sin(dLng) * Math.cos(lat2 * (Math.PI / 180));
+  const x =
+    Math.cos(lat1 * (Math.PI / 180)) * Math.sin(lat2 * (Math.PI / 180)) -
+    Math.sin(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) * Math.cos(dLng);
+  return (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+}
+
+// Función helper para desplazar las líneas por el carril derecho según la dirección del vehículo
+function applyRightHandOffset(coords: [number, number][], offset: number = 0.00006): [number, number][] {
+  if (coords.length < 2) return coords;
+  const result: [number, number][] = [];
+
+  for (let i = 0; i < coords.length; i++) {
+    let dLat = 0;
+    let dLng = 0;
+
+    if (i < coords.length - 1) {
+      dLat += coords[i + 1][0] - coords[i][0];
+      dLng += coords[i + 1][1] - coords[i][1];
+    }
+    if (i > 0) {
+      dLat += coords[i][0] - coords[i - 1][0];
+      dLng += coords[i][1] - coords[i - 1][1];
+    }
+
+    const len = Math.sqrt(dLat * dLat + dLng * dLng);
+    if (len < 1e-7) {
+      result.push(coords[i]);
+    } else {
+      const normLat = -dLng / len;
+      const normLng = dLat / len;
+      result.push([coords[i][0] + normLat * offset, coords[i][1] + normLng * offset]);
+    }
+  }
+
+  return result;
+}
+
+// Rutas divididas en 4 cuadrantes geográficos independientes sin solapamiento, con origen y retorno común en la Base Municipal
 const rutas: Record<string, RutaDetalle> = {
   'SJ-01': {
     id: 'Ruta SJ-01',
-    zona: 'Sector Central – Urb. Kennedy',
+    zona: 'Cuadrante Este – Urb. Larapa Residencial & Larapa Grande & Pata Pata',
     conductor: 'Julio Quispe M.',
     placa: 'A3T-851',
     estado: 'En ruta',
     tiempoEstimado: '10 min',
     velocidadBase: 20,
     puntos: [
-      { lat: -13.5485, lng: -71.8772 }, // Plaza Principal San Jerónimo
-      { lat: -13.5493, lng: -71.8755 }, // Jr. Cusco
-      { lat: -13.5505, lng: -71.8740 }, // Av. Evitamiento
-      { lat: -13.5518, lng: -71.8730 }, // Mercado San Jerónimo
-      { lat: -13.5528, lng: -71.8718 }, // Urb. Kennedy inicio
-      { lat: -13.5535, lng: -71.8705 }, // Jr. Simón Bolívar
-      { lat: -13.5522, lng: -71.8695 }  // Final Kennedy
+      { lat: -13.5510, lng: -71.8740 }, // Base Municipal (Salida)
+      { lat: -13.5525, lng: -71.8705 }, // Calle Los Álamos (Larapa Residencial)
+      { lat: -13.5515, lng: -71.8680 }, // Av. Larapa Central
+      { lat: -13.5525, lng: -71.8655 }, // Urb. Larapa Grande (Calle Interior)
+      { lat: -13.5545, lng: -71.8620 }, // Sector Pata Pata Residencial
+      { lat: -13.5505, lng: -71.8715 }, // Retorno por Av. Universidad
+      { lat: -13.5510, lng: -71.8740 }  // Base Municipal (Retorno)
     ],
     paradas: [
-      { nombre: 'Plaza Principal San Jerónimo', hora: '07:00', progressPercent: 0 },
-      { nombre: 'Mercado San Jerónimo (Av. Evitamiento)', hora: '07:20', progressPercent: 40 },
-      { nombre: 'Urb. Kennedy – Jr. Simón Bolívar', hora: '07:40', progressPercent: 75 },
-      { nombre: 'Final Urb. Kennedy', hora: '08:00', progressPercent: 100 }
+      { nombre: 'Salida: Base Operativa Municipal', hora: '07:00', progressPercent: 0 },
+      { nombre: 'Calle Los Álamos (Larapa Residencial)', hora: '07:15', progressPercent: 20 },
+      { nombre: 'Av. Larapa Central', hora: '07:35', progressPercent: 40 },
+      { nombre: 'Urb. Larapa Grande', hora: '07:55', progressPercent: 60 },
+      { nombre: 'Sector Pata Pata Residencial', hora: '08:15', progressPercent: 80 },
+      { nombre: 'Retorno: Base Operativa Municipal', hora: '08:35', progressPercent: 100 }
     ]
   },
   'SJ-02': {
     id: 'Ruta SJ-02',
-    zona: 'Urb. Los Incas – Sector Pillao Matao',
+    zona: 'Cuadrante Noreste (Arriba a la Derecha) – Versalles & Kantu & Huayna Picol Norte',
     conductor: 'Efraín Mamani H.',
     placa: 'B2R-412',
     estado: 'En recolección',
     tiempoEstimado: '15 min',
     velocidadBase: 18,
     puntos: [
-      { lat: -13.5470, lng: -71.8760 }, // Urb. Los Incas – ingreso
-      { lat: -13.5462, lng: -71.8745 }, // Av. Principal Los Incas
-      { lat: -13.5455, lng: -71.8730 }, // Jr. Los Incas
-      { lat: -13.5465, lng: -71.8720 }, // Conexión
-      { lat: -13.5475, lng: -71.8708 }, // Sector Pillao Matao
-      { lat: -13.5490, lng: -71.8698 }, // Av. Huáscar
-      { lat: -13.5505, lng: -71.8688 }  // Final Pillao Matao
+      { lat: -13.5510, lng: -71.8740 }, // Base Municipal (Salida)
+      { lat: -13.5480, lng: -71.8680 }, // Sector Kantu de Larapa
+      { lat: -13.5450, lng: -71.8650 }, // Urb. Versalles (Arriba Derecha)
+      { lat: -13.5415, lng: -71.8620 }, // APV Huayna Picol Norte
+      { lat: -13.5440, lng: -71.8660 }, // APV San Antonio Norte
+      { lat: -13.5490, lng: -71.8710 }, // Av. Collana Norte (Retorno)
+      { lat: -13.5510, lng: -71.8740 }  // Base Municipal (Retorno)
     ],
     paradas: [
-      { nombre: 'Ingreso Urb. Los Incas', hora: '07:00', progressPercent: 0 },
-      { nombre: 'Jr. Los Incas (Zona Central)', hora: '07:25', progressPercent: 35 },
-      { nombre: 'Inicio Sector Pillao Matao', hora: '07:50', progressPercent: 65 },
-      { nombre: 'Final Pillao Matao – Av. Huáscar', hora: '08:15', progressPercent: 100 }
+      { nombre: 'Salida: Base Operativa Municipal', hora: '07:00', progressPercent: 0 },
+      { nombre: 'Sector Kantu de Larapa', hora: '07:20', progressPercent: 20 },
+      { nombre: 'Urb. Versalles (Cuadrante Noreste)', hora: '07:45', progressPercent: 45 },
+      { nombre: 'APV Huayna Picol Norte', hora: '08:05', progressPercent: 70 },
+      { nombre: 'APV San Antonio Norte', hora: '08:20', progressPercent: 85 },
+      { nombre: 'Retorno: Base Operativa Municipal', hora: '08:40', progressPercent: 100 }
     ]
   },
   'SJ-03': {
     id: 'Ruta SJ-03',
-    zona: 'Urb. Santa Rosa – Sector Conchacalla',
+    zona: 'Cuadrante Noroeste (Arriba a la Izquierda) – Santa Rosa Alta & Mirador & Conchacalla Alta',
     conductor: 'Marcos Condori T.',
     placa: 'C5W-738',
     estado: 'Por iniciar',
     tiempoEstimado: '25 min',
     velocidadBase: 22,
     puntos: [
-      { lat: -13.5500, lng: -71.8750 }, // Urb. Santa Rosa – ingreso
-      { lat: -13.5510, lng: -71.8760 }, // Jr. Santa Rosa
-      { lat: -13.5515, lng: -71.8775 }, // Zona central Santa Rosa
-      { lat: -13.5508, lng: -71.8790 }, // Transición
-      { lat: -13.5495, lng: -71.8802 }, // Sector Conchacalla
-      { lat: -13.5480, lng: -71.8812 }, // Calle Conchacalla
-      { lat: -13.5468, lng: -71.8820 }  // Final Conchacalla
+      { lat: -13.5510, lng: -71.8740 }, // Base Municipal (Salida)
+      { lat: -13.5450, lng: -71.8785 }, // Urb. Santa Rosa Alta
+      { lat: -13.5420, lng: -71.8800 }, // APV Pampa Chanca Alta
+      { lat: -13.5380, lng: -71.8815 }, // APV Mirador San Jerónimo (Laderas Altas de Casas)
+      { lat: -13.5400, lng: -71.8835 }, // APV Conchacalla Alta
+      { lat: -13.5470, lng: -71.8780 }, // Bajada Conchacalla
+      { lat: -13.5510, lng: -71.8740 }  // Base Municipal (Retorno)
     ],
     paradas: [
-      { nombre: 'Ingreso Urb. Santa Rosa', hora: '07:00', progressPercent: 0 },
-      { nombre: 'Jr. Santa Rosa (Centro)', hora: '07:20', progressPercent: 35 },
-      { nombre: 'Inicio Sector Conchacalla', hora: '07:45', progressPercent: 65 },
-      { nombre: 'Final Conchacalla', hora: '08:10', progressPercent: 100 }
+      { nombre: 'Salida: Base Operativa Municipal', hora: '07:00', progressPercent: 0 },
+      { nombre: 'Urb. Santa Rosa Alta', hora: '07:20', progressPercent: 20 },
+      { nombre: 'APV Pampa Chanca Alta', hora: '07:40', progressPercent: 40 },
+      { nombre: 'APV Mirador San Jerónimo (Zona Alta de Casas)', hora: '08:05', progressPercent: 65 },
+      { nombre: 'APV Conchacalla Alta', hora: '08:25', progressPercent: 85 },
+      { nombre: 'Retorno: Base Operativa Municipal', hora: '08:50', progressPercent: 100 }
+    ]
+  },
+  'SJ-04': {
+    id: 'Ruta SJ-04',
+    zona: 'Cuadrante Suroeste (Abajo a la Izquierda) – Pillao Matao Sur & Chimpahuaylla Sur & Retamales Sur',
+    conductor: 'David Ramos V.',
+    placa: 'E4M-902',
+    estado: 'En ruta',
+    tiempoEstimado: '35 min',
+    velocidadBase: 24,
+    puntos: [
+      { lat: -13.5510, lng: -71.8740 }, // Base Municipal (Salida)
+      { lat: -13.5525, lng: -71.8770 }, // Sector Chimpahuaylla Sur
+      { lat: -13.5535, lng: -71.8805 }, // Pillao Matao Sur
+      { lat: -13.5545, lng: -71.8830 }, // APV Los Retamales Sur
+      { lat: -13.5560, lng: -71.8860 }, // Límite San Sebastián Sur
+      { lat: -13.5530, lng: -71.8790 }, // Retorno Av. Cusco Sur
+      { lat: -13.5510, lng: -71.8740 }  // Base Municipal (Retorno)
+    ],
+    paradas: [
+      { nombre: 'Salida: Base Operativa Municipal', hora: '07:00', progressPercent: 0 },
+      { nombre: 'Sector Chimpahuaylla Sur', hora: '07:15', progressPercent: 20 },
+      { nombre: 'Pillao Matao Sur', hora: '07:35', progressPercent: 45 },
+      { nombre: 'APV Los Retamales Sur', hora: '07:55', progressPercent: 70 },
+      { nombre: 'Límite San Sebastián Sur', hora: '08:15', progressPercent: 85 },
+      { nombre: 'Retorno: Base Operativa Municipal', hora: '08:35', progressPercent: 100 }
     ]
   }
 };
@@ -116,7 +210,7 @@ const MapaEnVivo = () => {
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const polylineRef = useRef<L.Polyline | null>(null);
+  const polylinesRef = useRef<L.Polyline[]>([]);
   const stopMarkersRef = useRef<L.Marker[]>([]);
   const truckMarkerRef = useRef<L.Marker | null>(null);
 
@@ -188,11 +282,28 @@ const MapaEnVivo = () => {
         const map = L.map(mapContainerRef.current, {
           zoomControl: true,
           scrollWheelZoom: true
-        }).setView([-13.5495, -71.8755], 15); // Centro de San Jerónimo
+        }).setView([-13.5495, -71.8755], 14); // Vista panorámica del Distrito de San Jerónimo
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
           attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Capa de Máscara: Oscurece todo el mapa fuera del límite de San Jerónimo
+        L.polygon([WORLD_OUTER_RING, SAN_JERONIMO_BOUNDARY], {
+          color: '#020617',
+          fillColor: '#020617',
+          fillOpacity: 0.60,
+          weight: 0,
+          stroke: false
+        }).addTo(map);
+
+        // Borde resaltado del perímetro del Distrito de San Jerónimo
+        L.polygon(SAN_JERONIMO_BOUNDARY, {
+          color: '#10b981',
+          weight: 3.5,
+          fillOpacity: 0.03,
+          dashArray: '8, 6'
         }).addTo(map);
 
         mapRef.current = map;
@@ -210,54 +321,155 @@ const MapaEnVivo = () => {
     const map = mapRef.current;
     if (!map) return;
 
+    // 1. Limpiar marcadores y flechas previas
     stopMarkersRef.current.forEach((m) => m.remove());
     stopMarkersRef.current = [];
 
-    if (polylineRef.current) polylineRef.current.remove();
+    // 2. Limpiar polilíneas previas directamente del mapa
+    polylinesRef.current.forEach((p) => p.remove());
+    polylinesRef.current = [];
 
-    const latLngs = activeRoute.puntos.map((p) => [p.lat, p.lng] as [number, number]);
-    const polyline = L.polyline(latLngs, {
-      color: '#059669',
-      weight: 6,
-      opacity: 0.85,
-      dashArray: '10, 8'
-    }).addTo(map);
-    polylineRef.current = polyline;
+    const drawRouteOnMap = (coords: [number, number][]) => {
+      if (!mapRef.current || coords.length < 2) return;
 
-    map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+      // Limpiar capas previas en este renderizado
+      polylinesRef.current.forEach((p) => p.remove());
+      polylinesRef.current = [];
 
-    fetchStreetRoute(activeRoute.puntos).then((streetCoords) => {
-      if (!mapRef.current) return;
-      if (polylineRef.current) polylineRef.current.remove();
-      const poly = L.polyline(streetCoords, {
+      const midIdx = Math.floor(coords.length / 2);
+      const rawIda = coords.slice(0, midIdx + 1);
+      const rawVuelta = coords.slice(midIdx);
+
+      // Desplazamiento por carril derecho según sentido de marcha
+      const idaCoords = applyRightHandOffset(rawIda, 0.00006);
+      const vueltaCoords = applyRightHandOffset(rawVuelta, 0.00006);
+
+      // 1. Línea de Ida (Esmeralda entrecortada con espaciado de 14px)
+      const polyIda = L.polyline(idaCoords, {
         color: '#059669',
-        weight: 6,
-        opacity: 0.9,
+        weight: 3.5,
+        opacity: 0.95,
+        dashArray: '14, 10',
         lineJoin: 'round',
         lineCap: 'round'
       }).addTo(mapRef.current);
-      polylineRef.current = poly;
-      mapRef.current.fitBounds(poly.getBounds(), { padding: [50, 50] });
+      polylinesRef.current.push(polyIda);
+
+      // 2. Línea de Vuelta (Turquesa/Teal entrecortada con espaciado de 14px)
+      if (vueltaCoords.length >= 2) {
+        const polyVuelta = L.polyline(vueltaCoords, {
+          color: '#0d9488',
+          weight: 3.5,
+          opacity: 0.95,
+          dashArray: '14, 10',
+          lineJoin: 'round',
+          lineCap: 'round'
+        }).addTo(mapRef.current);
+        polylinesRef.current.push(polyVuelta);
+      }
+
+      // Encuadre óptimo de la ruta en el mapa
+      const boundsGroup = L.featureGroup(polylinesRef.current);
+      if (boundsGroup.getBounds().isValid()) {
+        mapRef.current.fitBounds(boundsGroup.getBounds(), { padding: [50, 50] });
+      }
+
+      // Flechas de dirección para la Línea de Ida
+      const stepIda = Math.max(1, Math.floor(idaCoords.length / 5));
+      for (let i = 0; i < idaCoords.length - 1; i += stepIda) {
+        const pt1 = idaCoords[i];
+        const pt2 = idaCoords[Math.min(i + 1, idaCoords.length - 1)];
+        const bearing = calculateBearing(pt1[0], pt1[1], pt2[0], pt2[1]);
+
+        const arrowIcon = L.divIcon({
+          className: 'route-direction-arrow-ida',
+          html: `<div style="transform: rotate(${bearing}deg);" class="flex items-center justify-center text-emerald-600 dark:text-emerald-400 drop-shadow">
+                   <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                     <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
+                   </svg>
+                 </div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+
+        const arrowMarker = L.marker([pt1[0], pt1[1]], { icon: arrowIcon, interactive: false }).addTo(mapRef.current);
+        stopMarkersRef.current.push(arrowMarker);
+      }
+
+      // Flechas de dirección para la Línea de Vuelta
+      if (vueltaCoords.length >= 2) {
+        const stepVuelta = Math.max(1, Math.floor(vueltaCoords.length / 5));
+        for (let i = 0; i < vueltaCoords.length - 1; i += stepVuelta) {
+          const pt1 = vueltaCoords[i];
+          const pt2 = vueltaCoords[Math.min(i + 1, vueltaCoords.length - 1)];
+          const bearing = calculateBearing(pt1[0], pt1[1], pt2[0], pt2[1]);
+
+          const arrowIconVuelta = L.divIcon({
+            className: 'route-direction-arrow-vuelta',
+            html: `<div style="transform: rotate(${bearing}deg);" class="flex items-center justify-center text-teal-600 dark:text-teal-400 drop-shadow">
+                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                       <path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/>
+                     </svg>
+                   </div>`,
+            iconSize: [16, 16],
+            iconAnchor: [8, 8]
+          });
+
+          const arrowMarkerVuelta = L.marker([pt1[0], pt1[1]], { icon: arrowIconVuelta, interactive: false }).addTo(mapRef.current);
+          stopMarkersRef.current.push(arrowMarkerVuelta);
+        }
+      }
+    };
+
+    // Renderizar de inmediato los waypoints por defecto (garantiza visibilidad instantánea)
+    const fallbackCoords = activeRoute.puntos.map((p) => [p.lat, p.lng] as [number, number]);
+    drawRouteOnMap(fallbackCoords);
+
+    // Luego cargar las calles exactas de OSRM para reemplazar suavemente
+    fetchStreetRoute(activeRoute.puntos).then((streetCoords) => {
+      if (streetCoords && streetCoords.length >= 2) {
+        drawRouteOnMap(streetCoords);
+      }
     });
 
-    activeRoute.paradas.forEach((parada, idx) => {
+    // Marcador de la Base Operativa Municipal: compacto, estático (sin desbordamiento de texto)
+    const baseCoords = activeRoute.puntos[0];
+    const baseIcon = L.divIcon({
+      className: 'custom-base-icon-wrapper',
+      html: `<div class="bg-amber-500 text-white font-bold px-3 py-1 rounded-md border border-white shadow-md text-[11px] whitespace-nowrap inline-flex items-center justify-center">
+               🚩 Base Municipal (Inicio/Fin)
+             </div>`,
+      iconSize: [185, 28],
+      iconAnchor: [92, 14]
+    });
+
+    const baseMarker = L.marker([baseCoords.lat, baseCoords.lng], { icon: baseIcon })
+      .bindPopup(`<strong>🚩 Base Operativa Municipal (San Jerónimo)</strong><br/>Salida: ${activeRoute.paradas[0].hora} hrs<br/>Retorno estimado: ${activeRoute.paradas[activeRoute.paradas.length - 1].hora} hrs`)
+      .addTo(map);
+
+    stopMarkersRef.current.push(baseMarker);
+
+    // Renderizar paradas intermedias de recolección numeradas (1, 2, 3...) dentro del sector
+    const paradasIntermedias = activeRoute.paradas.slice(1, activeRoute.paradas.length - 1);
+    paradasIntermedias.forEach((parada, idx) => {
       const ptIndex = Math.min(
-        Math.floor((parada.progressPercent / 100) * (activeRoute.puntos.length - 1)),
+        Math.floor(((idx + 1) / (activeRoute.paradas.length - 1)) * (activeRoute.puntos.length - 1)),
         activeRoute.puntos.length - 1
       );
       const pt = activeRoute.puntos[ptIndex];
 
+      const paradaNumero = idx + 1;
       const paradaIcon = L.divIcon({
         className: 'custom-parada-icon-wrapper',
-        html: `<div id="map-stop-${idx}" class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white shadow-lg bg-slate-500 transition-all duration-300">
-                 ${idx + 1}
+        html: `<div id="map-stop-${idx}" class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-xs font-black text-white shadow-lg bg-emerald-600 transition-all duration-300">
+                 ${paradaNumero}
                </div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
       });
 
       const marker = L.marker([pt.lat, pt.lng], { icon: paradaIcon })
-        .bindPopup(`<strong>Parada ${idx + 1}: ${parada.nombre}</strong><br/>Hora estimada: ${parada.hora}`)
+        .bindPopup(`<strong>Parada ${paradaNumero}: ${parada.nombre}</strong><br/>Hora estimada: ${parada.hora}`)
         .addTo(map);
 
       stopMarkersRef.current.push(marker);

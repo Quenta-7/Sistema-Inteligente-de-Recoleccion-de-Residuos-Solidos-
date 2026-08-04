@@ -22,8 +22,24 @@ export const authedFetch = async (
   
   const fullUrl = url.startsWith('http') ? url : `${API_BASE_URL}${url}`;
   
-  return fetch(fullUrl, {
+  const response = await fetch(fullUrl, {
     ...options,
     headers,
   });
+
+  // Manejo centralizado de tokens expirados o no autorizados (401)
+  if (response.status === 401) {
+    const currentPath = window.location.pathname;
+    const isPublicPage = ['/login', '/registro', '/recuperar-contrasena', '/politica-privacidad', '/terminos-condiciones'].includes(currentPath);
+    
+    if (!isPublicPage) {
+      localStorage.removeItem('auth_token');
+      localStorage.removeItem('user_data');
+      sessionStorage.removeItem('auth_token');
+      sessionStorage.removeItem('user_data');
+      window.location.href = '/login';
+    }
+  }
+
+  return response;
 };
