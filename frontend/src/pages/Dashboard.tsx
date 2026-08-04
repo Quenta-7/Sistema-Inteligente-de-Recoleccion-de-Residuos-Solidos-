@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { Calendar, LogOut, Map, Bell, User, ChevronRight, Leaf, Camera, Trophy, Sun, Moon, Menu, X, Star, CheckCircle } from 'lucide-react';
+import { Calendar, LogOut, Map, Bell, User, ChevronRight, Leaf, Camera, Trophy, Sun, Moon, Menu, X, Star, CheckCircle, AlertTriangle } from 'lucide-react';
 import { authedFetch } from '../api';
 
 

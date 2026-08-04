@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Camera, UploadCloud, CheckCircle2, Recycle, AlertCircle, Loader, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, Camera, UploadCloud, CheckCircle2, Recycle, AlertCircle, Loader, Sun, Moon, MapPin } from 'lucide-react';
 import { authedFetch } from '../api';
 
 const Reportes = () => {
@@ -8,6 +8,10 @@ const Reportes = () => {
   const [tipoResiduo, setTipoResiduo] = useState('');
   const [cantidad, setCantidad] = useState('');
   const [direccionEntrega, setDireccionEntrega] = useState('');
+  const [latitud, setLatitud] = useState<number | null>(null);
+  const [longitud, setLongitud] = useState<number | null>(null);
+  const [obteniendoGps, setObteniendoGps] = useState(false);
+  const [gpsMsg, setGpsMsg] = useState('');
   const [horarioEntrega, setHorarioEntrega] = useState('');
   const [horarios, setHorarios] = useState<any[]>([]);
   const [enviado, setEnviado] = useState(false);
@@ -36,10 +40,36 @@ const Reportes = () => {
   };
   const [loadingEvidencias, setLoadingEvidencias] = useState(false);
 
-  // Cargar evidencias y horarios de zona al montar
+  const capturarUbicacionGps = () => {
+    if (!('geolocation' in navigator)) {
+      setGpsMsg('La geolocalización no está disponible en tu navegador.');
+      return;
+    }
+
+    setObteniendoGps(true);
+    setGpsMsg('Obteniendo señal GPS satelital...');
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        setLatitud(latitude);
+        setLongitud(longitude);
+        setObteniendoGps(false);
+        setGpsMsg(`Ubicación GPS capturada: Lat ${latitude.toFixed(5)}, Lng ${longitude.toFixed(5)} (±${accuracy.toFixed(1)}m)`);
+      },
+      (err) => {
+        setObteniendoGps(false);
+        setGpsMsg(`Permiso de GPS pendiente (${err.message}). Presiona el botón para reintentar.`);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  // Cargar evidencias, horarios y GPS al montar
   useEffect(() => {
     cargarEvidencias();
     cargarHorariosZona();
+    capturarUbicacionGps();
   }, []);
 
   const cargarHorariosZona = async () => {
@@ -89,6 +119,8 @@ const Reportes = () => {
       formData.append('descripcion', descripcion);
       formData.append('cantidad', cantidad);
       formData.append('direccion_entrega', direccionEntrega);
+      if (latitud !== null) formData.append('latitud', String(latitud));
+      if (longitud !== null) formData.append('longitud', String(longitud));
       if (horarioEntrega) {
         formData.append('horario_entrega', horarioEntrega);
       }
@@ -269,6 +301,34 @@ const Reportes = () => {
                   onChange={(e) => setCantidad(e.target.value)}
                 />
               </div>
+            </div>
+
+            {/* GPS Location Capture Box for Citizen Evidence */}
+            <div className="mb-6 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-2xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <label className="block text-sm font-bold text-slate-800 dark:text-white">
+                    Ubicación GPS Real del Registro
+                  </label>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Registra tu posición geográfica satelital exacta al entregar la evidencia.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={capturarUbicacionGps}
+                  disabled={obteniendoGps}
+                  className="px-3.5 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-xs font-bold transition-all shadow shadow-emerald-500/20 flex items-center justify-center gap-1.5 self-start sm:self-auto"
+                >
+                  {obteniendoGps ? <Loader className="h-4 w-4 animate-spin" /> : <MapPin className="h-4 w-4" />}
+                  {latitud !== null ? 'Actualizar GPS' : 'Capturar Mi Ubicación GPS'}
+                </button>
+              </div>
+              {gpsMsg && (
+                <p className={`text-xs font-mono font-medium mt-2.5 ${latitud !== null ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                  {gpsMsg}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">

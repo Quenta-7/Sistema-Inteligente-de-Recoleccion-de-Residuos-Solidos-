@@ -28,7 +28,7 @@ class EvidenciaSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Evidencia
-        fields = ['id', 'usuario', 'usuario_nombre', 'zona', 'zona_nombre', 'tipo_residuo', 'descripcion', 'foto', 'foto_url', 'cantidad', 'ecopuntos', 'estado', 'direccion_entrega', 'horario_entrega', 'horario_entrega_detalle', 'validador', 'validador_nombre', 'fecha_validacion', 'created_at', 'updated_at']
+        fields = ['id', 'usuario', 'usuario_nombre', 'zona', 'zona_nombre', 'tipo_residuo', 'descripcion', 'foto', 'foto_url', 'cantidad', 'ecopuntos', 'estado', 'direccion_entrega', 'latitud', 'longitud', 'horario_entrega', 'horario_entrega_detalle', 'validador', 'validador_nombre', 'fecha_validacion', 'created_at', 'updated_at']
         read_only_fields = ['id', 'usuario', 'ecopuntos', 'validador', 'fecha_validacion', 'created_at', 'updated_at']
 
     def get_foto_url(self, obj):
@@ -206,7 +206,7 @@ class IncidenciaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Incidencia
         fields = '__all__'
-        read_only_fields = ['id', 'recolector', 'respuesta_admin', 'created_at']
+        read_only_fields = ['id', 'recolector', 'created_at']
 
 class CalificacionServicioSerializer(serializers.ModelSerializer):
     ciudadano_nombre = serializers.CharField(source='ciudadano.nombre_completo', read_only=True)

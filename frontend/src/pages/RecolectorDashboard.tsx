@@ -6,8 +6,6 @@ import {
   AlertTriangle,
   CheckCircle,
   Truck,
-  Play,
-  Pause,
   LogOut,
   Calendar,
   Clock,
@@ -60,10 +58,13 @@ export default function RecolectorDashboard() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'rutas' | 'mapa' | 'incidencias'>('rutas');
   
-  // Simulation State
+  // Real GPS Tracking State
+  const [realGpsError, setRealGpsError] = useState<string | null>(null);
+  const [gpsAccuracy, setGpsAccuracy] = useState<number | null>(null);
+  const [lastGpsSyncTime, setLastGpsSyncTime] = useState<string | null>(null);
+
+  // Active Route State
   const [activeRuta, setActiveRuta] = useState<Ruta | null>(null);
-  const [progress, setProgress] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [lastBeepTime, setLastBeepTime] = useState(0);
   const [currentPosition, setCurrentPosition] = useState<[number, number] | null>(null);
@@ -191,50 +192,64 @@ export default function RecolectorDashboard() {
     return R * c;
   };
 
+  // Real HTML5 GPS Location Listener (watchPosition)
   useEffect(() => {
-    let interval: number;
-    if (isPlaying && activeRuta?.geometria_ruta && activeRuta.geometria_ruta.length > 0) {
-      interval = window.setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) {
-            setIsPlaying(false);
-            return 100;
-          }
-          return Math.min(prev + 0.8, 100);
-        });
-      }, 200);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, activeRuta]);
+    if (!activeRuta) return;
 
-  // Calculate current coordinates and proximity alerts
-  useEffect(() => {
-    if (!activeRuta?.geometria_ruta || activeRuta.geometria_ruta.length === 0) return;
-    const nodes = activeRuta.geometria_ruta;
-    const numSegments = nodes.length - 1;
-
-    if (numSegments <= 0) {
-      setCurrentPosition([nodes[0].lat, nodes[0].lng]);
+    if (!('geolocation' in navigator)) {
+      setRealGpsError('La geolocalización HTML5 no está disponible en este navegador.');
       return;
     }
 
-    const progressPerSegment = 100 / numSegments;
-    const segmentIndex = Math.min(
-      Math.floor(progress / progressPerSegment),
-      numSegments - 1
+    setRealGpsError(null);
+
+    const watchId = navigator.geolocation.watchPosition(
+      async (pos) => {
+        const { latitude, longitude, accuracy } = pos.coords;
+        setCurrentPosition([latitude, longitude]);
+        setGpsAccuracy(accuracy);
+        setLastGpsSyncTime(new Date().toLocaleTimeString());
+
+        // Transmit coordinates to backend API
+        try {
+          await authedFetch(`/api/rutas/${activeRuta.id}/`, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              lat_actual: latitude,
+              lng_actual: longitude
+            })
+          });
+        } catch (err) {
+          console.error('Error enviando posición GPS al servidor:', err);
+        }
+      },
+      (err) => {
+        console.warn('GPS Error:', err.message);
+        setRealGpsError(`Permiso de GPS pendiente o señal no activa (${err.message}). Por favor habilita la ubicación en tu navegador/móvil.`);
+        
+        // Fallback initial position to route start node if device GPS not accessible yet
+        if (!currentPosition && activeRuta?.geometria_ruta && activeRuta.geometria_ruta.length > 0) {
+          const firstNode = activeRuta.geometria_ruta[0];
+          setCurrentPosition([firstNode.lat, firstNode.lng]);
+        }
+      },
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
     );
-    const startNode = nodes[segmentIndex];
-    const endNode = nodes[segmentIndex + 1];
-    const relativeProgress = (progress % progressPerSegment) / progressPerSegment;
 
-    const lat = startNode.lat + (endNode.lat - startNode.lat) * relativeProgress;
-    const lng = startNode.lng + (endNode.lng - startNode.lng) * relativeProgress;
-    
-    setCurrentPosition([lat, lng]);
+    return () => {
+      navigator.geolocation.clearWatch(watchId);
+    };
+  }, [activeRuta]);
 
-    // Check proximity to all nodes
+  // Proximity alerts calculated directly from real GPS position
+  useEffect(() => {
+    if (!currentPosition || !activeRuta?.geometria_ruta || activeRuta.geometria_ruta.length === 0) return;
+    const [lat, lng] = currentPosition;
+    const nodes = activeRuta.geometria_ruta;
+
     let closeNodeName: string | null = null;
-    nodes.forEach((node) => {
+    nodes.forEach((node: any) => {
       const dist = getDistance(lat, lng, node.lat, node.lng);
       if (dist < 50) {
         closeNodeName = node.nombre;
@@ -242,8 +257,7 @@ export default function RecolectorDashboard() {
     });
 
     if (closeNodeName) {
-      setAlertMessage(`Proximidad: Menos de 50m de "${closeNodeName}". Tocando bocina.`);
-      // Limit playBeep to once every 4 seconds to not be annoying
+      setAlertMessage(`Proximidad: Menos de 50m del punto "${closeNodeName}". Sonando alerta sonora.`);
       const now = Date.now();
       if (now - lastBeepTime > 4000) {
         playBeep();
@@ -252,18 +266,18 @@ export default function RecolectorDashboard() {
     } else {
       setAlertMessage(null);
     }
-
-  }, [progress, activeRuta]);
+  }, [currentPosition, activeRuta]);
 
   // Leaflet Map Initialization and updates
   useEffect(() => {
     if (activeTab === 'mapa' && mapContainerRef.current) {
       // Re-initialize map
       if (!mapRef.current) {
+        const initialCenter = currentPosition || [-13.5485, -71.8772];
         const map = L.map(mapContainerRef.current, {
           zoomControl: false,
           scrollWheelZoom: true
-        }).setView([-13.522, -71.968], 15);
+        }).setView(initialCenter, 15);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
@@ -331,20 +345,20 @@ export default function RecolectorDashboard() {
       if (!truckMarkerRef.current) {
         const truckIcon = L.divIcon({
           className: 'custom-truck-icon-wrapper',
-          html: `<div class="w-9 h-9 bg-emerald-500 rounded-xl border-2 border-white flex items-center justify-center shadow-lg transition-transform animate-pulse">
-                   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5">
+          html: `<div class="w-10 h-10 bg-emerald-500 rounded-xl border-2 border-white flex items-center justify-center shadow-xl transition-transform animate-pulse">
+                   <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5">
                      <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
                      <path d="M19 18h2a1 1 0 0 0 1-1v-5.05a1.009 1.009 0 0 0-.29-.707l-4.07-4.07a1.009 1.009 0 0 0-.707-.29H14" />
                      <circle cx="5.5" cy="18.5" r="2.5" />
                      <circle cx="18.5" cy="18.5" r="2.5" />
                    </svg>
                  </div>`,
-          iconSize: [36, 36],
-          iconAnchor: [18, 18]
+          iconSize: [40, 40],
+          iconAnchor: [20, 20]
         });
 
         truckMarkerRef.current = L.marker(currentPosition, { icon: truckIcon })
-          .bindPopup(`<strong>Camión Recolector</strong><br/>Tu ubicación actual simulada`)
+          .bindPopup(`<strong>Camión Recolector</strong><br/>Tu ubicación GPS real en vivo`)
           .addTo(map);
       } else {
         truckMarkerRef.current.setLatLng(currentPosition);
@@ -364,9 +378,7 @@ export default function RecolectorDashboard() {
         // Update list
         setRutas(prev => prev.map(r => r.id === routeId ? updated : r));
         setActiveRuta(updated);
-        setProgress(0);
-        setIsPlaying(true);
-        setActiveTab('mapa'); // Switch to map simulation automatically
+        setActiveTab('mapa'); // Switch to map GPS automatically
       }
     } catch (err) {
       console.error('Error starting route:', err);
@@ -394,8 +406,6 @@ export default function RecolectorDashboard() {
         setRutas(prev => prev.map(r => r.id === completionRouteId ? updated : r));
         if (activeRuta?.id === completionRouteId) {
           setActiveRuta(null);
-          setIsPlaying(false);
-          setProgress(0);
         }
         setShowCompletionModal(false);
         setCompletionNotes('');
@@ -589,7 +599,7 @@ export default function RecolectorDashboard() {
                             onClick={() => startRoute(ruta.id)}
                             className="w-full flex items-center justify-center gap-1 text-xs font-bold text-white bg-emerald-500 hover:bg-emerald-600 py-2.5 rounded-xl transition-all shadow shadow-emerald-500/15"
                           >
-                            <Play className="h-3.5 w-3.5" />
+                            <Navigation className="h-3.5 w-3.5" />
                             Iniciar Recorrido
                           </button>
                         )}
@@ -634,17 +644,17 @@ export default function RecolectorDashboard() {
           </div>
         )}
 
-        {/* Tab 2: Mapa GPS & Simulation */}
+        {/* Tab 2: Mapa GPS Real */}
         {activeTab === 'mapa' && (
           <div className="space-y-4 fade-in-up">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Simulador GPS Activo</h3>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Navegación GPS y Telemetría en Vivo</h3>
                 {activeRuta && (
                   <p className="text-[10px] text-emerald-500 font-bold mt-0.5">{activeRuta.zona_nombre}</p>
                 )}
               </div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => setSoundEnabled(!soundEnabled)}
                   className={`p-2 rounded-xl border transition-colors ${
@@ -658,6 +668,12 @@ export default function RecolectorDashboard() {
                 </button>
               </div>
             </div>
+
+            {realGpsError && (
+              <div className="bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800/60 p-3.5 rounded-2xl text-xs text-amber-800 dark:text-amber-300 font-medium">
+                {realGpsError}
+              </div>
+            )}
 
             {/* No route active warning */}
             {!activeRuta ? (
@@ -690,53 +706,58 @@ export default function RecolectorDashboard() {
                     ref={mapContainerRef} 
                     className="h-80 w-full rounded-2xl border border-slate-200 dark:border-slate-850 shadow-inner z-10"
                   />
-                  <div className="absolute right-2.5 bottom-2.5 bg-white/90 dark:bg-slate-950/90 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-[9px] font-mono shadow z-20">
-                    Progreso: {progress.toFixed(0)}%
+                  <div className="absolute right-2.5 bottom-2.5 bg-white/95 dark:bg-slate-950/95 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 text-[9px] font-mono font-bold text-emerald-600 dark:text-emerald-400 shadow z-20 flex items-center gap-1.5">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
+                    Transmitiendo GPS Real
                   </div>
                 </div>
 
-                {/* Simulation Control Card */}
+                {/* Real GPS Status & Telemetry Card */}
                 <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-4 rounded-2xl shadow-sm">
                   <div className="flex justify-between items-center mb-3">
                     <div>
-                      <h4 className="text-xs font-extrabold text-slate-800 dark:text-white">Simulación de Tránsito</h4>
-                      <p className="text-[9px] text-slate-500 font-medium">Controla el avance automático del camión</p>
+                      <h4 className="text-xs font-extrabold text-slate-800 dark:text-white flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+                        Transmisión GPS Real en Tiempo Real
+                      </h4>
+                      <p className="text-[9px] text-slate-500 font-medium">Ubicación satelital emitida desde tu dispositivo a la central municipal</p>
                     </div>
-                    <button
-                      onClick={() => setIsPlaying(!isPlaying)}
-                      className={`flex items-center gap-1 text-[10px] font-black uppercase px-3 py-1.5 rounded-xl shadow-sm transition-all ${
-                        isPlaying 
-                          ? 'bg-amber-500 hover:bg-amber-600 text-white' 
-                          : 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                      }`}
-                    >
-                      {isPlaying ? (
-                        <>
-                          <Pause className="h-3 w-3" />
-                          Pausar
-                        </>
-                      ) : (
-                        <>
-                          <Play className="h-3 w-3" />
-                          Simular GPS
-                        </>
-                      )}
-                    </button>
+                    {currentPosition && (
+                      <button
+                        onClick={() => {
+                          if (mapRef.current && currentPosition) {
+                            mapRef.current.setView(currentPosition, 16);
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white rounded-xl text-[10px] font-bold transition-all shadow-sm shadow-emerald-500/20"
+                      >
+                        Centrar Ubicación
+                      </button>
+                    )}
                   </div>
 
-                  {/* Progress bar */}
-                  <div className="w-full bg-slate-100 dark:bg-slate-900 rounded-full h-2 overflow-hidden border border-slate-200/40 dark:border-slate-800/40">
-                    <div 
-                      className="bg-emerald-500 h-2 rounded-full transition-all duration-200" 
-                      style={{ width: `${progress}%` }}
-                    />
+                  {/* Real GPS coordinates & telemetry details */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100 dark:border-slate-900 text-[10px]">
+                    <div className="bg-slate-50 dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850">
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold">Latitud Real</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">{currentPosition ? currentPosition[0].toFixed(5) : 'Conectando...'}</span>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850">
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold">Longitud Real</span>
+                      <span className="font-mono font-bold text-slate-900 dark:text-white">{currentPosition ? currentPosition[1].toFixed(5) : 'Conectando...'}</span>
+                    </div>
+                    <div className="col-span-2 sm:col-span-1 bg-slate-50 dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850">
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold">Precisión Satelital</span>
+                      <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                        {gpsAccuracy ? `±${gpsAccuracy.toFixed(1)}m (GPS)` : 'Transmitiendo'}
+                      </span>
+                    </div>
                   </div>
-
-                  {/* Lat Lng display */}
-                  <div className="mt-3 grid grid-cols-2 gap-2 text-[10px] text-slate-500 font-mono">
-                    <div>Lat: {currentPosition ? currentPosition[0].toFixed(5) : 'Cargando...'}</div>
-                    <div className="text-right">Lng: {currentPosition ? currentPosition[1].toFixed(5) : 'Cargando...'}</div>
-                  </div>
+                  {lastGpsSyncTime && (
+                    <p className="text-[9px] text-slate-400 font-mono mt-2 text-right">
+                      Última señal sincronizada: {lastGpsSyncTime}
+                    </p>
+                  )}
                 </div>
 
                 {/* Quick Stop List */}

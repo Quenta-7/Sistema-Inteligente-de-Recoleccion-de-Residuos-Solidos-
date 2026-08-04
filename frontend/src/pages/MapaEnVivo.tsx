@@ -5,9 +5,6 @@ import {
   Navigation,
   Route as RouteIcon,
   Signal,
-  Play,
-  Pause,
-  RotateCcw,
   Gauge,
   Info,
   Sun,
@@ -15,6 +12,7 @@ import {
   MapPin
 } from 'lucide-react';
 import L from 'leaflet';
+import { authedFetch } from '../api';
 
 type RutaDetalle = {
   id: string;
@@ -107,20 +105,11 @@ const rutas: Record<string, RutaDetalle> = {
 
 const MapaEnVivo = () => {
   const [selectedRouteId, setSelectedRouteId] = useState<string>('SJ-01');
-  const [progress, setProgress] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [speedMultiplier, setSpeedMultiplier] = useState<number>(1);
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('color-theme') as 'light' | 'dark') || 'light';
   });
   const [isAdmin, setIsAdmin] = useState(false);
-
-  const [telemetry, setTelemetry] = useState({
-    velocidad: 0,
-    llenado: 20,
-    peso: 1.5,
-    combustible: 88
-  });
+  const [realGpsCoords, setRealGpsCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const activeRoute = rutas[selectedRouteId];
 
@@ -156,49 +145,36 @@ const MapaEnVivo = () => {
     localStorage.setItem('color-theme', nextTheme);
   };
 
+  // Poll backend for real GPS coordinates sent by collector
   useEffect(() => {
-    let interval: number;
-    if (isPlaying) {
-      interval = window.setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) return 0;
-          return Math.min(prev + 0.5 * speedMultiplier, 100);
-        });
-      }, 100);
-    }
-    return () => clearInterval(interval);
-  }, [isPlaying, speedMultiplier]);
+    const fetchLiveGps = async () => {
+      try {
+        const res = await authedFetch('/api/rutas/');
+        if (res.ok) {
+          const data = await res.json();
+          const rList = Array.isArray(data) ? data : data.results || [];
+          const activeR = rList.find((r: any) => r.estado === 'en_progreso' && r.lat_actual && r.lng_actual);
+          if (activeR) {
+            setRealGpsCoords({ lat: activeR.lat_actual, lng: activeR.lng_actual });
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching live GPS:', err);
+      }
+    };
 
-  useEffect(() => {
-    let currentSpeed = 0;
-    if (isPlaying) {
-      const isAtStop = activeRoute.paradas.some((stop) => {
-        const diff = Math.abs(progress - stop.progressPercent);
-        return diff < 3 && stop.progressPercent > 0 && stop.progressPercent < 100;
-      });
-      currentSpeed = isAtStop ? 0 : Math.floor(activeRoute.velocidadBase + (Math.sin(progress) * 4) + (Math.random() * 3));
-    }
-    setTelemetry({
-      velocidad: currentSpeed,
-      llenado: 20 + Math.floor(progress * 0.65),
-      peso: Number((1.0 + (progress * 0.032)).toFixed(1)),
-      combustible: Math.max(92 - Math.floor(progress * 0.08), 10)
-    });
-  }, [progress, selectedRouteId, isPlaying]);
+    fetchLiveGps();
+    const interval = setInterval(fetchLiveGps, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const getTruckCoords = () => {
-    const pts = activeRoute.puntos;
+    if (realGpsCoords) {
+      return realGpsCoords;
+    }
+    const pts = activeRoute?.puntos || [];
     if (pts.length === 0) return { lat: -13.5485, lng: -71.8772 };
-    const numSegments = pts.length - 1;
-    const progressPerSegment = 100 / numSegments;
-    const segmentIndex = Math.min(Math.floor(progress / progressPerSegment), numSegments - 1);
-    const startPoint = pts[segmentIndex];
-    const endPoint = pts[segmentIndex + 1];
-    const relativeProgress = (progress % progressPerSegment) / progressPerSegment;
-    return {
-      lat: startPoint.lat + (endPoint.lat - startPoint.lat) * relativeProgress,
-      lng: startPoint.lng + (endPoint.lng - startPoint.lng) * relativeProgress
-    };
+    return { lat: pts[0].lat, lng: pts[0].lng };
   };
 
   // Inicializar mapa centrado en San Jerónimo, Cusco
@@ -296,22 +272,7 @@ const MapaEnVivo = () => {
     } else {
       truckMarkerRef.current.setLatLng([truckPos.lat, truckPos.lng]);
     }
-
-    activeRoute.paradas.forEach((parada, idx) => {
-      const el = document.getElementById(`map-stop-${idx}`);
-      if (el) {
-        const hasPassed = progress >= parada.progressPercent;
-        const isCurrent = Math.abs(progress - parada.progressPercent) < 4;
-        if (isCurrent) {
-          el.className = "w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-slate-950 shadow-lg bg-amber-400 animate-pulse scale-110";
-        } else if (hasPassed) {
-          el.className = "w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white shadow-lg bg-emerald-500";
-        } else {
-          el.className = "w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white shadow-lg bg-slate-500";
-        }
-      }
-    });
-  }, [progress, activeRoute]);
+  }, [realGpsCoords, activeRoute]);
 
   const truckPos = getTruckCoords();
 
@@ -373,33 +334,11 @@ const MapaEnVivo = () => {
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 z-10 relative">
               <div>
                 <h2 className="text-lg font-bold text-slate-900 dark:text-white">Mapa – Distrito San Jerónimo, Cusco</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">Presiona play para reanudar o ajusta la velocidad de la simulación</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">Rastreo satelital en tiempo real emitido por los camiones recolectores.</p>
               </div>
-              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-1.5 rounded-xl transition-colors duration-300">
-                <button
-                  onClick={() => setIsPlaying(!isPlaying)}
-                  className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-emerald-600 dark:text-emerald-400 transition-all"
-                  title={isPlaying ? 'Pausar' : 'Reanudar'}
-                >
-                  {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                </button>
-                <button
-                  onClick={() => { setProgress(0); }}
-                  className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-all"
-                  title="Reiniciar"
-                >
-                  <RotateCcw className="h-4 w-4" />
-                </button>
-                <div className="h-4 w-px bg-slate-200 dark:bg-slate-800"></div>
-                {[1, 2.5, 5].map((speed) => (
-                  <button
-                    key={speed}
-                    onClick={() => setSpeedMultiplier(speed)}
-                    className={`px-2 py-1 text-xs rounded font-bold transition-all ${speedMultiplier === speed ? 'bg-emerald-500 text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'}`}
-                  >
-                    {speed}x
-                  </button>
-                ))}
+              <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-ping"></span>
+                GPS Real Conectado
               </div>
             </div>
 
@@ -408,18 +347,10 @@ const MapaEnVivo = () => {
                 ref={mapContainerRef}
                 className="h-[420px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 overflow-hidden shadow-inner relative z-10 transition-colors duration-300"
               />
-              {isAdmin && (
-                <>
-                  <div className="absolute left-4 bottom-4 bg-white/95 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-850 px-4 py-3 rounded-xl backdrop-blur-sm text-xs font-semibold shadow-md z-20 transition-all duration-300">
-                    <p className="text-slate-500 dark:text-slate-400">Coordenadas del Camión</p>
-                    <p className="font-mono text-slate-800 dark:text-white mt-0.5">Lat: {truckPos.lat.toFixed(5)}, Lng: {truckPos.lng.toFixed(5)}</p>
-                  </div>
-                  <div className="absolute right-4 bottom-4 bg-white/95 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-850 px-4 py-3 rounded-xl backdrop-blur-sm text-xs text-right font-semibold shadow-md z-20 transition-all duration-300">
-                    <p className="text-slate-500 dark:text-slate-400">Progreso de la Ruta</p>
-                    <p className="text-emerald-600 dark:text-emerald-400 font-bold mt-0.5">{progress.toFixed(0)}% Completado</p>
-                  </div>
-                </>
-              )}
+              <div className="absolute left-4 bottom-4 bg-white/95 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-850 px-4 py-3 rounded-xl backdrop-blur-sm text-xs font-semibold shadow-md z-20 transition-all duration-300">
+                <p className="text-slate-500 dark:text-slate-400">Coordenadas del Camión</p>
+                <p className="font-mono text-slate-800 dark:text-white mt-0.5">Lat: {truckPos.lat.toFixed(5)}, Lng: {truckPos.lng.toFixed(5)}</p>
+              </div>
             </div>
           </div>
 
@@ -431,24 +362,22 @@ const MapaEnVivo = () => {
                 Telemetría de la Unidad – San Jerónimo (Modo Admin)
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                {[
-                  { label: 'Velocidad', value: `${telemetry.velocidad}`, unit: 'km/h' },
-                  { label: 'Llenado Tolva', value: `${telemetry.llenado}%`, unit: '', alert: telemetry.llenado > 85 ? 'red' : telemetry.llenado > 60 ? 'amber' : 'green' },
-                  { label: 'Carga Total', value: `${telemetry.peso}`, unit: 'Tons' },
-                  { label: 'Combustible', value: `${telemetry.combustible}%`, unit: '' }
-                ].map((item) => (
-                  <div key={item.label} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-4 rounded-xl transition-colors duration-300">
-                    <span className="text-[10px] text-slate-500 dark:text-gray-400 uppercase font-bold tracking-wider">{item.label}</span>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-xl font-extrabold text-slate-900 dark:text-white">
-                        {item.value} {item.unit && <span className="text-xs font-medium text-slate-500 dark:text-slate-400">{item.unit}</span>}
-                      </p>
-                      {item.alert && (
-                        <span className={`h-2.5 w-2.5 rounded-full ${item.alert === 'red' ? 'bg-red-500' : item.alert === 'amber' ? 'bg-amber-500' : 'bg-emerald-500'}`}></span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-4 rounded-xl">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Señal GPS</span>
+                  <p className="text-sm font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">Activa en Vivo</p>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-4 rounded-xl">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Unidad Asignada</span>
+                  <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">{activeRoute?.placa || 'A3T-851'}</p>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-4 rounded-xl">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Conductor</span>
+                  <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1 truncate">{activeRoute?.conductor || 'Chofer'}</p>
+                </div>
+                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-4 rounded-xl">
+                  <span className="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Sector</span>
+                  <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1 truncate">{activeRoute?.zona || 'San Jerónimo'}</p>
+                </div>
               </div>
             </div>
           ) : (
@@ -457,13 +386,13 @@ const MapaEnVivo = () => {
                 <MapPin className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 Puntos Estratégicos de Acopio Autorizados
               </h3>
-              <p className="text-xs text-slate-605 dark:text-slate-400 leading-relaxed font-medium">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
                 Las paradas indicadas en el mapa representan los puntos estratégicos de reciclaje y acopio autorizados en el distrito de <strong>San Jerónimo</strong>. Por favor, deposita tus residuos sólidos generales únicamente en estos puntos en los días y horarios indicados:
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-1">
-                {activeRoute.paradas.map((parada, idx) => (
+                {activeRoute?.paradas.map((parada, idx) => (
                   <div key={idx} className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-850 p-3 rounded-xl flex items-start gap-2.5 hover:border-emerald-500 transition-colors">
-                    <span className="h-5 w-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-450 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">{idx + 1}</span>
+                    <span className="h-5 w-5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400 flex items-center justify-center font-bold text-[10px] flex-shrink-0 mt-0.5">{idx + 1}</span>
                     <div>
                       <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{parada.nombre}</p>
                       <p className="text-[10px] text-slate-500 mt-0.5">Horario estimado: {parada.hora}</p>
@@ -486,12 +415,12 @@ const MapaEnVivo = () => {
             </h3>
             <div className="space-y-3">
               {Object.values(rutas).map((ruta) => {
-                const isSelected = activeRoute.id === ruta.id;
+                const isSelected = activeRoute?.id === ruta.id;
                 const routeKey = ruta.id.replace('Ruta ', '');
                 return (
                   <button
                     key={ruta.id}
-                    onClick={() => { setSelectedRouteId(routeKey); setProgress(0); }}
+                    onClick={() => setSelectedRouteId(routeKey)}
                     className={`w-full border p-4 rounded-2xl text-left transition-all flex justify-between items-center ${
                       isSelected
                         ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 shadow-sm'
@@ -522,39 +451,19 @@ const MapaEnVivo = () => {
                 Paradas de la Ruta
               </h3>
               <div className="space-y-4">
-                {activeRoute.paradas.map((parada, idx) => {
-                  const hasPassed = progress >= parada.progressPercent;
-                  const isCurrent = Math.abs(progress - parada.progressPercent) < 4;
-                  return (
-                    <div key={parada.nombre} className="flex gap-3 items-start relative">
-                      <div className="flex flex-col items-center">
-                        <div className={`h-6 w-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                          isCurrent
-                            ? 'bg-amber-400 border-amber-400 text-slate-950 scale-110 shadow-md shadow-amber-400/20 animate-pulse'
-                            : hasPassed
-                              ? 'bg-emerald-500 border-emerald-500 text-white'
-                              : 'bg-slate-100 dark:bg-slate-900 border-slate-300 dark:border-slate-750 text-slate-500'
-                        }`}>
-                          <span className="text-[10px] font-black">{idx + 1}</span>
-                        </div>
-                        {idx < activeRoute.paradas.length - 1 && (
-                          <div className={`w-0.5 h-10 border-l border-dashed my-1 ${hasPassed ? 'border-emerald-500' : 'border-slate-300 dark:border-slate-750'}`}></div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between gap-2">
-                          <p className={`text-sm font-bold truncate ${isCurrent ? 'text-amber-500 dark:text-amber-400 font-extrabold' : hasPassed ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-700 dark:text-slate-300'}`}>
-                            {parada.nombre}
-                          </p>
-                          <span className="text-[10px] text-slate-500 font-mono flex-shrink-0">{parada.hora}</span>
-                        </div>
-                        <p className="text-[10px] text-slate-500 mt-0.5">
-                          {isCurrent ? 'Recolectando en este punto...' : hasPassed ? 'Recolección Completada' : 'Camión en ruta'}
-                        </p>
+                {activeRoute?.paradas.map((parada, idx) => (
+                  <div key={parada.nombre} className="flex gap-3 items-start relative">
+                    <div className="flex flex-col items-center">
+                      <div className="h-6 w-6 rounded-full border-2 bg-emerald-500 border-emerald-500 text-white flex items-center justify-center">
+                        <span className="text-[10px] font-black">{idx + 1}</span>
                       </div>
                     </div>
-                  );
-                })}
+                    <div>
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{parada.nombre}</p>
+                      <p className="text-[10px] text-slate-500">Horario: {parada.hora}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
 

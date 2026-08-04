@@ -3,17 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Users, 
   CheckCircle, 
-  XCircle, 
   MapPin, 
   LogOut, 
-  Trophy, 
   ShieldAlert, 
   BarChart3, 
   RefreshCw, 
-  Search,
   CheckSquare,
   Shield,
-  FileCheck2,
   Sun,
   Moon,
   Trash2,
@@ -21,13 +17,9 @@ import {
   Edit,
   Activity,
   Map,
-  Play,
-  Pause,
-  RotateCcw,
-  Gauge,
-  Info,
-  Clock,
-  Navigation
+  Star,
+  MessageSquare,
+  Send
 } from 'lucide-react';
 import { authedFetch } from '../api';
 import L from 'leaflet';
@@ -85,68 +77,39 @@ type Ruta = {
   observaciones?: string;
   distancia_restante: string;
   geometria_ruta?: any;
+  lat_actual?: number | null;
+  lng_actual?: number | null;
+  ultima_actualizacion_gps?: string | null;
 };
 
-// Simulation constants for San Jerónimo
-type RutaDetalle = {
-  id: string;
-  zona: string;
-  conductor: string;
-  placa: string;
-  puntos: { lat: number; lng: number }[];
-  paradas: { nombre: string; hora: string; progressPercent: number }[];
+type Incidencia = {
+  id: number;
+  recolector: number;
+  recolector_nombre: string;
+  tipo: string;
+  descripcion: string;
+  estado: 'pendiente' | 'resuelta';
+  respuesta_admin?: string;
+  created_at: string;
 };
 
-const simRutas: Record<string, RutaDetalle> = {
-  'SJ-01': {
-    id: 'Ruta SJ-01',
-    zona: 'Sector Central – Urb. Kennedy',
-    conductor: 'Julio Quispe M.',
-    placa: 'A3T-851',
-    puntos: [
-      { lat: -13.5485, lng: -71.8772 },
-      { lat: -13.5493, lng: -71.8755 },
-      { lat: -13.5505, lng: -71.8740 },
-      { lat: -13.5518, lng: -71.8730 },
-      { lat: -13.5528, lng: -71.8718 },
-      { lat: -13.5535, lng: -71.8705 },
-      { lat: -13.5522, lng: -71.8695 }
-    ],
-    paradas: [
-      { nombre: 'Plaza Principal San Jerónimo', hora: '07:00', progressPercent: 0 },
-      { nombre: 'Mercado San Jerónimo', hora: '07:20', progressPercent: 40 },
-      { nombre: 'Urb. Kennedy – Jr. Simón Bolívar', hora: '07:40', progressPercent: 75 },
-      { nombre: 'Final Urb. Kennedy', hora: '08:00', progressPercent: 100 }
-    ]
-  },
-  'SJ-02': {
-    id: 'Ruta SJ-02',
-    zona: 'Urb. Los Incas – Sector Pillao Matao',
-    conductor: 'Efraín Mamani H.',
-    placa: 'B2R-412',
-    puntos: [
-      { lat: -13.5470, lng: -71.8760 },
-      { lat: -13.5462, lng: -71.8745 },
-      { lat: -13.5455, lng: -71.8730 },
-      { lat: -13.5465, lng: -71.8720 },
-      { lat: -13.5475, lng: -71.8708 },
-      { lat: -13.5490, lng: -71.8698 },
-      { lat: -13.5505, lng: -71.8688 }
-    ],
-    paradas: [
-      { nombre: 'Ingreso Urb. Los Incas', hora: '07:00', progressPercent: 0 },
-      { nombre: 'Jr. Los Incas (Zona Central)', hora: '07:25', progressPercent: 35 },
-      { nombre: 'Inicio Sector Pillao Matao', hora: '07:50', progressPercent: 65 },
-      { nombre: 'Final Pillao Matao', hora: '08:15', progressPercent: 100 }
-    ]
-  }
+type CalificacionServicio = {
+  id: number;
+  ciudadano: number;
+  ciudadano_nombre: string;
+  ruta: number;
+  ruta_fecha: string;
+  recolector_nombre: string;
+  estrellas: number;
+  comentario?: string;
+  created_at: string;
 };
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const [adminName, setAdminName] = useState('Administrador');
-  const [activeTab, setActiveTab] = useState<'stats' | 'evidencias' | 'usuarios' | 'zonas' | 'rutas' | 'monitoreo'>('stats');
+  const [activeTab, setActiveTab] = useState<'stats' | 'evidencias' | 'usuarios' | 'zonas' | 'rutas' | 'monitoreo' | 'incidencias' | 'calificaciones'>('stats');
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
     return (localStorage.getItem('color-theme') as 'light' | 'dark') || 'light';
   });
@@ -156,12 +119,21 @@ const AdminDashboard = () => {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [zonas, setZonas] = useState<Zona[]>([]);
   const [rutas, setRutas] = useState<Ruta[]>([]);
+  const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
+  const [calificaciones, setCalificaciones] = useState<CalificacionServicio[]>([]);
 
   // Estados de carga e info
   const [loadingEvidencias, setLoadingEvidencias] = useState(false);
   const [loadingUsuarios, setLoadingUsuarios] = useState(false);
   const [loadingZonas, setLoadingZonas] = useState(false);
   const [loadingRutas, setLoadingRutas] = useState(false);
+  const [loadingIncidencias, setLoadingIncidencias] = useState(false);
+  const [loadingCalificaciones, setLoadingCalificaciones] = useState(false);
+
+  // Modal / Respuesta Incidencias State
+  const [incidenciaSeleccionada, setIncidenciaSeleccionada] = useState<Incidencia | null>(null);
+  const [respuestaIncidenciaText, setRespuestaIncidenciaText] = useState('');
+  const [submittingRespuestaIncidencia, setSubmittingRespuestaIncidencia] = useState(false);
   const [feedbackMsg, setFeedbackMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
   // Filtros
@@ -204,19 +176,6 @@ const AdminDashboard = () => {
     distancia_restante: '0.0'
   });
 
-  // Simulation State for Monitoreo Tab
-  const [selectedRouteId, setSelectedRouteId] = useState<string>('SJ-01');
-  const [progress, setProgress] = useState<number>(0);
-  const [isPlaying, setIsPlaying] = useState<boolean>(true);
-  const [speedMultiplier, setSpeedMultiplier] = useState<number>(1);
-  const [telemetry, setTelemetry] = useState({
-    velocidad: 0,
-    llenado: 20,
-    peso: 1.5,
-    combustible: 88
-  });
-
-  const activeSimRoute = simRutas[selectedRouteId];
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<L.Map | null>(null);
   const polylineRef = useRef<L.Polyline | null>(null);
@@ -266,8 +225,69 @@ const AdminDashboard = () => {
       cargarUsuarios();
       cargarZonas();
       cargarRutas();
+      cargarIncidencias();
+      cargarCalificaciones();
     }
   }, [isAdmin]);
+
+  const cargarIncidencias = async () => {
+    try {
+      setLoadingIncidencias(true);
+      const res = await authedFetch('/api/incidencias/');
+      if (res.ok) {
+        const data = await res.json();
+        setIncidencias(Array.isArray(data) ? data : data.results || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingIncidencias(false);
+    }
+  };
+
+  const cargarCalificaciones = async () => {
+    try {
+      setLoadingCalificaciones(true);
+      const res = await authedFetch('/api/calificaciones/');
+      if (res.ok) {
+        const data = await res.json();
+        setCalificaciones(Array.isArray(data) ? data : data.results || []);
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoadingCalificaciones(false);
+    }
+  };
+
+  const responderIncidencia = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!incidenciaSeleccionada || !respuestaIncidenciaText.trim()) return;
+    setSubmittingRespuestaIncidencia(true);
+    try {
+      const res = await authedFetch(`/api/incidencias/${incidenciaSeleccionada.id}/`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          respuesta_admin: respuestaIncidenciaText.trim(),
+          estado: 'resuelta'
+        })
+      });
+      if (res.ok) {
+        setFeedbackMsg({ text: `Incidencia #${incidenciaSeleccionada.id} respondida y marcada como resuelta.`, type: 'success' });
+        setIncidenciaSeleccionada(null);
+        setRespuestaIncidenciaText('');
+        cargarIncidencias();
+      } else {
+        setFeedbackMsg({ text: 'Error al enviar respuesta a la incidencia.', type: 'error' });
+      }
+    } catch (err) {
+      console.error(err);
+      setFeedbackMsg({ text: 'Error de conexión al responder incidencia.', type: 'error' });
+    } finally {
+      setSubmittingRespuestaIncidencia(false);
+    }
+  };
 
   const cargarEvidencias = async () => {
     try {
@@ -529,53 +549,18 @@ const AdminDashboard = () => {
     }
   };
 
-  // GPS Simulation engine for admin monitoreo tab
-  useEffect(() => {
-    let interval: number;
-    if (activeTab === 'monitoreo' && isPlaying) {
-      interval = window.setInterval(() => {
-        setProgress((prev) => {
-          if (prev >= 100) return 0;
-          return Math.min(prev + 0.5 * speedMultiplier, 100);
-        });
-      }, 100);
-    }
-    return () => clearInterval(interval);
-  }, [activeTab, isPlaying, speedMultiplier]);
+  const [selectedRealRutaId, setSelectedRealRutaId] = useState<number | null>(null);
 
+  // Poll real routes when monitoreo tab is active
   useEffect(() => {
     if (activeTab === 'monitoreo') {
-      let currentSpeed = 0;
-      if (isPlaying) {
-        const isAtStop = activeSimRoute?.paradas.some((stop) => {
-          const diff = Math.abs(progress - stop.progressPercent);
-          return diff < 3 && stop.progressPercent > 0 && stop.progressPercent < 100;
-        });
-        currentSpeed = isAtStop ? 0 : Math.floor(20 + (Math.sin(progress) * 4) + (Math.random() * 3));
-      }
-      setTelemetry({
-        velocidad: currentSpeed,
-        llenado: 20 + Math.floor(progress * 0.65),
-        peso: Number((1.0 + (progress * 0.032)).toFixed(1)),
-        combustible: Math.max(92 - Math.floor(progress * 0.08), 10)
-      });
+      cargarRutas();
+      const interval = setInterval(cargarRutas, 4000);
+      return () => clearInterval(interval);
     }
-  }, [progress, selectedRouteId, isPlaying, activeTab, activeSimRoute]);
+  }, [activeTab]);
 
-  const getTruckCoords = () => {
-    const pts = activeSimRoute?.puntos || [];
-    if (pts.length === 0) return { lat: -13.5485, lng: -71.8772 };
-    const numSegments = pts.length - 1;
-    const progressPerSegment = 100 / numSegments;
-    const segmentIndex = Math.min(Math.floor(progress / progressPerSegment), numSegments - 1);
-    const startPoint = pts[segmentIndex];
-    const endPoint = pts[segmentIndex + 1];
-    const relativeProgress = (progress % progressPerSegment) / progressPerSegment;
-    return {
-      lat: startPoint.lat + (endPoint.lat - startPoint.lat) * relativeProgress,
-      lng: startPoint.lng + (endPoint.lng - startPoint.lng) * relativeProgress
-    };
-  };
+  const activeRealRuta = rutas.find(r => r.id === selectedRealRutaId) || rutas.find(r => r.estado === 'en_progreso') || rutas[0];
 
   useEffect(() => {
     if (activeTab === 'monitoreo' && mapContainerRef.current && !mapRef.current) {
@@ -603,13 +588,19 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || activeTab !== 'monitoreo' || !activeSimRoute) return;
+    if (!map || activeTab !== 'monitoreo') return;
 
     stopMarkersRef.current.forEach((m) => m.remove());
     stopMarkersRef.current = [];
     if (polylineRef.current) polylineRef.current.remove();
 
-    const latLngs = activeSimRoute.puntos.map((p) => [p.lat, p.lng] as [number, number]);
+    const pts = activeRealRuta?.geometria_ruta || [
+      { lat: -13.5485, lng: -71.8772, nombre: 'Plaza Principal' },
+      { lat: -13.5518, lng: -71.8730, nombre: 'Mercado San Jerónimo' },
+      { lat: -13.5535, lng: -71.8705, nombre: 'Urb. Kennedy' }
+    ];
+
+    const latLngs = pts.map((p: any) => [p.lat, p.lng] as [number, number]);
     const polyline = L.polyline(latLngs, {
       color: '#0284c7',
       weight: 6,
@@ -620,41 +611,36 @@ const AdminDashboard = () => {
 
     map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
 
-    activeSimRoute.paradas.forEach((parada, idx) => {
-      const ptIndex = Math.min(
-        Math.floor((parada.progressPercent / 100) * (activeSimRoute.puntos.length - 1)),
-        activeSimRoute.puntos.length - 1
-      );
-      const pt = activeSimRoute.puntos[ptIndex];
-
+    pts.forEach((parada: any, idx: number) => {
       const paradaIcon = L.divIcon({
         className: 'custom-parada-icon-wrapper',
-        html: `<div id="admin-map-stop-${idx}" class="w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white shadow-lg bg-slate-500 transition-all duration-300">
+        html: `<div class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-lg bg-sky-600">
                  ${idx + 1}
                </div>`,
-        iconSize: [32, 32],
-        iconAnchor: [16, 16]
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
       });
 
-      const marker = L.marker([pt.lat, pt.lng], { icon: paradaIcon })
-        .bindPopup(`<strong>Parada ${idx + 1}: ${parada.nombre}</strong><br/>Hora: ${parada.hora}`)
+      const marker = L.marker([parada.lat, parada.lng], { icon: paradaIcon })
+        .bindPopup(`<strong>Punto ${idx + 1}: ${parada.nombre || 'Parada'}</strong>`)
         .addTo(map);
 
       stopMarkersRef.current.push(marker);
     });
-  }, [selectedRouteId, activeTab, activeSimRoute]);
 
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || activeTab !== 'monitoreo' || !activeSimRoute) return;
-
-    const truckPos = getTruckCoords();
+    // Real truck position
+    let truckPos = { lat: -13.5485, lng: -71.8772 };
+    if (activeRealRuta?.lat_actual && activeRealRuta?.lng_actual) {
+      truckPos = { lat: activeRealRuta.lat_actual, lng: activeRealRuta.lng_actual };
+    } else if (pts.length > 0) {
+      truckPos = { lat: pts[0].lat, lng: pts[0].lng };
+    }
 
     if (!truckMarkerRef.current) {
       const truckIcon = L.divIcon({
         className: 'custom-truck-icon-wrapper',
-        html: `<div class="w-10 h-10 bg-emerald-505 bg-sky-600 rounded-xl border-2 border-white flex items-center justify-center shadow-xl">
-                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        html: `<div class="w-10 h-10 bg-emerald-500 rounded-xl border-2 border-white flex items-center justify-center shadow-xl">
+                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2.5">
                    <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
                    <path d="M19 18h2a1 1 0 0 0 1-1v-5.05a1.009 1.009 0 0 0-.29-.707l-4.07-4.07a1.009 1.009 0 0 0-.707-.29H14" />
                    <circle cx="5.5" cy="18.5" r="2.5" />
@@ -666,27 +652,14 @@ const AdminDashboard = () => {
       });
 
       truckMarkerRef.current = L.marker([truckPos.lat, truckPos.lng], { icon: truckIcon })
-        .bindPopup(`<strong>Camión Recolector</strong><br/>Placa: ${activeSimRoute.placa}`)
+        .bindPopup(`<strong>Camión Recolector</strong><br/>Ubicación en vivo`)
         .addTo(map);
     } else {
       truckMarkerRef.current.setLatLng([truckPos.lat, truckPos.lng]);
     }
+  }, [activeTab, activeRealRuta, rutas]);
 
-    activeSimRoute.paradas.forEach((parada, idx) => {
-      const el = document.getElementById(`admin-map-stop-${idx}`);
-      if (el) {
-        const hasPassed = progress >= parada.progressPercent;
-        const isCurrent = Math.abs(progress - parada.progressPercent) < 4;
-        if (isCurrent) {
-          el.className = "w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-slate-950 shadow-lg bg-amber-400 animate-pulse scale-110";
-        } else if (hasPassed) {
-          el.className = "w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white shadow-lg bg-emerald-500";
-        } else {
-          el.className = "w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-xs font-bold text-white shadow-lg bg-slate-500";
-        }
-      }
-    });
-  }, [progress, activeSimRoute, activeTab]);
+
 
   if (isAdmin === null) {
     return (
@@ -827,6 +800,27 @@ const AdminDashboard = () => {
             >
               <Activity className="h-4 w-4 text-emerald-500" />
               Monitoreo y Telemetría
+            </button>
+            <button
+              onClick={() => setActiveTab('incidencias')}
+              className={`flex items-center justify-between px-4 py-3 rounded-xl text-sm font-bold transition-all text-left ${activeTab === 'incidencias' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-605 dark:text-slate-300 hover:bg-slate-105 dark:hover:bg-slate-805'}`}
+            >
+              <div className="flex items-center gap-3">
+                <MessageSquare className="h-4 w-4 text-amber-500" />
+                Atención a Incidencias
+              </div>
+              {incidencias.filter(i => i.estado === 'pendiente').length > 0 && (
+                <span className="bg-amber-500 text-slate-950 font-black text-xs px-2 py-0.5 rounded-full">
+                  {incidencias.filter(i => i.estado === 'pendiente').length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setActiveTab('calificaciones')}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-bold transition-all text-left ${activeTab === 'calificaciones' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-605 dark:text-slate-300 hover:bg-slate-105 dark:hover:bg-slate-805'}`}
+            >
+              <Star className="h-4 w-4 text-yellow-400 fill-yellow-400" />
+              Calificación del Servicio
             </button>
           </div>
         </aside>
@@ -1210,130 +1204,339 @@ const AdminDashboard = () => {
             </div>
           )}
 
-          {/* Tab 6: Monitoreo GPS y Telemetría (Moved from Citizen to Admin) */}
+{/* Tab 6: Monitoreo GPS y Telemetría (Moved from Citizen to Admin) */}
           {activeTab === 'monitoreo' && (
             <div className="space-y-6 fade-in-up">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h1 className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
-                    <Activity className="h-7 w-7 text-sky-655" /> Monitoreo y Telemetría GPS
+                  <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Activity className="h-7 w-7 text-sky-500" /> Monitoreo y Telemetría GPS Real
                   </h1>
-                  <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">Visualiza los vehículos recolectores en vivo sobre Cusco y audita la telemetría.</p>
+                  <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
+                    Rastreo satelital en vivo transmitido desde el dispositivo móvil de los camiones recolectores.
+                  </p>
                 </div>
-                <div className="bg-white dark:bg-slate-950 p-3.5 rounded-xl border flex items-center gap-2.5 shadow-sm text-xs font-semibold">
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping"></span>
-                  <span>Servidor de GPS En Línea</span>
+                <div className="bg-white dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-2.5 shadow-sm text-xs font-semibold">
+                  <span className={`h-2.5 w-2.5 rounded-full ${activeRealRuta?.lat_actual ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'}`}></span>
+                  <span>{activeRealRuta?.lat_actual ? 'Transmisión GPS Real en Vivo' : 'Servidor GPS Activo'}</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 lg:grid-cols-[1.8fr_1fr] gap-6">
                 
-                {/* Map & Controller */}
+                {/* Map & Real-time Telemetry */}
                 <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl flex flex-col gap-4 shadow-sm">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Mapa Operativo - San Jerónimo</p>
-                      <p className="text-[11px] text-slate-500">Controles de velocidad y reproducción satelital</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Mapa Operativo - San Jerónimo, Cusco</p>
+                      <p className="text-[11px] text-slate-500">
+                        Ruta activa: <strong className="text-sky-600 dark:text-sky-400">{activeRealRuta?.zona_nombre || 'General'}</strong>
+                      </p>
                     </div>
-                    <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-900 border p-1 rounded-lg">
-                      <button onClick={() => setIsPlaying(!isPlaying)} className="p-1 hover:bg-slate-200 rounded">
-                        {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
-                      </button>
-                      <button onClick={() => setProgress(0)} className="p-1 hover:bg-slate-200 rounded">
-                        <RotateCcw className="h-4 w-4" />
-                      </button>
-                      <div className="h-4 w-px bg-slate-200"></div>
-                      {[1, 2.5, 5].map((speed) => (
-                        <button
-                          key={speed}
-                          onClick={() => setSpeedMultiplier(speed)}
-                          className={`px-1.5 py-0.5 text-xs rounded font-bold ${speedMultiplier === speed ? 'bg-sky-505 bg-sky-500 text-white' : 'text-slate-500'}`}
-                        >
-                          {speed}x
-                        </button>
-                      ))}
+                    <div className="flex items-center gap-2 text-xs font-bold bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
+                      <span className="text-slate-500">Estado:</span>
+                      <span className="uppercase text-emerald-600 dark:text-emerald-400">{activeRealRuta?.estado?.replace('_', ' ') || 'Registrada'}</span>
                     </div>
                   </div>
 
                   <div className="relative">
-                    <div ref={mapContainerRef} className="h-[360px] w-full rounded-2xl border bg-slate-100 overflow-hidden relative z-10" />
-                    <div className="absolute left-3 bottom-3 bg-white/95 dark:bg-slate-950/90 border border-slate-200 p-2.5 rounded-lg text-[10px] font-mono shadow z-20">
-                      Lat: {getTruckCoords().lat.toFixed(5)}, Lng: {getTruckCoords().lng.toFixed(5)}
-                    </div>
-                    <div className="absolute right-3 bottom-3 bg-white/95 dark:bg-slate-950/90 border border-slate-200 p-2.5 rounded-lg text-[10px] text-right font-bold text-emerald-650 shadow z-20">
-                      Ruta: {progress.toFixed(0)}%
+                    <div ref={mapContainerRef} className="h-[360px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 overflow-hidden relative z-10" />
+                    <div className="absolute left-3 bottom-3 bg-white/95 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-[10px] font-mono shadow z-20">
+                      {activeRealRuta?.lat_actual && activeRealRuta?.lng_actual ? (
+                        <span className="text-emerald-600 dark:text-emerald-400 font-bold">
+                          GPS Real: Lat {activeRealRuta.lat_actual.toFixed(5)}, Lng {activeRealRuta.lng_actual.toFixed(5)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-500">Posición base: Lat -13.54850, Lng -71.87720</span>
+                      )}
                     </div>
                   </div>
 
-                  {/* Telemetría Panel (Exclusive to admin dashboard) */}
+                  {/* Telemetría Real Panel */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
-                    {[
-                      { label: 'Velocidad Camión', value: `${telemetry.velocidad} km/h` },
-                      { label: 'Capacidad Tolva', value: `${telemetry.llenado}%`, alert: telemetry.llenado > 80 },
-                      { label: 'Carga Recogida', value: `${telemetry.peso} Tons` },
-                      { label: 'Tanque Combustible', value: `${telemetry.combustible}%` }
-                    ].map((item, idx) => (
-                      <div key={idx} className="bg-slate-50 dark:bg-slate-900 border p-3.5 rounded-xl">
-                        <p className="text-[10px] text-slate-500 uppercase font-bold">{item.label}</p>
-                        <p className={`text-lg font-black mt-1 ${item.alert ? 'text-rose-500' : 'text-slate-900 dark:text-white'}`}>{item.value}</p>
-                      </div>
-                    ))}
+                    <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl">
+                      <p className="text-[10px] text-slate-500 uppercase font-bold">Recolector a Cargo</p>
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1 truncate">{activeRealRuta?.recolector_nombre || 'No asignado'}</p>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl">
+                      <p className="text-[10px] text-slate-500 uppercase font-bold">Sector / Zona</p>
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1 truncate">{activeRealRuta?.zona_nombre || 'San Jerónimo'}</p>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl">
+                      <p className="text-[10px] text-slate-500 uppercase font-bold">Horario de Salida</p>
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">{activeRealRuta?.hora_inicio || '07:00'}</p>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl">
+                      <p className="text-[10px] text-slate-500 uppercase font-bold">Última Señal GPS</p>
+                      <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
+                        {activeRealRuta?.ultima_actualizacion_gps
+                          ? new Date(activeRealRuta.ultima_actualizacion_gps).toLocaleTimeString()
+                          : 'En espera'}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Right side selector & Stops list */}
+                {/* Right side selector & Real Stops */}
                 <div className="flex flex-col gap-6">
-                  
-                  {/* Select Route */}
+                  {/* Select Real Route */}
                   <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white mb-3">Selecciona la Unidad</p>
-                    <div className="space-y-2.5">
-                      {Object.values(simRutas).map(r => {
-                        const isSelected = selectedRouteId === r.id.replace('Ruta ', '');
-                        return (
-                          <button
-                            key={r.id}
-                            onClick={() => { setSelectedRouteId(r.id.replace('Ruta ', '')); setProgress(0); }}
-                            className={`w-full border p-3 rounded-xl text-left text-xs ${isSelected ? 'border-sky-500 bg-sky-50 dark:bg-sky-500/10' : 'border-slate-100 hover:bg-slate-50'}`}
-                          >
-                            <p className="font-bold">{r.id}</p>
-                            <p className="text-slate-550 mt-0.5">{r.zona}</p>
-                            <p className="text-[10px] text-slate-500 font-mono mt-0.5">Placa: {r.placa}</p>
-                          </button>
-                        );
-                      })}
-                    </div>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white mb-3">Rutas Registradas en Base de Datos</p>
+                    {rutas.length === 0 ? (
+                      <p className="text-xs text-slate-500">No hay rutas programadas en la base de datos.</p>
+                    ) : (
+                      <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
+                        {rutas.map(r => {
+                          const isSelected = activeRealRuta?.id === r.id;
+                          return (
+                            <button
+                              key={r.id}
+                              onClick={() => setSelectedRealRutaId(r.id)}
+                              className={`w-full border p-3 rounded-xl text-left text-xs transition-colors ${isSelected ? 'border-sky-500 bg-sky-50 dark:bg-sky-500/10' : 'border-slate-100 dark:border-slate-800 hover:bg-slate-50'}`}
+                            >
+                              <div className="flex items-center justify-between">
+                                <p className="font-bold text-slate-900 dark:text-white">Ruta #{r.id} - {r.zona_nombre}</p>
+                                <span className="text-[9px] uppercase font-bold text-emerald-600">{r.estado}</span>
+                              </div>
+                              <p className="text-slate-500 mt-0.5 text-[11px]">Recolector: {r.recolector_nombre}</p>
+                              {r.lat_actual && (
+                                <p className="text-[9px] font-mono text-sky-500 mt-0.5">GPS Transmitiendo</p>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
-                  {/* Stops Timeline */}
-                  <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-6 rounded-3xl shadow-sm flex-1">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white mb-4">Línea de Paradas Realizadas</p>
-                    <div className="space-y-3">
-                      {activeSimRoute?.paradas.map((p, idx) => {
-                        const hasPassed = progress >= p.progressPercent;
-                        return (
-                          <div key={idx} className="flex gap-2 text-xs">
-                            <span className={`h-4.5 w-4.5 rounded-full flex items-center justify-center font-bold text-[9px] border ${hasPassed ? 'bg-emerald-500 border-emerald-500 text-white' : 'bg-slate-100 text-slate-400'}`}>
-                              {idx + 1}
-                            </span>
-                            <div className="flex-1">
-                              <p className={`font-bold ${hasPassed ? 'text-slate-900 dark:text-white' : 'text-slate-400'}`}>{p.nombre}</p>
-                              <span className="text-[10px] text-slate-450 font-mono">{p.hora}</span>
-                            </div>
-                          </div>
-                        );
-                      })}
+                  {/* Real Stops Timeline */}
+                  <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm flex-1">
+                    <p className="text-sm font-bold text-slate-900 dark:text-white mb-4">Puntos de Acopio del Sector</p>
+                    <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
+                      {((activeRealRuta?.geometria_ruta as any[]) || [
+                        { nombre: 'Plaza Principal San Jerónimo' },
+                        { nombre: 'Mercado San Jerónimo (Av. Evitamiento)' },
+                        { nombre: 'Urb. Kennedy – Jr. Simón Bolívar' }
+                      ]).map((p: any, idx: number) => (
+                        <div key={idx} className="flex gap-2 text-xs items-center">
+                          <span className="h-5 w-5 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-[9px] flex-shrink-0">
+                            {idx + 1}
+                          </span>
+                          <p className="font-semibold text-slate-800 dark:text-slate-200">{p.nombre || `Punto ${idx + 1}`}</p>
+                        </div>
+                      ))}
                     </div>
                   </div>
-
                 </div>
 
               </div>
             </div>
           )}
 
+          {/* Tab: Incidencias */}
+          {activeTab === 'incidencias' && (
+            <div className="space-y-6 fade-in-up">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Atención a Incidencias Operativas</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Revisa y responde los reportes emitidos por los recolectores en campo.</p>
+                </div>
+                <button onClick={cargarIncidencias} className="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800 rounded-xl">
+                  <RefreshCw className={`h-4 w-4 ${loadingIncidencias ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-3xl overflow-hidden shadow-sm">
+                {incidencias.length === 0 ? (
+                  <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+                    <CheckCircle className="h-12 w-12 text-emerald-500 mx-auto mb-3" />
+                    <p className="font-bold text-base">No hay incidencias registradas.</p>
+                    <p className="text-xs mt-1">Los recolectores no han reportado problemas en las rutas.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                      <thead className="bg-slate-50 dark:bg-slate-900 text-xs uppercase font-extrabold text-slate-500 border-b border-slate-200 dark:border-slate-800">
+                        <tr>
+                          <th className="py-4 px-6">ID / Tipo</th>
+                          <th className="py-4 px-6">Recolector</th>
+                          <th className="py-4 px-6">Descripción</th>
+                          <th className="py-4 px-6">Estado</th>
+                          <th className="py-4 px-6">Respuesta Admin</th>
+                          <th className="py-4 px-6 text-right">Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
+                        {incidencias.map((inc) => (
+                          <tr key={inc.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
+                            <td className="py-4 px-6">
+                              <span className="font-mono text-xs font-bold text-sky-600 dark:text-sky-400">#{inc.id}</span>
+                              <p className="font-extrabold text-slate-900 dark:text-white mt-0.5">{inc.tipo}</p>
+                            </td>
+                            <td className="py-4 px-6 font-semibold text-slate-800 dark:text-slate-200">{inc.recolector_nombre}</td>
+                            <td className="py-4 px-6 max-w-xs text-xs text-slate-600 dark:text-slate-400">{inc.descripcion}</td>
+                            <td className="py-4 px-6">
+                              <span className={`text-[10px] font-black uppercase px-2.5 py-1 rounded-full ${
+                                inc.estado === 'resuelta' ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300' : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
+                              }`}>
+                                {inc.estado}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-xs italic text-slate-500">
+                              {inc.respuesta_admin || 'Sin respuesta aún'}
+                            </td>
+                            <td className="py-4 px-6 text-right">
+                              <button
+                                onClick={() => { setIncidenciaSeleccionada(inc); setRespuestaIncidenciaText(inc.respuesta_admin || ''); }}
+                                className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs rounded-xl shadow-sm transition-all"
+                              >
+                                Responder
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Tab: Calificaciones */}
+          {activeTab === 'calificaciones' && (
+            <div className="space-y-6 fade-in-up">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white">Métricas de Calificación del Servicio</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400">Retroalimentación directa enviada por los ciudadanos sobre el servicio de recolección.</p>
+                </div>
+                <button onClick={cargarCalificaciones} className="p-2 text-slate-500 hover:text-slate-900 dark:hover:text-white border border-slate-200 dark:border-slate-800 rounded-xl">
+                  <RefreshCw className={`h-4 w-4 ${loadingCalificaciones ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              {/* Resumen Card */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-5 rounded-3xl shadow-sm">
+                  <span className="text-xs font-bold text-slate-500 uppercase">Promedio General</span>
+                  <div className="flex items-center gap-2 mt-2">
+                    <Star className="h-7 w-7 text-yellow-400 fill-yellow-400" />
+                    <span className="text-3xl font-black text-slate-900 dark:text-white">
+                      {calificaciones.length > 0
+                        ? (calificaciones.reduce((acc, c) => acc + c.estrellas, 0) / calificaciones.length).toFixed(1)
+                        : '5.0'}
+                    </span>
+                    <span className="text-xs text-slate-400">/ 5.0</span>
+                  </div>
+                </div>
+                <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-5 rounded-3xl shadow-sm">
+                  <span className="text-xs font-bold text-slate-500 uppercase">Total Evaluaciones</span>
+                  <p className="text-3xl font-black text-slate-900 dark:text-white mt-2">{calificaciones.length}</p>
+                </div>
+                <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 p-5 rounded-3xl shadow-sm">
+                  <span className="text-xs font-bold text-slate-500 uppercase">Satisfacción</span>
+                  <p className="text-3xl font-black text-emerald-600 dark:text-emerald-400 mt-2">
+                    {calificaciones.length > 0
+                      ? `${Math.round((calificaciones.filter(c => c.estrellas >= 4).length / calificaciones.length) * 100)}%`
+                      : '100%'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-3xl overflow-hidden shadow-sm">
+                {calificaciones.length === 0 ? (
+                  <div className="p-12 text-center text-slate-500 dark:text-slate-400">
+                    <Star className="h-12 w-12 text-yellow-400 mx-auto mb-3" />
+                    <p className="font-bold text-base">No hay calificaciones enviadas aún.</p>
+                    <p className="text-xs mt-1">Los vecinos podrán calificar cuando se completen las rutas programadas.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+                      <thead className="bg-slate-50 dark:bg-slate-900 text-xs uppercase font-extrabold text-slate-500 border-b border-slate-200 dark:border-slate-850">
+                        <tr>
+                          <th className="py-4 px-6">Ciudadano</th>
+                          <th className="py-4 px-6">Ruta / Fecha</th>
+                          <th className="py-4 px-6">Recolector</th>
+                          <th className="py-4 px-6">Puntuación</th>
+                          <th className="py-4 px-6">Comentario</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
+                        {calificaciones.map((cal) => (
+                          <tr key={cal.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-900/50 transition-colors">
+                            <td className="py-4 px-6 font-bold text-slate-900 dark:text-white">{cal.ciudadano_nombre}</td>
+                            <td className="py-4 px-6 text-xs text-slate-600 dark:text-slate-400 font-mono">Ruta #{cal.ruta} ({cal.ruta_fecha})</td>
+                            <td className="py-4 px-6 font-semibold text-slate-700 dark:text-slate-300">{cal.recolector_nombre}</td>
+                            <td className="py-4 px-6">
+                              <div className="flex items-center gap-1 text-yellow-400">
+                                {[...Array(5)].map((_, i) => (
+                                  <Star key={i} className={`h-4 w-4 ${i < cal.estrellas ? 'fill-yellow-400' : 'text-slate-300 dark:text-slate-700'}`} />
+                                ))}
+                              </div>
+                            </td>
+                            <td className="py-4 px-6 text-xs text-slate-600 dark:text-slate-400 italic">{cal.comentario || 'Sin comentario adicional'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
         </main>
       </div>
+
+      {/* MODAL RESPONDER INCIDENCIA */}
+      {incidenciaSeleccionada && (
+        <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <form onSubmit={responderIncidencia} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-lg space-y-4 shadow-2xl">
+            <h2 className="text-xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <MessageSquare className="h-5 w-5 text-sky-500" />
+              Responder Incidencia #{incidenciaSeleccionada.id}
+            </h2>
+
+            <div className="bg-slate-50 dark:bg-slate-950 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs space-y-2">
+              <p><strong className="text-slate-700 dark:text-slate-300">Recolector:</strong> {incidenciaSeleccionada.recolector_nombre}</p>
+              <p><strong className="text-slate-700 dark:text-slate-300">Tipo:</strong> {incidenciaSeleccionada.tipo}</p>
+              <p><strong className="text-slate-700 dark:text-slate-300">Detalle del problema:</strong> {incidenciaSeleccionada.descripcion}</p>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-500 uppercase mb-1">Respuesta del Administrador</label>
+              <textarea
+                required
+                rows={4}
+                value={respuestaIncidenciaText}
+                onChange={(e) => setRespuestaIncidenciaText(e.target.value)}
+                placeholder="Escribe las acciones correctivas o instrucciones para el recolector..."
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={() => { setIncidenciaSeleccionada(null); setRespuestaIncidenciaText(''); }}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs py-3 rounded-xl"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                disabled={submittingRespuestaIncidencia}
+                className="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs py-3 rounded-xl shadow-md flex items-center justify-center gap-2"
+              >
+                <Send className="h-4 w-4" />
+                {submittingRespuestaIncidencia ? 'Enviando...' : 'Enviar Respuesta'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {/* Modales CRUD */}
 

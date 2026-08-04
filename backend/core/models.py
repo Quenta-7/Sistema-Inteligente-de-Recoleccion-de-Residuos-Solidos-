@@ -99,6 +99,8 @@ class Evidencia(models.Model):
     ecopuntos = models.IntegerField(default=50)  # puntos otorgados
     estado = models.CharField(max_length=20, choices=EstadoReporte.choices, default=EstadoReporte.NUEVO)
     direccion_entrega = models.CharField(max_length=255, null=True, blank=True)
+    latitud = models.FloatField(null=True, blank=True)
+    longitud = models.FloatField(null=True, blank=True)
     horario_entrega = models.ForeignKey(Horario, on_delete=models.SET_NULL, null=True, blank=True, related_name='evidencias')
     validador = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='evidencias_validadas')
     fecha_validacion = models.DateTimeField(null=True, blank=True)
@@ -167,6 +169,9 @@ class Ruta(models.Model):
     fecha_hora_reporte = models.DateTimeField(null=True, blank=True)
     distancia_restante = models.DecimalField(max_digits=5, decimal_places=2, default=0.0)
     geometria_ruta = models.JSONField(null=True, blank=True)
+    lat_actual = models.FloatField(null=True, blank=True)
+    lng_actual = models.FloatField(null=True, blank=True)
+    ultima_actualizacion_gps = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         ordering = ['fecha', 'hora_inicio']

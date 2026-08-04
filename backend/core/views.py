@@ -254,8 +254,9 @@ class ConsultarDniView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         import requests
+        import os
         try:
-            token = "sk_14327.Mp0kGu1vUedcnvCZNFpFFss0NrUEOZ8D"
+            token = os.environ.get('RENIEC_API_TOKEN', 'sk_14327.Mp0kGu1vUedcnvCZNFpFFss0NrUEOZ8D')
             url = f"https://api.decolecta.com/v1/reniec/dni?numero={dni}"
             headers = {
                 'Authorization': f'Bearer {token}',
@@ -435,6 +436,13 @@ class RutaViewSet(viewsets.ModelViewSet):
                 if user.zona:
                     return Ruta.objects.filter(zona=user.zona)
         return Ruta.objects.none()
+
+    def perform_update(self, serializer):
+        from django.utils import timezone
+        if 'lat_actual' in serializer.validated_data or 'lng_actual' in serializer.validated_data:
+            serializer.save(ultima_actualizacion_gps=timezone.now())
+        else:
+            serializer.save()
 
 class IncidenciaViewSet(viewsets.ModelViewSet):
     serializer_class = IncidenciaSerializer
