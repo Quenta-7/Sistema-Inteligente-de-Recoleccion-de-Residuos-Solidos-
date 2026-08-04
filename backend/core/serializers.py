@@ -1,6 +1,6 @@
 # backend/core/serializers.py
 from rest_framework import serializers
-from .models import Usuario, Zona, Horario, Reporte, Evidencia, Notificacion, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio
+from .models import Usuario, Zona, Horario, Reporte, Evidencia, Notificacion, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio, BitacoraRuta
 from django.contrib.auth import authenticate
 
 class ZonaSerializer(serializers.ModelSerializer):
@@ -84,6 +84,7 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
 class UsuarioAdminSerializer(serializers.ModelSerializer):
     foto_perfil_url = serializers.SerializerMethodField()
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True, min_length=8)
 
     def get_foto_perfil_url(self, obj):
         if obj.foto_perfil:
@@ -95,9 +96,8 @@ class UsuarioAdminSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ['id', 'email', 'nombre_completo', 'rol', 'zona', 'telefono', 'activo', 'ecopuntos', 'acepta_terminos', 'fecha_aceptacion_terminos', 'foto_perfil', 'foto_perfil_url']
+        fields = ['id', 'email', 'nombre_completo', 'rol', 'zona', 'telefono', 'activo', 'ecopuntos', 'acepta_terminos', 'fecha_aceptacion_terminos', 'foto_perfil', 'foto_perfil_url', 'password']
         read_only_fields = ['id', 'fecha_aceptacion_terminos']
-
 class RegistroSerializer(serializers.ModelSerializer):
     dni = serializers.CharField(
         write_only=True,
@@ -195,9 +195,18 @@ class LoginSerializer(serializers.Serializer):
         data['usuario'] = usuario
         return data
 
+class BitacoraRutaSerializer(serializers.ModelSerializer):
+    usuario_nombre = serializers.CharField(source='usuario.nombre_completo', read_only=True)
+
+    class Meta:
+        model = BitacoraRuta
+        fields = ['id', 'ruta', 'usuario', 'usuario_nombre', 'estado_anterior', 'estado_nuevo', 'observaciones', 'fecha_hora']
+        read_only_fields = ['id', 'usuario', 'fecha_hora']
+
 class RutaSerializer(serializers.ModelSerializer):
     recolector_nombre = serializers.CharField(source='recolector.nombre_completo', read_only=True)
     zona_nombre = serializers.CharField(source='zona.nombre', read_only=True)
+    bitacora = BitacoraRutaSerializer(many=True, read_only=True)
 
     class Meta:
         model = Ruta
