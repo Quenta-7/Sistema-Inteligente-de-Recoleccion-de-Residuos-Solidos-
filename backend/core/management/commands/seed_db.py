@@ -34,97 +34,65 @@ class Command(BaseCommand):
         self.stdout.write('Creando sectores/zonas de San Jerónimo...')
         zonas_data = [
             {
-                'nombre': 'Sector Central San Jerónimo',
+                'nombre': 'Cuadrante Este – Urb. Larapa Residencial & Larapa Grande & Pata Pata',
                 'codigo': 'SJE001',
-                'descripcion': 'El centro del distrito, alrededor de la Plaza Principal',
+                'descripcion': 'Sector Este: Urb. Larapa Residencial, Larapa Grande y Pata Pata',
                 'geometria': {
                     'type': 'Polygon',
                     'coordinates': [[
-                        [-71.8800, -13.5470],
-                        [-71.8800, -13.5510],
-                        [-71.8760, -13.5510],
-                        [-71.8760, -13.5470],
-                        [-71.8800, -13.5470]
+                        [-71.8740, -13.5500],
+                        [-71.8740, -13.5560],
+                        [-71.8600, -13.5560],
+                        [-71.8600, -13.5500],
+                        [-71.8740, -13.5500]
                     ]]
                 },
                 'activa': True
             },
             {
-                'nombre': 'Urb. Kennedy',
+                'nombre': 'Cuadrante Noreste – Urb. Versalles & Kantu & Huayna Picol Norte',
                 'codigo': 'SJE002',
-                'descripcion': 'Urbanización Kennedy, sector residencial',
+                'descripcion': 'Sector Noreste: Urb. Versalles, Sector Kantu de Larapa, APV Huayna Picol Norte',
                 'geometria': {
                     'type': 'Polygon',
                     'coordinates': [[
-                        [-71.8760, -13.5500],
-                        [-71.8760, -13.5540],
-                        [-71.8720, -13.5540],
-                        [-71.8720, -13.5500],
-                        [-71.8760, -13.5500]
+                        [-71.8740, -13.5410],
+                        [-71.8740, -13.5500],
+                        [-71.8600, -13.5500],
+                        [-71.8600, -13.5410],
+                        [-71.8740, -13.5410]
                     ]]
                 },
                 'activa': True
             },
             {
-                'nombre': 'Urb. Los Incas',
+                'nombre': 'Cuadrante Noroeste – Santa Rosa Alta & Mirador & Conchacalla Alta',
                 'codigo': 'SJE003',
-                'descripcion': 'Urbanización Los Incas',
+                'descripcion': 'Sector Noroeste: Urb. Santa Rosa Alta, APV Pampa Chanca Alta, APV Mirador Norte y Conchacalla Alta',
                 'geometria': {
                     'type': 'Polygon',
                     'coordinates': [[
-                        [-71.8780, -13.5450],
-                        [-71.8780, -13.5490],
-                        [-71.8740, -13.5490],
-                        [-71.8740, -13.5450],
-                        [-71.8780, -13.5450]
+                        [-71.8860, -13.5350],
+                        [-71.8860, -13.5500],
+                        [-71.8740, -13.5500],
+                        [-71.8740, -13.5350],
+                        [-71.8860, -13.5350]
                     ]]
                 },
                 'activa': True
             },
             {
-                'nombre': 'Sector Pillao Matao',
+                'nombre': 'Cuadrante Suroeste – Pillao Matao Sur & Chimpahuaylla Sur & Retamales Sur',
                 'codigo': 'SJE004',
-                'descripcion': 'Zona de Pillao Matao',
+                'descripcion': 'Sector Suroeste: Sector Chimpahuaylla Sur, Pillao Matao Sur, APV Los Retamales Sur',
                 'geometria': {
                     'type': 'Polygon',
                     'coordinates': [[
-                        [-71.8810, -13.5530],
-                        [-71.8810, -13.5570],
-                        [-71.8770, -13.5570],
-                        [-71.8770, -13.5530],
-                        [-71.8810, -13.5530]
-                    ]]
-                },
-                'activa': True
-            },
-            {
-                'nombre': 'Urb. Santa Rosa',
-                'codigo': 'SJE005',
-                'descripcion': 'Urbanización Santa Rosa',
-                'geometria': {
-                    'type': 'Polygon',
-                    'coordinates': [[
-                        [-71.8770, -13.5480],
-                        [-71.8770, -13.5520],
-                        [-71.8730, -13.5520],
-                        [-71.8730, -13.5480],
-                        [-71.8770, -13.5480]
-                    ]]
-                },
-                'activa': True
-            },
-            {
-                'nombre': 'Sector Conchacalla',
-                'codigo': 'SJE006',
-                'descripcion': 'Sector Conchacalla',
-                'geometria': {
-                    'type': 'Polygon',
-                    'coordinates': [[
-                        [-71.8820, -13.5460],
-                        [-71.8820, -13.5500],
-                        [-71.8780, -13.5500],
-                        [-71.8780, -13.5460],
-                        [-71.8820, -13.5460]
+                        [-71.8860, -13.5500],
+                        [-71.8860, -13.5580],
+                        [-71.8740, -13.5580],
+                        [-71.8740, -13.5500],
+                        [-71.8860, -13.5500]
                     ]]
                 },
                 'activa': True
@@ -201,12 +169,82 @@ class Command(BaseCommand):
             {
                 'email': 'recolector@residuos.com',
                 'username': 'recolector',
-                'nombre_completo': 'Recolector San Jerónimo',
+                'nombre_completo': 'Recolector 01 – Ing. Marco Antonio Quispe (Placa: E1M-908)',
                 'password': make_password('pass123'),
                 'rol': 'recolector',
                 'dni': '40000001',
                 'zona': zonas_creadas.get('SJE001'),
                 'telefono': '+51987654321'
+            },
+            {
+                'email': 'recolector2@residuos.com',
+                'username': 'recolector2',
+                'nombre_completo': 'Recolector 02 – Carlos Alberto Huamán (Placa: E1M-909)',
+                'password': make_password('pass123'),
+                'rol': 'recolector',
+                'dni': '40000002',
+                'zona': zonas_creadas.get('SJE001'),
+                'telefono': '+51987654322'
+            },
+            {
+                'email': 'recolector3@residuos.com',
+                'username': 'recolector3',
+                'nombre_completo': 'Recolector 03 – Juan Carlos Mamani (Placa: E2M-745)',
+                'password': make_password('pass123'),
+                'rol': 'recolector',
+                'dni': '40000003',
+                'zona': zonas_creadas.get('SJE002'),
+                'telefono': '+51987654323'
+            },
+            {
+                'email': 'recolector4@residuos.com',
+                'username': 'recolector4',
+                'nombre_completo': 'Recolector 04 – Percy Alexander Cutipa (Placa: E2M-746)',
+                'password': make_password('pass123'),
+                'rol': 'recolector',
+                'dni': '40000004',
+                'zona': zonas_creadas.get('SJE002'),
+                'telefono': '+51987654324'
+            },
+            {
+                'email': 'recolector5@residuos.com',
+                'username': 'recolector5',
+                'nombre_completo': 'Recolector 05 – Roberto Mendoza (Placa: E3M-512)',
+                'password': make_password('pass123'),
+                'rol': 'recolector',
+                'dni': '40000005',
+                'zona': zonas_creadas.get('SJE003'),
+                'telefono': '+51987654325'
+            },
+            {
+                'email': 'recolector6@residuos.com',
+                'username': 'recolector6',
+                'nombre_completo': 'Recolector 06 – Víctor Raúl Champi (Placa: E3M-513)',
+                'password': make_password('pass123'),
+                'rol': 'recolector',
+                'dni': '40000006',
+                'zona': zonas_creadas.get('SJE003'),
+                'telefono': '+51987654326'
+            },
+            {
+                'email': 'recolector7@residuos.com',
+                'username': 'recolector7',
+                'nombre_completo': 'Recolector 07 – David Ramos V. (Placa: E4M-902)',
+                'password': make_password('pass123'),
+                'rol': 'recolector',
+                'dni': '40000007',
+                'zona': zonas_creadas.get('SJE004'),
+                'telefono': '+51987654327'
+            },
+            {
+                'email': 'recolector8@residuos.com',
+                'username': 'recolector8',
+                'nombre_completo': 'Recolector 08 – José Luis Condori (Placa: E4M-903)',
+                'password': make_password('pass123'),
+                'rol': 'recolector',
+                'dni': '40000008',
+                'zona': zonas_creadas.get('SJE004'),
+                'telefono': '+51987654328'
             },
         ]
 
@@ -227,7 +265,7 @@ class Command(BaseCommand):
         # Tipo de residuo: Residuos Generales (recolección general, sin separación por tipo).
         self.stdout.write('Creando horarios de recolección San Jerónimo...')
         horarios_data = [
-            # Lunes: Sector Central (SJE001) + Urb. Kennedy (SJE002) — turno mañana
+            # Lunes: Cuadrante Este (SJE001) — turno mañana
             {
                 'zona_codigo': 'SJE001',
                 'dia': 'lunes',
@@ -235,6 +273,7 @@ class Command(BaseCommand):
                 'hora_fin': time(10, 0),
                 'tipos_residuo': ['Residuos Generales']
             },
+            # Lunes: Cuadrante Noreste (SJE002) — turno mañana
             {
                 'zona_codigo': 'SJE002',
                 'dia': 'lunes',
@@ -242,7 +281,7 @@ class Command(BaseCommand):
                 'hora_fin': time(10, 0),
                 'tipos_residuo': ['Residuos Generales']
             },
-            # Martes: Urb. Los Incas (SJE003) + Sector Pillao Matao (SJE004) — turno mañana
+            # Martes: Cuadrante Noroeste (SJE003) — turno mañana
             {
                 'zona_codigo': 'SJE003',
                 'dia': 'martes',
@@ -250,6 +289,7 @@ class Command(BaseCommand):
                 'hora_fin': time(10, 0),
                 'tipos_residuo': ['Residuos Generales']
             },
+            # Martes: Cuadrante Suroeste (SJE004) — turno mañana
             {
                 'zona_codigo': 'SJE004',
                 'dia': 'martes',
@@ -257,29 +297,23 @@ class Command(BaseCommand):
                 'hora_fin': time(10, 0),
                 'tipos_residuo': ['Residuos Generales']
             },
-            # Miércoles: Urb. Santa Rosa (SJE005) + Sector Conchacalla (SJE006) — turno mañana
-            {
-                'zona_codigo': 'SJE005',
-                'dia': 'miercoles',
-                'hora_inicio': time(7, 0),
-                'hora_fin': time(10, 0),
-                'tipos_residuo': ['Residuos Generales']
-            },
-            {
-                'zona_codigo': 'SJE006',
-                'dia': 'miercoles',
-                'hora_inicio': time(7, 0),
-                'hora_fin': time(10, 0),
-                'tipos_residuo': ['Residuos Generales']
-            },
-            # Jueves: Sector Central (SJE001) + Urb. Los Incas (SJE003) — segundo recorrido, turno tarde
+            # Miércoles: Cuadrante Este (SJE001) — segundo recorrido, turno tarde
             {
                 'zona_codigo': 'SJE001',
-                'dia': 'jueves',
+                'dia': 'miercoles',
                 'hora_inicio': time(15, 0),
                 'hora_fin': time(18, 0),
                 'tipos_residuo': ['Residuos Generales']
             },
+            # Miércoles: Cuadrante Noreste (SJE002) — segundo recorrido, turno tarde
+            {
+                'zona_codigo': 'SJE002',
+                'dia': 'miercoles',
+                'hora_inicio': time(15, 0),
+                'hora_fin': time(18, 0),
+                'tipos_residuo': ['Residuos Generales']
+            },
+            # Jueves: Cuadrante Noroeste (SJE003) — segundo recorrido, turno tarde
             {
                 'zona_codigo': 'SJE003',
                 'dia': 'jueves',
@@ -287,31 +321,39 @@ class Command(BaseCommand):
                 'hora_fin': time(18, 0),
                 'tipos_residuo': ['Residuos Generales']
             },
-            # Viernes: Urb. Kennedy (SJE002) + Urb. Santa Rosa (SJE005) — segundo recorrido, turno tarde
-            {
-                'zona_codigo': 'SJE002',
-                'dia': 'viernes',
-                'hora_inicio': time(15, 0),
-                'hora_fin': time(18, 0),
-                'tipos_residuo': ['Residuos Generales']
-            },
-            {
-                'zona_codigo': 'SJE005',
-                'dia': 'viernes',
-                'hora_inicio': time(15, 0),
-                'hora_fin': time(18, 0),
-                'tipos_residuo': ['Residuos Generales']
-            },
-            # Sábado: Sector Pillao Matao (SJE004) + Sector Conchacalla (SJE006) — segundo recorrido, turno mañana
+            # Jueves: Cuadrante Suroeste (SJE004) — segundo recorrido, turno tarde
             {
                 'zona_codigo': 'SJE004',
+                'dia': 'jueves',
+                'hora_inicio': time(15, 0),
+                'hora_fin': time(18, 0),
+                'tipos_residuo': ['Residuos Generales']
+            },
+            # Viernes: Cuadrante Este (SJE001) + Noroeste (SJE003) — turno mañana
+            {
+                'zona_codigo': 'SJE001',
+                'dia': 'viernes',
+                'hora_inicio': time(7, 0),
+                'hora_fin': time(10, 0),
+                'tipos_residuo': ['Residuos Generales']
+            },
+            {
+                'zona_codigo': 'SJE003',
+                'dia': 'viernes',
+                'hora_inicio': time(7, 0),
+                'hora_fin': time(10, 0),
+                'tipos_residuo': ['Residuos Generales']
+            },
+            # Sábado: Cuadrante Noreste (SJE002) + Suroeste (SJE004) — turno mañana
+            {
+                'zona_codigo': 'SJE002',
                 'dia': 'sabado',
                 'hora_inicio': time(7, 0),
                 'hora_fin': time(10, 0),
                 'tipos_residuo': ['Residuos Generales']
             },
             {
-                'zona_codigo': 'SJE006',
+                'zona_codigo': 'SJE004',
                 'dia': 'sabado',
                 'hora_inicio': time(7, 0),
                 'hora_fin': time(10, 0),
@@ -472,67 +514,117 @@ class Command(BaseCommand):
             except Exception:
                 return waypoints
 
-        # Ruta SJ-01: Plaza Principal → Jr. Cusco → Av. Evitamiento → Mercado San Jerónimo
+        # Ruta SJ-01: Cuadrante Este – Urb. Larapa Residencial & Larapa Grande & Pata Pata
         waypoints_sj01 = [
-            {"lat": -13.5485, "lng": -71.8772, "nombre": "Plaza Principal San Jerónimo"},
-            {"lat": -13.5493, "lng": -71.8755, "nombre": "Jr. Cusco"},
-            {"lat": -13.5510, "lng": -71.8742, "nombre": "Av. Evitamiento"},
-            {"lat": -13.5522, "lng": -71.8730, "nombre": "Mercado San Jerónimo"}
+            {"lat": -13.5510, "lng": -71.8740, "nombre": "Salida: Base Operativa Municipal"},
+            {"lat": -13.5525, "lng": -71.8705, "nombre": "Calle Los Álamos (Larapa Residencial)"},
+            {"lat": -13.5515, "lng": -71.8680, "nombre": "Av. Larapa Central"},
+            {"lat": -13.5525, "lng": -71.8655, "nombre": "Urb. Larapa Grande"},
+            {"lat": -13.5545, "lng": -71.8620, "nombre": "Sector Pata Pata Residencial"},
+            {"lat": -13.5505, "lng": -71.8715, "nombre": "Retorno: Av. Universidad"},
+            {"lat": -13.5510, "lng": -71.8740, "nombre": "Retorno: Base Operativa Municipal"}
         ]
         geometria_ruta_sj01 = get_street_route(waypoints_sj01)
 
-        # Ruta SJ-02: Urb. Kennedy → Urb. Los Incas → Sector Conchacalla
+        # Ruta SJ-02: Cuadrante Noreste (Arriba a la Derecha) – Versalles & Kantu & Huayna Picol Norte
         waypoints_sj02 = [
-            {"lat": -13.5520, "lng": -71.8740, "nombre": "Urb. Kennedy"},
-            {"lat": -13.5470, "lng": -71.8760, "nombre": "Urb. Los Incas"},
-            {"lat": -13.5480, "lng": -71.8800, "nombre": "Sector Conchacalla"}
+            {"lat": -13.5510, "lng": -71.8740, "nombre": "Salida: Base Operativa Municipal"},
+            {"lat": -13.5480, "lng": -71.8680, "nombre": "Sector Kantu de Larapa"},
+            {"lat": -13.5450, "lng": -71.8650, "nombre": "Urb. Versalles (Arriba Derecha)"},
+            {"lat": -13.5415, "lng": -71.8620, "nombre": "APV Huayna Picol Norte"},
+            {"lat": -13.5440, "lng": -71.8660, "nombre": "APV San Antonio Norte"},
+            {"lat": -13.5490, "lng": -71.8710, "nombre": "Av. Collana Norte"},
+            {"lat": -13.5510, "lng": -71.8740, "nombre": "Retorno: Base Operativa Municipal"}
         ]
         geometria_ruta_sj02 = get_street_route(waypoints_sj02)
 
-        if recolector and zona_central and zona_kennedy:
+        # Ruta SJ-03: Cuadrante Noroeste (Arriba a la Izquierda) – Santa Rosa Alta & Mirador & Conchacalla Alta
+        waypoints_sj03 = [
+            {"lat": -13.5510, "lng": -71.8740, "nombre": "Salida: Base Operativa Municipal"},
+            {"lat": -13.5450, "lng": -71.8785, "nombre": "Urb. Santa Rosa Alta"},
+            {"lat": -13.5420, "lng": -71.8800, "nombre": "APV Pampa Chanca Alta"},
+            {"lat": -13.5380, "lng": -71.8815, "nombre": "APV Mirador San Jerónimo (Laderas Altas)"},
+            {"lat": -13.5400, "lng": -71.8835, "nombre": "APV Conchacalla Alta"},
+            {"lat": -13.5470, "lng": -71.8780, "nombre": "Bajada Conchacalla"},
+            {"lat": -13.5510, "lng": -71.8740, "nombre": "Retorno: Base Operativa Municipal"}
+        ]
+        geometria_ruta_sj03 = get_street_route(waypoints_sj03)
+
+        # Ruta SJ-04: Cuadrante Suroeste (Abajo a la Izquierda) – Pillao Matao Sur & Chimpahuaylla Sur & Retamales Sur
+        waypoints_sj04 = [
+            {"lat": -13.5510, "lng": -71.8740, "nombre": "Salida: Base Operativa Municipal"},
+            {"lat": -13.5525, "lng": -71.8770, "nombre": "Sector Chimpahuaylla Sur"},
+            {"lat": -13.5535, "lng": -71.8805, "nombre": "Pillao Matao Sur"},
+            {"lat": -13.5545, "lng": -71.8830, "nombre": "APV Los Retamales Sur"},
+            {"lat": -13.5560, "lng": -71.8860, "nombre": "Límite San Sebastián Sur"},
+            {"lat": -13.5530, "lng": -71.8790, "nombre": "Retorno Av. Cusco Sur"},
+            {"lat": -13.5510, "lng": -71.8740, "nombre": "Retorno: Base Operativa Municipal"}
+        ]
+        geometria_ruta_sj04 = get_street_route(waypoints_sj04)
+
+        zona_este = zonas_creadas.get('SJE001')
+        zona_noreste = zonas_creadas.get('SJE002')
+        zona_noroeste = zonas_creadas.get('SJE003')
+        zona_suroeste = zonas_creadas.get('SJE004')
+
+        if recolector and zona_este and zona_noreste and zona_noroeste and zona_suroeste:
             # Ruta completada (SJ-01 ayer)
             ruta_completada, _ = Ruta.objects.get_or_create(
                 recolector=recolector,
-                zona=zona_central,
+                zona=zona_este,
                 fecha=hoy - timedelta(days=1),
                 hora_inicio=time(7, 0),
                 hora_fin_estimada=time(10, 0),
                 defaults={
                     'estado': Ruta.EstadoRuta.COMPLETADA,
-                    'observaciones': 'Ruta SJ-01 completada sin novedades. Plaza Principal → Mercado San Jerónimo.',
+                    'observaciones': 'Ruta SJ-01 completada sin novedades. Cuadrante Este: Larapa Residencial → Larapa Grande → Pata Pata.',
                     'geometria_ruta': geometria_ruta_sj01,
                 }
             )
 
-            # Ruta en progreso (SJ-01 hoy)
+            # Ruta en progreso (SJ-02 hoy)
             ruta_hoy, _ = Ruta.objects.get_or_create(
                 recolector=recolector,
-                zona=zona_central,
+                zona=zona_noreste,
                 fecha=hoy,
                 hora_inicio=time(7, 0),
                 hora_fin_estimada=time(10, 0),
                 defaults={
                     'estado': Ruta.EstadoRuta.EN_PROGRESO,
-                    'observaciones': 'Ruta SJ-01 en ejecución. Recorrido por Sector Central San Jerónimo.',
-                    'geometria_ruta': geometria_ruta_sj01,
+                    'observaciones': 'Ruta SJ-02 en ejecución. Cuadrante Noreste: Versalles → Kantu → Huayna Picol Norte.',
+                    'geometria_ruta': geometria_ruta_sj02,
                 }
             )
 
-            # Ruta programada (SJ-02 mañana)
+            # Ruta programada (SJ-03 mañana)
             ruta_manana, _ = Ruta.objects.get_or_create(
                 recolector=recolector,
-                zona=zona_kennedy,
+                zona=zona_noroeste,
                 fecha=manana,
                 hora_inicio=time(7, 0),
                 hora_fin_estimada=time(10, 0),
                 defaults={
                     'estado': Ruta.EstadoRuta.PROGRAMADA,
-                    'observaciones': 'Ruta SJ-02 programada. Urb. Kennedy → Urb. Los Incas → Conchacalla.',
-                    'geometria_ruta': geometria_ruta_sj02,
+                    'observaciones': 'Ruta SJ-03 programada. Cuadrante Noroeste: Santa Rosa Alta → Mirador → Conchacalla Alta.',
+                    'geometria_ruta': geometria_ruta_sj03,
                 }
             )
 
-            self.stdout.write(self.style.SUCCESS('[OK] Rutas San Jerónimo creadas (SJ-01, SJ-02)'))
+            # Ruta programada (SJ-04 pasado mañana)
+            ruta_pasado_manana, _ = Ruta.objects.get_or_create(
+                recolector=recolector,
+                zona=zona_suroeste,
+                fecha=manana + timedelta(days=1),
+                hora_inicio=time(7, 0),
+                hora_fin_estimada=time(10, 0),
+                defaults={
+                    'estado': Ruta.EstadoRuta.PROGRAMADA,
+                    'observaciones': 'Ruta SJ-04 programada. Cuadrante Suroeste: Pillao Matao Sur → Chimpahuaylla Sur → Retamales Sur.',
+                    'geometria_ruta': geometria_ruta_sj04,
+                }
+            )
+
+            self.stdout.write(self.style.SUCCESS('[OK] Rutas San Jerónimo creadas (SJ-01 a SJ-04)'))
 
             # Calificación para la ruta completada
             if ciudadano:
@@ -569,8 +661,8 @@ class Command(BaseCommand):
         # 7. CREAR EVIDENCIAS - EcoPuntos de Acopio en San Jerónimo
         self.stdout.write('Creando puntos de acopio (EcoPuntos) San Jerónimo...')
         zona_central_obj = zonas_creadas.get('SJE001')
-        zona_kennedy_obj = zonas_creadas.get('SJE002')
-        zona_losincas_obj = zonas_creadas.get('SJE003')
+        zona_noreste_obj = zonas_creadas.get('SJE002')
+        zona_noroeste_obj = zonas_creadas.get('SJE003')
         ciudadano1 = usuarios_creados.get('ciudadano1@residuos.com')
         ciudadano2 = usuarios_creados.get('ciudadano2@residuos.com')
         ciudadano3 = usuarios_creados.get('ciudadano3@residuos.com')
@@ -579,53 +671,53 @@ class Command(BaseCommand):
             {
                 'usuario': ciudadano1,
                 'zona': zona_central_obj,
-                'descripcion': 'Punto Acopio Central: Plaza Principal San Jerónimo',
+                'descripcion': 'Punto Acopio: Av. Larapa Central, Cuadrante Este',
                 'tipo': 'reciclaje',
                 'puntos_otorgados': 50,
                 'estado': 'aprobado',
                 'ubicacion': {
-                    'lat': -13.5485,
-                    'lng': -71.8772,
-                    'direccion': 'Plaza Principal, San Jerónimo, Cusco'
+                    'lat': -13.5515,
+                    'lng': -71.8680,
+                    'direccion': 'Av. Larapa Central, Urb. Larapa, San Jerónimo'
                 }
             },
             {
                 'usuario': ciudadano2,
-                'zona': zona_kennedy_obj,
-                'descripcion': 'Punto Acopio Kennedy: Jr. Simón Bolívar s/n, Urb. Kennedy',
+                'zona': zona_noreste_obj,
+                'descripcion': 'Punto Acopio: Sector Kantu de Larapa, Cuadrante Noreste',
                 'tipo': 'reciclaje',
                 'puntos_otorgados': 40,
                 'estado': 'aprobado',
                 'ubicacion': {
-                    'lat': -13.5520,
-                    'lng': -71.8740,
-                    'direccion': 'Jr. Simón Bolívar s/n, Urb. Kennedy, San Jerónimo'
+                    'lat': -13.5480,
+                    'lng': -71.8680,
+                    'direccion': 'Sector Kantu de Larapa, San Jerónimo'
                 }
             },
             {
                 'usuario': ciudadano3,
-                'zona': zona_losincas_obj,
-                'descripcion': 'Punto Acopio Los Incas: Av. Principal, Urb. Los Incas',
+                'zona': zona_noroeste_obj,
+                'descripcion': 'Punto Acopio: Urb. Santa Rosa Alta, Cuadrante Noroeste',
                 'tipo': 'reciclaje',
                 'puntos_otorgados': 45,
                 'estado': 'aprobado',
                 'ubicacion': {
-                    'lat': -13.5470,
-                    'lng': -71.8760,
-                    'direccion': 'Av. Principal, Urb. Los Incas, San Jerónimo'
+                    'lat': -13.5450,
+                    'lng': -71.8785,
+                    'direccion': 'Urb. Santa Rosa Alta, San Jerónimo'
                 }
             },
             {
                 'usuario': ciudadano1,
                 'zona': zona_central_obj,
-                'descripcion': 'Punto Acopio Mercado: Mercado San Jerónimo, Av. Evitamiento',
+                'descripcion': 'Punto Acopio: Sector Pata Pata, Cuadrante Este',
                 'tipo': 'reciclaje',
                 'puntos_otorgados': 55,
                 'estado': 'pendiente',
                 'ubicacion': {
-                    'lat': -13.5522,
-                    'lng': -71.8730,
-                    'direccion': 'Mercado San Jerónimo, Av. Evitamiento, San Jerónimo'
+                    'lat': -13.5545,
+                    'lng': -71.8620,
+                    'direccion': 'Sector Pata Pata Residencial, San Jerónimo'
                 }
             },
         ]
@@ -655,9 +747,7 @@ class Command(BaseCommand):
         self.stdout.write('   Email: admin@residuos.com')
         self.stdout.write('   Contrasena: admin123')
         self.stdout.write('\n=== Sectores San Jerónimo creados:')
-        self.stdout.write('   SJE001 - Sector Central San Jerónimo')
-        self.stdout.write('   SJE002 - Urb. Kennedy')
-        self.stdout.write('   SJE003 - Urb. Los Incas')
-        self.stdout.write('   SJE004 - Sector Pillao Matao')
-        self.stdout.write('   SJE005 - Urb. Santa Rosa')
-        self.stdout.write('   SJE006 - Sector Conchacalla')
+        self.stdout.write('   SJE001 - Cuadrante Este – Urb. Larapa Residencial & Larapa Grande & Pata Pata')
+        self.stdout.write('   SJE002 - Cuadrante Noreste – Urb. Versalles & Kantu & Huayna Picol Norte')
+        self.stdout.write('   SJE003 - Cuadrante Noroeste – Santa Rosa Alta & Mirador & Conchacalla Alta')
+        self.stdout.write('   SJE004 - Cuadrante Suroeste – Pillao Matao Sur & Chimpahuaylla Sur & Retamales Sur')

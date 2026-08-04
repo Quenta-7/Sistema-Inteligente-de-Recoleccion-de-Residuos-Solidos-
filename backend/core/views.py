@@ -157,10 +157,37 @@ class EvidenciaViewSet(viewsets.ModelViewSet):
         return Evidencia.objects.filter(usuario=self.request.user)
 
     def perform_create(self, serializer):
-        # El usuario se asigna automáticamente del token
         usuario = self.request.user
-        # Por defecto se crea en estado 'nuevo'
-        evidencia = serializer.save(usuario=usuario, estado='nuevo')
+        cantidad = serializer.validated_data.get('cantidad')
+        
+        # Calcular ecopuntos proporcionalmente a la cantidad en kg (20 EcoPuntos por cada kg, mínimo 10)
+        ecopuntos = 50
+        if cantidad:
+            try:
+                ecopuntos = max(10, int(float(cantidad) * 20))
+            except Exception:
+                ecopuntos = 50
+
+        # Si se usó GPS y no se envió dirección explícita
+        direccion = serializer.validated_data.get('direccion_entrega')
+        lat = serializer.validated_data.get('latitud')
+        lng = serializer.validated_data.get('longitud')
+        if not direccion and lat is not None and lng is not None:
+            direccion = f"Ubicación GPS Satelital Registrada (Lat: {lat:.5f}, Lng: {lng:.5f})"
+
+        zona = serializer.validated_data.get('zona')
+        if not zona:
+            zona = usuario.zona
+            if not zona:
+                zona = Zona.objects.filter(activa=True).first()
+
+        evidencia = serializer.save(
+            usuario=usuario,
+            zona=zona,
+            ecopuntos=ecopuntos,
+            direccion_entrega=direccion,
+            estado='nuevo'
+        )
 
     def perform_update(self, serializer):
         instancia = self.get_object()
@@ -202,6 +229,7 @@ class UsuarioViewSet(viewsets.ModelViewSet):
     """
     serializer_class = UsuarioAdminSerializer
     permission_classes = [IsAuthenticated]
+    pagination_class = None
 
     def get_queryset(self):
         # Solo administradores pueden ver y gestionar usuarios

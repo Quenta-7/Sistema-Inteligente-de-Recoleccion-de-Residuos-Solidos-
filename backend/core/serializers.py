@@ -139,8 +139,8 @@ class RegistroSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('La contraseña debe contener al menos una letra minúscula.')
         if not re.search(r'[0-9]', value):
             raise serializers.ValidationError('La contraseña debe contener al menos un número.')
-        if not re.search(r'[@$!%*?&._\-#]', value):
-            raise serializers.ValidationError('La contraseña debe contener al menos un carácter especial (ej. @, $, !, %, *, ?, &, ., _, -, #).')
+        if not re.search(r'[^A-Za-z0-9]', value):
+            raise serializers.ValidationError('La contraseña debe contener al menos un carácter especial (ej. @, $, !, %, *, ?, &, ., _, -, #, (, ), etc.).')
         return value
 
     def validate_acepta_terminos(self, value):
