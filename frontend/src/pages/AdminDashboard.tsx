@@ -22,11 +22,8 @@ import {
   Send
 } from 'lucide-react';
 import { authedFetch } from '../api';
+import { fetchStreetRoute } from '../utils/routing';
 import L from 'leaflet';
-import { 
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Cell,
-  PieChart, Pie, Legend
-} from 'recharts';
 
 type Evidencia = {
   id: number;
@@ -788,11 +785,11 @@ const AdminDashboard = () => {
   const datosEcoPuntosPorSector = Object.entries(ecoPuntosZonaMap).map(([sector, ecopuntos]) => ({ sector, ecopuntos }));
 
   const datosSatisfaccion = [
-    { estrellas: '5 ★', total: calificaciones.filter(c => c.estrellas === 5).length || 12 },
-    { estrellas: '4 ★', total: calificaciones.filter(c => c.estrellas === 4).length || 5 },
-    { estrellas: '3 ★', total: calificaciones.filter(c => c.estrellas === 3).length || 2 },
-    { estrellas: '2 ★', total: calificaciones.filter(c => c.estrellas === 2).length || 1 },
-    { estrellas: '1 ★', total: calificaciones.filter(c => c.estrellas === 1).length || 0 }
+    { estrellas: '5 ★', total: calificaciones.filter(c => c.estrellas === 5).length || 12, fill: '#10b981' },
+    { estrellas: '4 ★', total: calificaciones.filter(c => c.estrellas === 4).length || 5, fill: '#0ea5e9' },
+    { estrellas: '3 ★', total: calificaciones.filter(c => c.estrellas === 3).length || 2, fill: '#f59e0b' },
+    { estrellas: '2 ★', total: calificaciones.filter(c => c.estrellas === 2).length || 1, fill: '#f97316' },
+    { estrellas: '1 ★', total: calificaciones.filter(c => c.estrellas === 1).length || 0, fill: '#ef4444' }
   ];
 
   return (
@@ -986,7 +983,7 @@ const AdminDashboard = () => {
                 </div>
               </div>
 
-              {/* GRÁFICOS INTERACTIVOS RECHARTS */}
+              {/* GRÁFICOS INTERACTIVOS NATIVOS SVG */}
 
               {/* Fila 1: Residuos y Usuarios */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -996,55 +993,96 @@ const AdminDashboard = () => {
                     <BarChart3 className="h-5 w-5 text-emerald-500" />
                     Volumen de Residuos Recolectados (Kg)
                   </h3>
-                  <p className="text-xs text-slate-500 mb-6">Comparativa por categoría de material registrado por ciudadanos.</p>
-                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={datosResiduosPorTipo} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                        <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#64748b' }} />
-                        <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', color: '#fff', fontSize: '12px' }} 
-                        />
-                        <Bar dataKey="cantidad" radius={[8, 8, 0, 0]}>
-                          {datosResiduosPorTipo.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS_RESIDUOS[index % COLORS_RESIDUOS.length]} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                  <p className="text-xs text-slate-500 mb-6">Comparativa por categoría de material registrado por ciudadanos en San Jerónimo.</p>
+                  
+                  <div className="space-y-4">
+                    {datosResiduosPorTipo.map((item, idx) => {
+                      const maxVal = Math.max(...datosResiduosPorTipo.map(d => d.cantidad), 1);
+                      const pct = Math.round((item.cantidad / maxVal) * 100);
+                      const color = COLORS_RESIDUOS[idx % COLORS_RESIDUOS.length];
+                      
+                      return (
+                        <div key={item.name} className="space-y-1">
+                          <div className="flex justify-between text-xs font-bold">
+                            <span className="text-slate-700 dark:text-slate-300">{item.name}</span>
+                            <span className="text-slate-900 dark:text-white font-mono">{item.cantidad} Kg ({pct}%)</span>
+                          </div>
+                          <div className="w-full bg-slate-100 dark:bg-slate-900 h-3.5 rounded-full overflow-hidden p-0.5 border border-slate-200/60 dark:border-slate-800">
+                            <div 
+                              className="h-full rounded-full transition-all duration-700 shadow-sm"
+                              style={{ width: `${pct}%`, backgroundColor: color }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
                 {/* Gráfico 2: Distribución de Usuarios por Rol */}
-                <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm">
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
-                    <Users className="h-5 w-5 text-sky-500" />
-                    Distribución de Usuarios en la Plataforma
-                  </h3>
-                  <p className="text-xs text-slate-500 mb-6">Proporción según el rol de la cuenta registrada.</p>
-                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <PieChart>
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', color: '#fff', fontSize: '12px' }} 
+                <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm flex flex-col justify-between">
+                  <div>
+                    <h3 className="text-base font-extrabold text-slate-900 dark:text-white mb-1 flex items-center gap-2">
+                      <Users className="h-5 w-5 text-sky-500" />
+                      Distribución de Usuarios en la Plataforma
+                    </h3>
+                    <p className="text-xs text-slate-500 mb-6">Proporción según el rol de la cuenta registrada.</p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row items-center justify-around gap-6 py-2">
+                    {/* SVG Donut Chart */}
+                    <div className="relative w-36 h-36 flex items-center justify-center">
+                      <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
+                        <path
+                          className="text-slate-100 dark:text-slate-900"
+                          strokeWidth="3.8"
+                          stroke="currentColor"
+                          fill="none"
+                          d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
                         />
-                        <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px' }} />
-                        <Pie
-                          data={datosUsuariosPorRol}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={55}
-                          outerRadius={85}
-                          paddingAngle={5}
-                          dataKey="value"
-                        >
-                          {datosUsuariosPorRol.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                      </PieChart>
-                    </ResponsiveContainer>
+                        {datosUsuariosPorRol.map((u, i) => {
+                          const total = datosUsuariosPorRol.reduce((acc, curr) => acc + curr.value, 0) || 1;
+                          const pct = (u.value / total) * 100;
+                          const prevSum = datosUsuariosPorRol.slice(0, i).reduce((acc, curr) => acc + curr.value, 0);
+                          const strokeDasharray = `${pct} ${100 - pct}`;
+                          const strokeDashoffset = -((prevSum / total) * 100);
+
+                          return (
+                            <path
+                              key={u.name}
+                              stroke={u.color}
+                              strokeWidth="3.8"
+                              strokeDasharray={strokeDasharray}
+                              strokeDashoffset={strokeDashoffset}
+                              strokeLinecap="round"
+                              fill="none"
+                              d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                            />
+                          );
+                        })}
+                      </svg>
+                      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+                        <span className="text-2xl font-black text-slate-900 dark:text-white">{usuarios.length}</span>
+                        <span className="text-[9px] font-bold uppercase text-slate-400">Total</span>
+                      </div>
+                    </div>
+
+                    {/* Legend */}
+                    <div className="space-y-3 w-full sm:w-auto">
+                      {datosUsuariosPorRol.map((u) => {
+                        const total = datosUsuariosPorRol.reduce((acc, curr) => acc + curr.value, 0) || 1;
+                        const pct = Math.round((u.value / total) * 100);
+                        return (
+                          <div key={u.name} className="flex items-center justify-between sm:justify-start gap-4 text-xs font-bold">
+                            <div className="flex items-center gap-2">
+                              <span className="h-3 w-3 rounded-full flex-shrink-0" style={{ backgroundColor: u.color }} />
+                              <span className="text-slate-700 dark:text-slate-300">{u.name}</span>
+                            </div>
+                            <span className="text-slate-900 dark:text-white font-mono">{u.value} ({pct}%)</span>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1058,22 +1096,27 @@ const AdminDashboard = () => {
                     Estado Operativo de Rutas de Recolección
                   </h3>
                   <p className="text-xs text-slate-500 mb-6">Desglose de rutas según su avance diario.</p>
-                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={datosRutasPorEstado} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                        <XAxis dataKey="estado" tick={{ fontSize: 11, fill: '#64748b' }} />
-                        <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', color: '#fff', fontSize: '12px' }} 
-                        />
-                        <Bar dataKey="total" radius={[8, 8, 0, 0]}>
-                          {datosRutasPorEstado.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                  
+                  <div className="space-y-4">
+                    {datosRutasPorEstado.map((item) => {
+                      const totalR = rutas.length || 1;
+                      const pct = Math.round((item.total / totalR) * 100);
+                      
+                      return (
+                        <div key={item.estado} className="space-y-1">
+                          <div className="flex justify-between text-xs font-bold">
+                            <span className="text-slate-700 dark:text-slate-300">{item.estado}</span>
+                            <span className="text-slate-900 dark:text-white font-mono">{item.total} Rutas ({pct}%)</span>
+                          </div>
+                          <div className="w-full bg-slate-100 dark:bg-slate-900 h-3.5 rounded-full overflow-hidden p-0.5 border border-slate-200/60 dark:border-slate-800">
+                            <div 
+                              className="h-full rounded-full transition-all duration-700 shadow-sm"
+                              style={{ width: `${pct}%`, backgroundColor: item.fill }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
 
@@ -1084,18 +1127,27 @@ const AdminDashboard = () => {
                     EcoPuntos Otorgados por Sector (San Jerónimo)
                   </h3>
                   <p className="text-xs text-slate-500 mb-6">Puntaje acumulado por los vecinos en cada zona de acopio.</p>
-                  <div className="h-64 w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart layout="vertical" data={datosEcoPuntosPorSector} margin={{ top: 10, right: 10, left: 30, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                        <XAxis type="number" tick={{ fontSize: 11, fill: '#64748b' }} />
-                        <YAxis type="category" dataKey="sector" tick={{ fontSize: 10, fill: '#64748b' }} />
-                        <Tooltip 
-                          contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', color: '#fff', fontSize: '12px' }} 
-                        />
-                        <Bar dataKey="ecopuntos" fill="#0ea5e9" radius={[0, 8, 8, 0]} />
-                      </BarChart>
-                    </ResponsiveContainer>
+                  
+                  <div className="space-y-3.5">
+                    {datosEcoPuntosPorSector.map((item) => {
+                      const maxPts = Math.max(...datosEcoPuntosPorSector.map(d => d.ecopuntos), 1);
+                      const pct = Math.round((item.ecopuntos / maxPts) * 100);
+                      
+                      return (
+                        <div key={item.sector} className="space-y-1">
+                          <div className="flex justify-between text-xs font-bold">
+                            <span className="text-slate-700 dark:text-slate-300 truncate max-w-[200px]">{item.sector}</span>
+                            <span className="text-sky-600 dark:text-sky-400 font-mono">{item.ecopuntos} pts</span>
+                          </div>
+                          <div className="w-full bg-slate-100 dark:bg-slate-900 h-3 rounded-full overflow-hidden p-0.5 border border-slate-200/60 dark:border-slate-800">
+                            <div 
+                              className="h-full rounded-full bg-gradient-to-r from-sky-500 to-indigo-500 transition-all duration-700 shadow-sm"
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
@@ -1107,27 +1159,27 @@ const AdminDashboard = () => {
                   Nivel de Satisfacción del Ciudadano
                 </h3>
                 <p className="text-xs text-slate-500 mb-6">Distribución de valoraciones de 1 a 5 estrellas enviadas por los usuarios.</p>
-                <div className="h-56 w-full">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={datosSatisfaccion} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" opacity={0.15} />
-                      <XAxis dataKey="estrellas" tick={{ fontSize: 11, fill: '#64748b' }} />
-                      <YAxis tick={{ fontSize: 11, fill: '#64748b' }} />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', color: '#fff', fontSize: '12px' }} 
-                      />
-                      <Bar dataKey="total" radius={[8, 8, 0, 0]}>
-                        {datosSatisfaccion.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.fill} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-5 gap-3">
+                  {datosSatisfaccion.map((item) => {
+                    const totalVal = datosSatisfaccion.reduce((acc, curr) => acc + curr.total, 0) || 1;
+                    const pct = Math.round((item.total / totalVal) * 100);
+                    
+                    return (
+                      <div key={item.estrellas} className="bg-slate-50 dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/70 dark:border-slate-850 flex flex-col justify-between items-center text-center">
+                        <div className="flex items-center gap-1 font-bold text-amber-500 text-sm mb-2">
+                          <Star className="h-4 w-4 fill-amber-400" />
+                          <span>{item.estrellas}</span>
+                        </div>
+                        <p className="text-2xl font-black text-slate-900 dark:text-white font-mono">{item.total}</p>
+                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{pct}% del total</p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
             </div>
-          )}
           )}
 
           {/* Tab 2: Validar Evidencias */}

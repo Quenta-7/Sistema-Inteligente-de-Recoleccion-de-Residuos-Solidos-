@@ -8,11 +8,9 @@ import {
   Truck, 
   Sun, 
   Moon, 
-  Info,
   Calendar,
   List,
   Search,
-  CheckCircle2,
   Sparkles,
   Sunrise,
   Sunset
