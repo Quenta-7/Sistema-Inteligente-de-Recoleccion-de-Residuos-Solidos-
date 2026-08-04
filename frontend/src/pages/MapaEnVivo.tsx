@@ -180,19 +180,23 @@ const MapaEnVivo = () => {
 
   // Inicializar mapa centrado en San Jerónimo, Cusco
   useEffect(() => {
-    if (mapContainerRef.current && !mapRef.current) {
-      const map = L.map(mapContainerRef.current, {
-        zoomControl: true,
-        scrollWheelZoom: true
-      }).setView([-13.5495, -71.8755], 15); // Centro de San Jerónimo
+    if (mapContainerRef.current) {
+      if ((mapContainerRef.current as any)._leaflet_id && !mapRef.current) {
+        (mapContainerRef.current as any)._leaflet_id = null;
+      }
+      if (!mapRef.current) {
+        const map = L.map(mapContainerRef.current, {
+          zoomControl: true,
+          scrollWheelZoom: true
+        }).setView([-13.5495, -71.8755], 15); // Centro de San Jerónimo
 
-      L.tileLayer('http://{s}.google.com/vt/lyrs=m&x={x}&y={y}&z={z}', {
-        maxZoom: 20,
-        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-        attribution: 'Map data &copy; Google'
-      }).addTo(map);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          maxZoom: 19,
+          attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
 
-      mapRef.current = map;
+        mapRef.current = map;
+      }
     }
     return () => {
       if (mapRef.current) {

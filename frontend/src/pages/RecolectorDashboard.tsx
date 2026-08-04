@@ -156,8 +156,8 @@ export default function RecolectorDashboard() {
       if (rRes.ok) {
         const rData = await rRes.json();
         setRutas(rData);
-        // Set first route in progress as active route if none selected
-        const currentActive = rData.find((r: Ruta) => r.estado === 'en_progreso');
+        // Set active route to en_progreso or first available route if none selected
+        const currentActive = rData.find((r: Ruta) => r.estado === 'en_progreso') || (rData.length > 0 ? rData[0] : null);
         if (currentActive && !activeRuta) {
           setActiveRuta(currentActive);
         }
@@ -272,7 +272,10 @@ export default function RecolectorDashboard() {
   // Leaflet Map Initialization and updates
   useEffect(() => {
     if (activeTab === 'mapa' && mapContainerRef.current) {
-      // Re-initialize map
+      if ((mapContainerRef.current as any)._leaflet_id && !mapRef.current) {
+        (mapContainerRef.current as any)._leaflet_id = null;
+      }
+
       if (!mapRef.current) {
         const initialCenter = currentPosition || [-13.5485, -71.8772];
         const map = L.map(mapContainerRef.current, {
@@ -304,8 +307,14 @@ export default function RecolectorDashboard() {
 
       // Draw active route path
       if (activeRuta?.geometria_ruta && activeRuta.geometria_ruta.length > 0) {
-        // Add stop markers
-        activeRuta.geometria_ruta.forEach((node, idx) => {
+        const nodes = activeRuta.geometria_ruta;
+
+        // Numbered markers ONLY for key stops/nodes to avoid marker cluttering
+        const keyStops = nodes.length > 10 
+          ? nodes.filter((n, idx) => (n.nombre && !n.nombre.startsWith('Punto ')) || idx === 0 || idx === nodes.length - 1 || idx % Math.max(1, Math.floor(nodes.length / 4)) === 0)
+          : nodes;
+
+        keyStops.forEach((node, idx) => {
           const stopIcon = L.divIcon({
             className: 'custom-stop-icon',
             html: `<div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-black text-white shadow bg-emerald-700">
@@ -316,41 +325,48 @@ export default function RecolectorDashboard() {
           });
 
           const m = L.marker([node.lat, node.lng], { icon: stopIcon })
-            .bindPopup(`<strong>Punto de Acopio ${idx + 1}:</strong> ${node.nombre}`)
+            .bindPopup(`<strong>Punto ${idx + 1}:</strong> ${node.nombre || 'Parada de Acopio'}`)
             .addTo(map);
           stopMarkersRef.current.push(m);
         });
 
-        // Draw initial fallback polyline first
-        const directCoords = activeRuta.geometria_ruta.map(n => [n.lat, n.lng] as [number, number]);
-        const initialPoly = L.polyline(directCoords, {
+        // Draw route polyline
+        const coords = nodes.map(n => [n.lat, n.lng] as [number, number]);
+        const poly = L.polyline(coords, {
           color: '#10b981',
           weight: 6,
-          opacity: 0.85
+          opacity: 0.9,
+          lineJoin: 'round',
+          lineCap: 'round'
         }).addTo(map);
-        polylineRef.current = initialPoly;
-        map.fitBounds(initialPoly.getBounds(), { padding: [30, 30] });
+        polylineRef.current = poly;
+        map.fitBounds(poly.getBounds(), { padding: [30, 30] });
 
-        // Fetch exact street routing geometry asynchronously
-        fetchStreetRoute(activeRuta.geometria_ruta).then((streetCoords) => {
-          if (!mapRef.current) return;
-          if (polylineRef.current) polylineRef.current.remove();
-          
-          const poly = L.polyline(streetCoords, {
-            color: '#10b981',
-            weight: 6,
-            opacity: 0.9,
-            lineJoin: 'round',
-            lineCap: 'round'
-          }).addTo(mapRef.current);
-          polylineRef.current = poly;
-          mapRef.current.fitBounds(poly.getBounds(), { padding: [30, 30] });
-        });
+        // If nodes has fewer than 10 points, calculate OSRM street path asynchronously
+        if (nodes.length < 10) {
+          fetchStreetRoute(nodes).then((streetCoords) => {
+            if (!mapRef.current) return;
+            if (polylineRef.current) polylineRef.current.remove();
+            
+            const streetPoly = L.polyline(streetCoords, {
+              color: '#10b981',
+              weight: 6,
+              opacity: 0.9,
+              lineJoin: 'round',
+              lineCap: 'round'
+            }).addTo(mapRef.current);
+            polylineRef.current = streetPoly;
+            mapRef.current.fitBounds(streetPoly.getBounds(), { padding: [30, 30] });
+          });
+        }
       }
     }
 
     return () => {
-      // Keep map reference cached unless tab changes completely
+      if (mapRef.current) {
+        mapRef.current.remove();
+        mapRef.current = null;
+      }
     };
   }, [activeTab, activeRuta]);
 
