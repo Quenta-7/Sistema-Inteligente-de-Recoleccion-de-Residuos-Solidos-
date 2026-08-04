@@ -85,6 +85,14 @@ class UsuarioSerializer(serializers.ModelSerializer):
 class UsuarioAdminSerializer(serializers.ModelSerializer):
     foto_perfil_url = serializers.SerializerMethodField()
 
+    def get_foto_perfil_url(self, obj):
+        if obj.foto_perfil:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.foto_perfil.url)
+            return obj.foto_perfil.url
+        return None
+
     class Meta:
         model = Usuario
         fields = ['id', 'email', 'nombre_completo', 'rol', 'zona', 'telefono', 'activo', 'ecopuntos', 'acepta_terminos', 'fecha_aceptacion_terminos', 'foto_perfil', 'foto_perfil_url']
