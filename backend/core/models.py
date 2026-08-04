@@ -212,3 +212,17 @@ class CalificacionServicio(models.Model):
 
     def __str__(self):
         return f"Calificación {self.estrellas}* para Ruta {self.ruta.id} por {self.ciudadano.nombre_completo}"
+
+class BitacoraRuta(models.Model):
+    ruta = models.ForeignKey(Ruta, on_delete=models.CASCADE, related_name='bitacora')
+    usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, related_name='cambios_bitacora')
+    estado_anterior = models.CharField(max_length=30, null=True, blank=True)
+    estado_nuevo = models.CharField(max_length=30)
+    observaciones = models.TextField(null=True, blank=True)
+    fecha_hora = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-fecha_hora']
+
+    def __str__(self):
+        return f"Bitácora Ruta {self.ruta_id}: {self.estado_anterior} -> {self.estado_nuevo}"

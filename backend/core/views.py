@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
-from .models import Zona, Horario, Reporte, Usuario, Evidencia, Notificacion, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio
+from .models import Zona, Horario, Reporte, Usuario, Evidencia, Notificacion, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio, BitacoraRuta
 from .serializers import (
     ZonaSerializer,
     HorarioSerializer,
@@ -21,6 +21,7 @@ from .serializers import (
     RutaSerializer,
     IncidenciaSerializer,
     CalificacionServicioSerializer,
+    BitacoraRutaSerializer,
 )
 
 class ZonaViewSet(viewsets.ModelViewSet):
@@ -208,6 +209,19 @@ class UsuarioViewSet(viewsets.ModelViewSet):
         if hasattr(self.request.user, 'rol') and self.request.user.rol == 'admin':
             return Usuario.objects.all()
         return Usuario.objects.filter(id=self.request.user.id)
+
+    def perform_create(self, serializer):
+        # El username debe ser único; usamos el email como username,
+        # igual que en el registro público, para evitar el error de
+        # UNIQUE constraint al crear usuarios desde el panel admin.
+        email = serializer.validated_data.get('email')
+        password = serializer.validated_data.pop('password', None)
+        usuario = serializer.save(username=email)
+        if password:
+            usuario.set_password(password)
+        else:
+            usuario.set_password('Cambiar123!')  # Contraseña temporal por defecto
+        usuario.save()
 
 
 class PerfilView(APIView):
@@ -422,6 +436,9 @@ class RutaViewSet(viewsets.ModelViewSet):
     serializer_class = RutaSerializer
     permission_classes = [IsAuthenticated]
 
+    # Estados que consideramos "ruta cerrada" (ya tiene su reporte final)
+    ESTADOS_CERRADOS = ['completada', 'parcialmente_completada', 'no_completada']
+
     def get_queryset(self):
         user = self.request.user
         if hasattr(user, 'rol'):
@@ -437,8 +454,38 @@ class RutaViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         from django.utils import timezone
+        from rest_framework.exceptions import ValidationError, PermissionDenied
+
+        instancia = self.get_object()
+        estado_anterior = instancia.estado
+        nuevo_estado = serializer.validated_data.get('estado', estado_anterior)
+        user = self.request.user
+
+        # Regla de negocio: una ruta ya cerrada no puede modificarse
+        # (excepto administradores, que sí pueden gestionar el cierre)
+        es_admin = hasattr(user, 'rol') and user.rol == 'admin'
+        if estado_anterior in self.ESTADOS_CERRADOS and not es_admin:
+            raise PermissionDenied(
+                "Esta ruta ya fue cerrada con un reporte final y no puede modificarse."
+            )
+
+        # Solo GPS: no es un "reporte de cumplimiento", se actualiza normal
         if 'lat_actual' in serializer.validated_data or 'lng_actual' in serializer.validated_data:
             serializer.save(ultima_actualizacion_gps=timezone.now())
+            return
+
+        # Si el estado cambia a uno de cierre, forzamos fecha/hora del servidor
+        # (nunca confiamos en la fecha que mande el cliente) y registramos bitácora
+        if nuevo_estado in self.ESTADOS_CERRADOS and nuevo_estado != estado_anterior:
+            ruta_actualizada = serializer.save(fecha_hora_reporte=timezone.now())
+
+            BitacoraRuta.objects.create(
+                ruta=ruta_actualizada,
+                usuario=user,
+                estado_anterior=estado_anterior,
+                estado_nuevo=nuevo_estado,
+                observaciones=serializer.validated_data.get('observaciones', '')
+            )
         else:
             serializer.save()
 

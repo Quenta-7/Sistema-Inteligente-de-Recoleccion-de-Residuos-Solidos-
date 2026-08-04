@@ -77,6 +77,8 @@ export default function RecolectorDashboard() {
   const [completionStatus, setCompletionStatus] = useState<'completada' | 'parcialmente_completada' | 'no_completada'>('completada');
   const [completionNotes, setCompletionNotes] = useState('');
   const [submittingCompletion, setSubmittingCompletion] = useState(false);
+  const [completionSuccessMsg, setCompletionSuccessMsg] = useState('');
+  
 
   const [incidenyType, setIncidentType] = useState('');
   const [incidentDesc, setIncidentDesc] = useState('');
@@ -428,8 +430,7 @@ export default function RecolectorDashboard() {
         method: 'PATCH',
         body: JSON.stringify({
           estado: completionStatus,
-          observaciones: completionNotes,
-          fecha_hora_reporte: new Date().toISOString()
+          observaciones: completionNotes
         })
       });
 
@@ -442,6 +443,11 @@ export default function RecolectorDashboard() {
         setShowCompletionModal(false);
         setCompletionNotes('');
         setCompletionRouteId(null);
+        setCompletionSuccessMsg('Reporte de cumplimiento registrado exitosamente.');
+        setTimeout(() => setCompletionSuccessMsg(''), 4000);
+      } else {
+        const errorData = await res.json().catch(() => null);
+        console.error('Error del servidor al completar ruta:', errorData);
       }
     } catch (err) {
       console.error('Error completing route:', err);
@@ -559,6 +565,12 @@ export default function RecolectorDashboard() {
         {/* Tab 1: Rutas List */}
         {activeTab === 'rutas' && (
           <div className="space-y-4 fade-in-up">
+            {completionSuccessMsg && (
+              <div className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 p-3 rounded-xl text-xs font-bold flex items-center gap-2">
+                <CheckCircle className="h-4 w-4 flex-shrink-0" />
+                {completionSuccessMsg}
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <h3 className="text-sm font-bold text-slate-900 dark:text-white uppercase tracking-wider">Mis Rutas Asignadas</h3>
               <button 
