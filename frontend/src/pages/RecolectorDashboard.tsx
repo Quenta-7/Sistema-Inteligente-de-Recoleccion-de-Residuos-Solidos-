@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import L from 'leaflet';
 import { authedFetch } from '../api';
+import { fetchStreetRoute } from '../utils/routing';
 
 interface RouteNode {
   lat: number;
@@ -303,17 +304,6 @@ export default function RecolectorDashboard() {
 
       // Draw active route path
       if (activeRuta?.geometria_ruta && activeRuta.geometria_ruta.length > 0) {
-        const coords = activeRuta.geometria_ruta.map(n => [n.lat, n.lng] as [number, number]);
-        
-        // Draw Route Polyline
-        const poly = L.polyline(coords, {
-          color: '#10b981',
-          weight: 6,
-          opacity: 0.85
-        }).addTo(map);
-        polylineRef.current = poly;
-        map.fitBounds(poly.getBounds(), { padding: [30, 30] });
-
         // Add stop markers
         activeRuta.geometria_ruta.forEach((node, idx) => {
           const stopIcon = L.divIcon({
@@ -329,6 +319,32 @@ export default function RecolectorDashboard() {
             .bindPopup(`<strong>Punto de Acopio ${idx + 1}:</strong> ${node.nombre}`)
             .addTo(map);
           stopMarkersRef.current.push(m);
+        });
+
+        // Draw initial fallback polyline first
+        const directCoords = activeRuta.geometria_ruta.map(n => [n.lat, n.lng] as [number, number]);
+        const initialPoly = L.polyline(directCoords, {
+          color: '#10b981',
+          weight: 6,
+          opacity: 0.85
+        }).addTo(map);
+        polylineRef.current = initialPoly;
+        map.fitBounds(initialPoly.getBounds(), { padding: [30, 30] });
+
+        // Fetch exact street routing geometry asynchronously
+        fetchStreetRoute(activeRuta.geometria_ruta).then((streetCoords) => {
+          if (!mapRef.current) return;
+          if (polylineRef.current) polylineRef.current.remove();
+          
+          const poly = L.polyline(streetCoords, {
+            color: '#10b981',
+            weight: 6,
+            opacity: 0.9,
+            lineJoin: 'round',
+            lineCap: 'round'
+          }).addTo(mapRef.current);
+          polylineRef.current = poly;
+          mapRef.current.fitBounds(poly.getBounds(), { padding: [30, 30] });
         });
       }
     }

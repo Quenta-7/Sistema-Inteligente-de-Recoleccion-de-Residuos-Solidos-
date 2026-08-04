@@ -459,20 +459,35 @@ class Command(BaseCommand):
         zona_central = zonas_creadas.get('SJE001')
         zona_kennedy = zonas_creadas.get('SJE002')
 
+        # Helper para ruteo por calles usando OSRM
+        import urllib.request, json
+        def get_street_route(waypoints):
+            try:
+                coords_str = ';'.join([f"{w['lng']},{w['lat']}" for w in waypoints])
+                url = f"https://router.project-osrm.org/route/v1/driving/{coords_str}?overview=full&geometries=geojson"
+                req = urllib.request.urlopen(url, timeout=3)
+                data = json.loads(req.read().decode())
+                street_pts = data['routes'][0]['geometry']['coordinates']
+                return [{'lat': round(pt[1], 6), 'lng': round(pt[0], 6), 'nombre': f"Punto {i+1}"} for i, pt in enumerate(street_pts)]
+            except Exception:
+                return waypoints
+
         # Ruta SJ-01: Plaza Principal → Jr. Cusco → Av. Evitamiento → Mercado San Jerónimo
-        geometria_ruta_sj01 = [
+        waypoints_sj01 = [
             {"lat": -13.5485, "lng": -71.8772, "nombre": "Plaza Principal San Jerónimo"},
             {"lat": -13.5493, "lng": -71.8755, "nombre": "Jr. Cusco"},
             {"lat": -13.5510, "lng": -71.8742, "nombre": "Av. Evitamiento"},
             {"lat": -13.5522, "lng": -71.8730, "nombre": "Mercado San Jerónimo"}
         ]
+        geometria_ruta_sj01 = get_street_route(waypoints_sj01)
 
         # Ruta SJ-02: Urb. Kennedy → Urb. Los Incas → Sector Conchacalla
-        geometria_ruta_sj02 = [
+        waypoints_sj02 = [
             {"lat": -13.5520, "lng": -71.8740, "nombre": "Urb. Kennedy"},
             {"lat": -13.5470, "lng": -71.8760, "nombre": "Urb. Los Incas"},
             {"lat": -13.5480, "lng": -71.8800, "nombre": "Sector Conchacalla"}
         ]
+        geometria_ruta_sj02 = get_street_route(waypoints_sj02)
 
         if recolector and zona_central and zona_kennedy:
             # Ruta completada (SJ-01 ayer)

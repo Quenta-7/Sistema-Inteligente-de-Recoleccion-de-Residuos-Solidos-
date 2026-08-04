@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import L from 'leaflet';
 import { authedFetch } from '../api';
+import { fetchStreetRoute } from '../utils/routing';
 
 type RutaDetalle = {
   id: string;
@@ -220,6 +221,20 @@ const MapaEnVivo = () => {
     polylineRef.current = polyline;
 
     map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+
+    fetchStreetRoute(activeRoute.puntos).then((streetCoords) => {
+      if (!mapRef.current) return;
+      if (polylineRef.current) polylineRef.current.remove();
+      const poly = L.polyline(streetCoords, {
+        color: '#059669',
+        weight: 6,
+        opacity: 0.9,
+        lineJoin: 'round',
+        lineCap: 'round'
+      }).addTo(mapRef.current);
+      polylineRef.current = poly;
+      mapRef.current.fitBounds(poly.getBounds(), { padding: [50, 50] });
+    });
 
     activeRoute.paradas.forEach((parada, idx) => {
       const ptIndex = Math.min(

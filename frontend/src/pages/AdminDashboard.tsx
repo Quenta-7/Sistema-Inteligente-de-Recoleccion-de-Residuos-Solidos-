@@ -22,6 +22,7 @@ import {
   Send
 } from 'lucide-react';
 import { authedFetch } from '../api';
+import { fetchStreetRoute } from '../utils/routing';
 import L from 'leaflet';
 
 type Evidencia = {
@@ -610,6 +611,20 @@ const AdminDashboard = () => {
     polylineRef.current = polyline;
 
     map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+
+    fetchStreetRoute(pts).then((streetCoords) => {
+      if (!mapRef.current) return;
+      if (polylineRef.current) polylineRef.current.remove();
+      const poly = L.polyline(streetCoords, {
+        color: '#0284c7',
+        weight: 6,
+        opacity: 0.9,
+        lineJoin: 'round',
+        lineCap: 'round'
+      }).addTo(mapRef.current);
+      polylineRef.current = poly;
+      mapRef.current.fitBounds(poly.getBounds(), { padding: [50, 50] });
+    });
 
     pts.forEach((parada: any, idx: number) => {
       const paradaIcon = L.divIcon({
