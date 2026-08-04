@@ -301,8 +301,8 @@ const Perfil = () => {
               >
                 <ArrowLeft className="h-5 w-5" />
               </Link>
-              <div className="h-9 w-9 bg-gradient-to-tr from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-md">
-                <span className="text-white font-bold text-lg">V</span>
+              <div className="h-9 w-9 bg-gradient-to-tr from-emerald-500 via-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md shadow-emerald-500/20">
+                <Leaf className="h-5 w-5 text-white" />
               </div>
               <span className="text-gray-900 dark:text-white text-xl font-extrabold tracking-tight">
                 Te Quiero{' '}

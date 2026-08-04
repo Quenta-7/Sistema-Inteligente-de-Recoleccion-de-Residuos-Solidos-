@@ -229,8 +229,8 @@ const Dashboard = () => {
               >
                 {menuAbierto ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
               </button>
-              <div className="h-10 w-10 bg-gradient-to-tr from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-md mr-3">
-                 <span className="text-white font-bold text-xl">V</span>
+              <div className="h-10 w-10 bg-gradient-to-tr from-emerald-500 via-teal-500 to-emerald-600 rounded-xl flex items-center justify-center shadow-md shadow-emerald-500/20 mr-3">
+                 <Leaf className="h-6 w-6 text-white" />
               </div>
               <span className="text-gray-900 dark:text-white text-2xl font-extrabold tracking-tight">
                 Te Quiero <span className="text-emerald-600">Verde</span>{' '}
@@ -344,8 +344,8 @@ const Dashboard = () => {
           <div className="relative flex-1 flex flex-col max-w-xs w-full bg-white dark:bg-slate-900 shadow-2xl p-6 z-55 transition-transform">
             <div className="flex items-center justify-between mb-8 pb-4 border-b border-gray-100 dark:border-slate-800">
               <div className="flex items-center">
-                <div className="h-8 w-8 bg-gradient-to-tr from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center shadow-sm mr-2.5">
-                  <span className="text-white font-bold text-sm">V</span>
+                <div className="h-8 w-8 bg-gradient-to-tr from-emerald-500 via-teal-500 to-emerald-600 rounded-lg flex items-center justify-center shadow-sm mr-2.5">
+                  <Leaf className="h-5 w-5 text-white" />
                 </div>
                 <span className="text-gray-900 dark:text-white text-md font-extrabold">Te Quiero Verde</span>
               </div>
