@@ -499,6 +499,24 @@ const AdminDashboard = () => {
   };
 
   // RUTA CRUD
+  const asignarRecolectorARuta = async (rutaId: number, recolectorId: number) => {
+    if (!recolectorId) return;
+    try {
+      const res = await authedFetch(`/api/rutas/${rutaId}/`, {
+        method: 'PATCH',
+        body: JSON.stringify({ recolector: recolectorId })
+      });
+      if (res.ok) {
+        showFeedback('Recolector asignado a la ruta correctamente.', 'success');
+        cargarRutas();
+      } else {
+        showFeedback('Error al asignar el recolector a la ruta.', 'error');
+      }
+    } catch (err) {
+      showFeedback('Error de conexión con el servidor.', 'error');
+    }
+  };
+
   const saveRuta = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
@@ -1172,7 +1190,21 @@ const AdminDashboard = () => {
                         <tr key={r.id} className="hover:bg-slate-100/40 transition-colors">
                           <td className="px-6 py-4">
                             <p className="text-sm font-bold text-slate-900 dark:text-white">{r.zona_nombre || `Zona ID: ${r.zona}`}</p>
-                            <p className="text-xs text-slate-500">Chofer: {r.recolector_nombre || `ID: ${r.recolector}`}</p>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <span className="text-xs text-slate-500 font-semibold">Recolector:</span>
+                              <select
+                                value={r.recolector}
+                                onChange={(e) => asignarRecolectorARuta(r.id, Number(e.target.value))}
+                                className="bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-lg text-xs font-bold px-2 py-1 text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500"
+                              >
+                                <option value="">Seleccionar recolector</option>
+                                {usuarios.filter(u => u.rol === 'recolector' || u.rol === 'admin').map(u => (
+                                  <option key={u.id} value={u.id}>
+                                    {u.nombre_completo} ({u.rol})
+                                  </option>
+                                ))}
+                              </select>
+                            </div>
                           </td>
                           <td className="px-6 py-4">
                             <p className="text-xs font-bold text-slate-800 dark:text-slate-200">{r.fecha}</p>
@@ -1190,6 +1222,16 @@ const AdminDashboard = () => {
                           <td className="px-6 py-4 text-center space-x-2">
                             <button
                               onClick={() => {
+                                setSelectedRealRutaId(r.id);
+                                setActiveTab('monitoreo');
+                              }}
+                              className="px-2.5 py-1.5 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 rounded-lg inline-flex items-center gap-1 text-xs font-bold transition-colors"
+                              title="Ver mapa de esta ruta"
+                            >
+                              <Map className="h-3.5 w-3.5" /> Mapa
+                            </button>
+                            <button
+                              onClick={() => {
                                 setEditingRuta(r);
                                 setRutaForm({
                                   recolector: String(r.recolector),
@@ -1204,12 +1246,14 @@ const AdminDashboard = () => {
                                 setShowRutaModal(true);
                               }}
                               className="p-1.5 bg-sky-100 text-sky-700 hover:bg-sky-200 rounded-lg inline-flex items-center"
+                              title="Editar"
                             >
                               <Edit className="h-4 w-4" />
                             </button>
                             <button
                               onClick={() => deleteRuta(r.id)}
                               className="p-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-lg inline-flex items-center"
+                              title="Eliminar"
                             >
                               <Trash2 className="h-4 w-4" />
                             </button>
