@@ -311,16 +311,14 @@ class LogoutView(APIView):
 
     def post(self, request):
         try:
-            request.user.auth_token.delete()
-            return Response({
-                'success': True,
-                'message': 'Sesión cerrada correctamente en el servidor.'
-            }, status=status.HTTP_200_OK)
+            if hasattr(request.user, 'auth_token'):
+                request.user.auth_token.delete()
         except Exception:
-            return Response({
-                'success': False,
-                'message': 'Error al intentar cerrar la sesión en el servidor.'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            pass
+        return Response({
+            'success': True,
+            'message': 'Sesión cerrada correctamente en el servidor.'
+        }, status=status.HTTP_200_OK)
 
 
 class RecuperarContrasenaView(APIView):

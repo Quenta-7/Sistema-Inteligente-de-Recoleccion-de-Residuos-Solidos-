@@ -801,13 +801,13 @@ export default function RecolectorDashboard() {
                       const isNear = dist < 50;
 
                       return (
-                        <div key={node.nombre} className="flex items-center justify-between border-b border-slate-100 dark:border-slate-900 pb-2 last:border-0 last:pb-0">
+                        <div key={node.nombre || `node-${idx}-${node.lat}`} className="flex items-center justify-between border-b border-slate-100 dark:border-slate-900 pb-2 last:border-0 last:pb-0">
                           <div className="flex items-center gap-2">
                             <span className="w-5 h-5 rounded-full bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-[10px] font-bold text-slate-500 flex items-center justify-center">
                               {idx + 1}
                             </span>
                             <div>
-                              <p className="text-xs font-bold text-slate-800 dark:text-white">{node.nombre}</p>
+                              <p className="text-xs font-bold text-slate-800 dark:text-white">{node.nombre || `Parada ${idx + 1}`}</p>
                               <p className="text-[9px] text-slate-500">Distancia: {dist.toFixed(0)}m</p>
                             </div>
                           </div>
