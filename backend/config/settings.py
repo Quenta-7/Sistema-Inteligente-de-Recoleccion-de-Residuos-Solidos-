@@ -16,17 +16,24 @@ from pathlib import Path
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# Cargar variables antes de evaluar seguridad, hosts y base de datos.
+try:
+    from dotenv import load_dotenv
+    load_dotenv(BASE_DIR / '.env')
+except ImportError:
+    pass
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-(l%23896&2)aw8ik)6e#i=d4eci8!bq%y4rs(px(^3y*j3=r=b'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-local-development-only')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if host.strip()]
 
 
 # Application definition
@@ -62,6 +69,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",  # ejemplo: frontend React
     "http://127.0.0.1:5173",  # otro ejemplo
 ]
+if os.environ.get('CORS_ALLOWED_ORIGINS'):
+    CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ['CORS_ALLOWED_ORIGINS'].split(',') if origin.strip()]
 
 AUTH_USER_MODEL = 'core.Usuario'
 
@@ -121,8 +130,7 @@ AUTH_PASSWORD_VALIDATORS = [
 # Configuración de REST Framework
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.TokenAuthentication',
+        'core.authentication.SingleSessionJWTAuthentication',
     ],
     'DEFAULT_THROTTLE_CLASSES': [
         'rest_framework.throttling.AnonRateThrottle',
@@ -141,6 +149,16 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=30),
     'AUTH_HEADER_TYPES': ('Token', 'Bearer'),
 }
+
+# HTTPS se termina normalmente en Nginx/Apache/Cloudflare. Estas opciones se
+# activan con DJANGO_SECURE_SSL=1 en producción y exigen TLS en toda la app.
+SECURE_SSL_REDIRECT = os.environ.get('DJANGO_SECURE_SSL', '0') == '1'
+SESSION_COOKIE_SECURE = SECURE_SSL_REDIRECT
+CSRF_COOKIE_SECURE = SECURE_SSL_REDIRECT
+SECURE_HSTS_SECONDS = 31536000 if SECURE_SSL_REDIRECT else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = SECURE_SSL_REDIRECT
+SECURE_HSTS_PRELOAD = SECURE_SSL_REDIRECT
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 PASSWORD_HASHERS = [
     'django.contrib.auth.hashers.BCryptSHA256PasswordHasher',
@@ -174,13 +192,6 @@ MEDIA_ROOT = BASE_DIR / 'media'
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-
-# Cargar archivo .env si existe
-try:
-    from dotenv import load_dotenv
-    load_dotenv(BASE_DIR / '.env')
-except ImportError:
-    pass
 
 # Configuración de Correo Electrónico
 EMAIL_HOST = os.environ.get('EMAIL_HOST', '')

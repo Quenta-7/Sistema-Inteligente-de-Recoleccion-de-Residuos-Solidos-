@@ -34,6 +34,7 @@ const Dashboard = () => {
   const [ratingComentario, setRatingComentario] = useState('');
   const [enviandoCalificacion, setEnviandoCalificacion] = useState(false);
   const [calificacionExito, setCalificacionExito] = useState(false);
+  const [historialCalificaciones, setHistorialCalificaciones] = useState<any[]>([]);
 
   useEffect(() => {
     const root = window.document.documentElement;
@@ -114,6 +115,10 @@ const Dashboard = () => {
         })
       });
       if (res.ok) {
+        const data = await res.json();
+        if (data.calificacion) {
+          setHistorialCalificaciones(prev => [data.calificacion, ...prev]);
+        }
         setCalificacionExito(true);
         // Remover de la lista
         setCompletadasSinCalificar(prev => prev.filter(r => r.id !== rutaACalificar.id));
@@ -139,6 +144,7 @@ const Dashboard = () => {
         if (rRes.ok && cRes.ok) {
           const rData = await rRes.json();
           const cData = await cRes.json();
+          setHistorialCalificaciones(Array.isArray(cData) ? cData : cData.results || []);
           const calificadasIds = cData.map((c: any) => c.ruta);
           const completadas = rData.filter((r: any) => 
             (r.estado === 'completada' || r.estado === 'parcialmente_completada') && 
@@ -476,6 +482,28 @@ const Dashboard = () => {
               Calificar Ahora
             </button>
           </div>
+        )}
+
+        {historialCalificaciones.length > 0 && (
+          <section className="mb-8 bg-white/90 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-3xl p-5 shadow-sm">
+            <h3 className="text-sm font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <Star className="h-4 w-4 text-amber-400 fill-amber-400" />
+              Historial de calificaciones
+            </h3>
+            <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {historialCalificaciones.map(calificacion => (
+                <article key={calificacion.id} className="rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-100 dark:border-slate-800 p-3">
+                  <p className="text-xs font-bold text-slate-800 dark:text-white">Ruta #{calificacion.ruta} · {calificacion.ruta_fecha}</p>
+                  <div className="flex gap-0.5 my-1 text-amber-400">
+                    {[...Array(5)].map((_, index) => <Star key={index} className={`h-3.5 w-3.5 ${index < calificacion.estrellas ? 'fill-amber-400' : 'text-slate-300'}`} />)}
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
+                    {calificacion.estado_moderacion === 'oculto' ? 'Comentario oculto por moderación.' : (calificacion.comentario || 'Sin comentario.')}
+                  </p>
+                </article>
+              ))}
+            </div>
+          </section>
         )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">

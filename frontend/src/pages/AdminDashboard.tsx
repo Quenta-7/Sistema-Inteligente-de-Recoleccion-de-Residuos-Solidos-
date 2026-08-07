@@ -109,6 +109,7 @@ type CalificacionServicio = {
   recolector_nombre: string;
   estrellas: number;
   comentario?: string;
+  estado_moderacion: 'visible' | 'oculto';
   created_at: string;
 };
 
@@ -264,6 +265,21 @@ const AdminDashboard = () => {
       console.error(err);
     } finally {
       setLoadingCalificaciones(false);
+    }
+  };
+
+  const moderarCalificacion = async (calificacion: CalificacionServicio) => {
+    const nuevoEstado = calificacion.estado_moderacion === 'visible' ? 'oculto' : 'visible';
+    const res = await authedFetch(`/api/calificaciones/${calificacion.id}/`, {
+      method: 'PATCH',
+      body: JSON.stringify({ estado_moderacion: nuevoEstado }),
+    });
+    if (res.ok) {
+      const actualizada = await res.json();
+      setCalificaciones(prev => prev.map(item => item.id === actualizada.id ? actualizada : item));
+      showFeedback(`Comentario marcado como ${nuevoEstado}.`, 'success');
+    } else {
+      showFeedback('No se pudo moderar el comentario.', 'error');
     }
   };
 
@@ -1968,6 +1984,7 @@ const AdminDashboard = () => {
                           <th className="py-4 px-6">Recolector</th>
                           <th className="py-4 px-6">Puntuación</th>
                           <th className="py-4 px-6">Comentario</th>
+                          <th className="py-4 px-6">Moderación</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-850">
@@ -1983,7 +2000,17 @@ const AdminDashboard = () => {
                                 ))}
                               </div>
                             </td>
-                            <td className="py-4 px-6 text-xs text-slate-600 dark:text-slate-400 italic">{cal.comentario || 'Sin comentario adicional'}</td>
+                            <td className="py-4 px-6 text-xs text-slate-600 dark:text-slate-400 italic">
+                              {cal.estado_moderacion === 'oculto' ? 'Comentario oculto por moderación' : (cal.comentario || 'Sin comentario adicional')}
+                            </td>
+                            <td className="py-4 px-6">
+                              <button
+                                onClick={() => moderarCalificacion(cal)}
+                                className={`px-3 py-1.5 rounded-lg text-[10px] font-bold ${cal.estado_moderacion === 'visible' ? 'bg-amber-100 text-amber-800' : 'bg-emerald-100 text-emerald-800'}`}
+                              >
+                                {cal.estado_moderacion === 'visible' ? 'Ocultar' : 'Mostrar'}
+                              </button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>

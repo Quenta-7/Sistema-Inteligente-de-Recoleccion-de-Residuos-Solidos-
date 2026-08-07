@@ -202,11 +202,20 @@ class RutaSerializer(serializers.ModelSerializer):
     class Meta:
         model = Ruta
         fields = '__all__'
+        read_only_fields = ['ultima_actualizacion_gps']
 
     def validate_estado(self, value):
         if value not in Ruta.EstadoRuta.values:
             raise serializers.ValidationError("Estado de ruta inválido.")
         return value
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        if instance.estado != Ruta.EstadoRuta.EN_PROGRESO:
+            data['lat_actual'] = None
+            data['lng_actual'] = None
+            data['ultima_actualizacion_gps'] = None
+        return data
 
 class IncidenciaSerializer(serializers.ModelSerializer):
     recolector_nombre = serializers.CharField(source='recolector.nombre_completo', read_only=True)
@@ -224,9 +233,24 @@ class CalificacionServicioSerializer(serializers.ModelSerializer):
     class Meta:
         model = CalificacionServicio
         fields = '__all__'
-        read_only_fields = ['id', 'ciudadano', 'created_at']
+        read_only_fields = ['id', 'ciudadano', 'estado_moderacion', 'moderado_por', 'fecha_moderacion', 'created_at']
 
     def validate_estrellas(self, value):
         if value < 1 or value > 5:
             raise serializers.ValidationError("La calificación debe estar entre 1 y 5 estrellas.")
         return value
+
+    def validate(self, attrs):
+        request = self.context.get('request')
+        if request and request.method == 'POST':
+            user = request.user
+            ruta = attrs.get('ruta')
+            if getattr(user, 'rol', None) != 'ciudadano':
+                raise serializers.ValidationError('Solo los ciudadanos pueden calificar el servicio.')
+            if ruta.estado not in [Ruta.EstadoRuta.COMPLETADA, Ruta.EstadoRuta.PARCIALMENTE_COMPLETADA]:
+                raise serializers.ValidationError({'ruta': 'Solo se puede calificar un servicio ya realizado.'})
+            if not user.zona_id or ruta.zona_id != user.zona_id:
+                raise serializers.ValidationError({'ruta': 'El servicio no corresponde a la zona del ciudadano.'})
+            if CalificacionServicio.objects.filter(ciudadano=user, ruta=ruta).exists():
+                raise serializers.ValidationError({'ruta': 'Ya registraste una calificación para este servicio.'})
+        return attrs

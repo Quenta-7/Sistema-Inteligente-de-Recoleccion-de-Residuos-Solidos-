@@ -51,11 +51,19 @@ interface Incidencia {
   created_at: string;
 }
 
+interface Notificacion {
+  id: number;
+  mensaje: string;
+  leido: boolean;
+  created_at: string;
+}
+
 export default function RecolectorDashboard() {
   const navigate = useNavigate();
   const [user, setUser] = useState<any>(null);
   const [rutas, setRutas] = useState<Ruta[]>([]);
   const [incidencias, setIncidencias] = useState<Incidencia[]>([]);
+  const [notificaciones, setNotificaciones] = useState<Notificacion[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'rutas' | 'mapa' | 'incidencias'>('rutas');
   
@@ -89,6 +97,7 @@ export default function RecolectorDashboard() {
   const polylineRef = useRef<L.Polyline | null>(null);
   const truckMarkerRef = useRef<L.Marker | null>(null);
   const stopMarkersRef = useRef<L.Marker[]>([]);
+  const lastGpsTransmissionRef = useRef(0);
 
   // Theme support
   const [theme, setThemeState] = useState<'light' | 'dark'>(() => {
@@ -169,6 +178,12 @@ export default function RecolectorDashboard() {
         const iData = await iRes.json();
         setIncidencias(iData);
       }
+
+      const nRes = await authedFetch('/api/notificaciones/');
+      if (nRes.ok) {
+        const nData = await nRes.json();
+        setNotificaciones(Array.isArray(nData) ? nData : nData.results || []);
+      }
     } catch (err) {
       console.error('Error fetching collector data:', err);
     } finally {
@@ -178,6 +193,14 @@ export default function RecolectorDashboard() {
 
   useEffect(() => {
     fetchData();
+    const notificationsInterval = window.setInterval(async () => {
+      const response = await authedFetch('/api/notificaciones/');
+      if (response.ok) {
+        const data = await response.json();
+        setNotificaciones(Array.isArray(data) ? data : data.results || []);
+      }
+    }, 15_000);
+    return () => window.clearInterval(notificationsInterval);
   }, []);
 
   // Distance calculator helper
@@ -195,7 +218,10 @@ export default function RecolectorDashboard() {
 
   // Real HTML5 GPS Location Listener (watchPosition)
   useEffect(() => {
-    if (!activeRuta) return;
+    if (!activeRuta || activeRuta.estado !== 'en_progreso') {
+      setCurrentPosition(null);
+      return;
+    }
 
     if (!('geolocation' in navigator)) {
       setRealGpsError('La geolocalización HTML5 no está disponible en este navegador.');
@@ -209,11 +235,17 @@ export default function RecolectorDashboard() {
         const { latitude, longitude, accuracy } = pos.coords;
         setCurrentPosition([latitude, longitude]);
         setGpsAccuracy(accuracy);
-        setLastGpsSyncTime(new Date().toLocaleTimeString());
+
+        // watchPosition puede dispararse muchas veces por segundo. La API se
+        // sincroniza cada 30 s como máximo para una operación estable en 4G.
+        const now = Date.now();
+        if (now - lastGpsTransmissionRef.current < 30_000) return;
+        lastGpsTransmissionRef.current = now;
+        setLastGpsSyncTime(new Date(now).toLocaleTimeString());
 
         // Transmit coordinates to backend API
         try {
-          await authedFetch(`/api/rutas/${activeRuta.id}/`, {
+          const response = await authedFetch(`/api/rutas/${activeRuta.id}/`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -221,6 +253,11 @@ export default function RecolectorDashboard() {
               lng_actual: longitude
             })
           });
+          if (response.ok) {
+            const updated = await response.json();
+            setActiveRuta(updated);
+            setRutas(prev => prev.map(route => route.id === updated.id ? updated : route));
+          }
         } catch (err) {
           console.error('Error enviando posición GPS al servidor:', err);
         }
@@ -315,17 +352,21 @@ export default function RecolectorDashboard() {
           : nodes;
 
         keyStops.forEach((node, idx) => {
+          const isStart = idx === 0;
+          const isEnd = idx === keyStops.length - 1;
+          const markerText = isStart ? 'I' : isEnd ? 'F' : String(idx);
+          const markerColor = isStart ? 'bg-sky-600' : isEnd ? 'bg-rose-600' : 'bg-emerald-700';
           const stopIcon = L.divIcon({
             className: 'custom-stop-icon',
-            html: `<div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-black text-white shadow bg-emerald-700">
-                     ${idx + 1}
+            html: `<div class="w-6 h-6 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-black text-white shadow ${markerColor}">
+                     ${markerText}
                    </div>`,
             iconSize: [24, 24],
             iconAnchor: [12, 12]
           });
 
           const m = L.marker([node.lat, node.lng], { icon: stopIcon })
-            .bindPopup(`<strong>Punto ${idx + 1}:</strong> ${node.nombre || 'Parada de Acopio'}`)
+            .bindPopup(`<strong>${isStart ? 'Inicio' : isEnd ? 'Final' : `Punto ${idx}`}:</strong> ${node.nombre || 'Parada de Acopio'}`)
             .addTo(map);
           stopMarkersRef.current.push(m);
         });
@@ -555,6 +596,23 @@ export default function RecolectorDashboard() {
           </div>
         </div>
 
+        {notificaciones.filter(item => !item.leido).map(item => (
+          <button
+            key={item.id}
+            onClick={async () => {
+              await authedFetch(`/api/notificaciones/${item.id}/`, {
+                method: 'PATCH',
+                body: JSON.stringify({ leido: true }),
+              });
+              setNotificaciones(prev => prev.map(current => current.id === item.id ? { ...current, leido: true } : current));
+            }}
+            className="w-full mb-3 p-3 rounded-2xl bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 text-left flex gap-2"
+          >
+            <AlertTriangle className="h-4 w-4 text-sky-600 flex-shrink-0" />
+            <span className="text-xs font-semibold text-sky-900 dark:text-sky-200">{item.mensaje}</span>
+          </button>
+        ))}
+
         {/* Tab 1: Rutas List */}
         {activeTab === 'rutas' && (
           <div className="space-y-4 fade-in-up">
@@ -768,7 +826,7 @@ export default function RecolectorDashboard() {
                   </div>
 
                   {/* Real GPS coordinates & telemetry details */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2 border-t border-slate-100 dark:border-slate-900 text-[10px]">
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-slate-100 dark:border-slate-900 text-[10px]">
                     <div className="bg-slate-50 dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850">
                       <span className="text-slate-400 block text-[9px] uppercase font-bold">Latitud Real</span>
                       <span className="font-mono font-bold text-slate-900 dark:text-white">{currentPosition ? currentPosition[0].toFixed(5) : 'Conectando...'}</span>
@@ -782,6 +840,10 @@ export default function RecolectorDashboard() {
                       <span className="font-bold text-emerald-600 dark:text-emerald-400">
                         {gpsAccuracy ? `±${gpsAccuracy.toFixed(1)}m (GPS)` : 'Transmitiendo'}
                       </span>
+                    </div>
+                    <div className="col-span-2 sm:col-span-1 bg-slate-50 dark:bg-slate-900 p-2.5 rounded-xl border border-slate-100 dark:border-slate-850">
+                      <span className="text-slate-400 block text-[9px] uppercase font-bold">Distancia restante</span>
+                      <span className="font-bold text-sky-600 dark:text-sky-400">{Number(activeRuta.distancia_restante || 0).toFixed(2)} km</span>
                     </div>
                   </div>
                   {lastGpsSyncTime && (

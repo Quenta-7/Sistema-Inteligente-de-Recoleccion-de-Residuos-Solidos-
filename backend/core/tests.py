@@ -5,7 +5,7 @@ from rest_framework import status
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode
 from django.utils.encoding import force_bytes
-from core.models import Usuario, Zona, Horario, Evidencia, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio
+from core.models import Usuario, Zona, Horario, Evidencia, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio, BitacoraAuditoria
 
 class CoreApiTests(TestCase):
     def setUp(self):
@@ -173,6 +173,7 @@ class CoreApiTests(TestCase):
         incidencia.refresh_from_db()
         self.assertEqual(incidencia.estado, "resuelta")
         self.assertEqual(incidencia.respuesta_admin, "Camión desviado por Av. Evitamiento")
+        self.assertTrue(self.recolector.notificaciones.filter(mensaje__contains=f'#{incidencia.id}').exists())
 
     def test_calificacion_servicio(self):
         ruta = Ruta.objects.create(
@@ -193,6 +194,71 @@ class CoreApiTests(TestCase):
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['message'], 'Calificación registrada correctamente.')
+        self.assertTrue(BitacoraAuditoria.objects.filter(
+            usuario=self.ciudadano,
+            accion='calificacion_creada',
+            entidad_id=response.data['calificacion']['id'],
+        ).exists())
+
+        # La restricción existe tanto en API como en la base de datos.
+        duplicate = self.client.post(url, data, format='json')
+        self.assertEqual(duplicate.status_code, status.HTTP_400_BAD_REQUEST)
+
+        rating_id = response.data['calificacion']['id']
+        self.assertEqual(self.client.delete(f'/api/calificaciones/{rating_id}/').status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+
+        self.client.force_authenticate(user=self.admin)
+        moderation = self.client.patch(
+            f'/api/calificaciones/{rating_id}/',
+            {'estado_moderacion': 'oculto'},
+            format='json',
+        )
+        self.assertEqual(moderation.status_code, status.HTTP_200_OK)
+        self.assertEqual(moderation.data['estado_moderacion'], 'oculto')
+
+    def test_no_se_califica_ruta_no_realizada(self):
+        ruta = Ruta.objects.create(
+            recolector=self.recolector, zona=self.zona, fecha='2026-08-07',
+            hora_inicio='07:00:00', hora_fin_estimada='10:00:00', estado='programada',
+        )
+        self.client.force_authenticate(user=self.ciudadano)
+        response = self.client.post('/api/calificaciones/', {'ruta': ruta.id, 'estrellas': 4}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_gps_solo_durante_ruta_y_se_limpia_al_finalizar(self):
+        ruta = Ruta.objects.create(
+            recolector=self.recolector, zona=self.zona, fecha='2026-08-07',
+            hora_inicio='07:00:00', hora_fin_estimada='10:00:00', estado='programada',
+            geometria_ruta=[{'lat': -13.54, 'lng': -71.87}, {'lat': -13.55, 'lng': -71.88}],
+        )
+        self.client.force_authenticate(user=self.recolector)
+        url = f'/api/rutas/{ruta.id}/'
+        rejected = self.client.patch(url, {'lat_actual': -13.54, 'lng_actual': -71.87}, format='json')
+        self.assertEqual(rejected.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(self.client.patch(url, {'estado': 'en_progreso'}, format='json').status_code, status.HTTP_200_OK)
+        tracked = self.client.patch(url, {'lat_actual': -13.54, 'lng_actual': -71.87}, format='json')
+        self.assertEqual(tracked.status_code, status.HTTP_200_OK)
+        self.assertIsNotNone(tracked.data['ultima_actualizacion_gps'])
+        completed = self.client.patch(url, {'estado': 'completada', 'observaciones': 'Ruta terminada'}, format='json')
+        self.assertEqual(completed.status_code, status.HTTP_200_OK)
+        self.assertIsNone(completed.data['lat_actual'])
+        self.assertIsNone(completed.data['lng_actual'])
+
+    def test_nuevo_login_invalida_jwt_anterior(self):
+        login_url = reverse('login')
+        first = self.client.post(login_url, {
+            'email': self.recolector.email, 'password': 'Password123!', 'device_id': 'android-a',
+        }, format='json')
+        second = self.client.post(login_url, {
+            'email': self.recolector.email, 'password': 'Password123!', 'device_id': 'android-b',
+        }, format='json')
+        previous_client = APIClient()
+        previous_client.credentials(HTTP_AUTHORIZATION=f"Bearer {first.data['token']}")
+        self.assertEqual(previous_client.get('/api/perfil/').status_code, status.HTTP_401_UNAUTHORIZED)
+        current_client = APIClient()
+        current_client.credentials(HTTP_AUTHORIZATION=f"Bearer {second.data['token']}")
+        self.assertEqual(current_client.get('/api/perfil/').status_code, status.HTTP_200_OK)
 
     def test_solicitud_recuperar_contrasena(self):
         url = reverse('recuperar_contrasena')

@@ -73,7 +73,9 @@ function Ensure-Database() {
     Write-Section 'Aplicando migraciones'
     & $PythonExe manage.py migrate
 
-    if (-not (Test-Path $SeedMarker)) {
+    $seedStatus = & $PythonExe manage.py shell -c "from core.models import Usuario; print(Usuario.objects.filter(email='admin@residuos.com').exists())"
+    $hasSeedData = ($seedStatus | Select-Object -Last 1).Trim() -eq 'True'
+    if (-not $hasSeedData) {
         Write-Section 'Inicializando base de datos por primera vez'
         & $PythonExe manage.py seed_db
         New-Item -Path $SeedMarker -ItemType File -Force | Out-Null

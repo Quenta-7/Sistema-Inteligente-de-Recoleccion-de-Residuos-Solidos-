@@ -2,13 +2,20 @@
  * Helper para realizar peticiones autenticadas
  * Agrega automáticamente el token a la cabecera Authorization
  */
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+import { clearAuthSession, getAuthToken, isTokenExpired } from './utils/auth';
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 export const authedFetch = async (
   url: string,
   options: RequestInit = {}
 ): Promise<Response> => {
-  const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
+  const token = getAuthToken();
+  if (token && isTokenExpired(token)) {
+    clearAuthSession();
+    window.location.href = '/login';
+    return new Response(JSON.stringify({ detail: 'Token expirado.' }), { status: 401 });
+  }
   
   const headers = new Headers(options.headers || {});
   
@@ -33,10 +40,7 @@ export const authedFetch = async (
     const isPublicPage = ['/login', '/registro', '/recuperar-contrasena', '/restablecer-contrasena', '/politica-privacidad', '/terminos-condiciones'].some(page => currentPath.startsWith(page));
     
     if (!isPublicPage) {
-      localStorage.removeItem('auth_token');
-      localStorage.removeItem('user_data');
-      sessionStorage.removeItem('auth_token');
-      sessionStorage.removeItem('user_data');
+      clearAuthSession();
       window.location.href = '/login';
     }
   }

@@ -10,7 +10,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 from django.conf import settings
-from .models import Zona, Horario, Reporte, Usuario, Evidencia, Notificacion, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio
+from .models import Zona, Horario, Reporte, Usuario, Evidencia, Notificacion, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio, BitacoraAuditoria
 from .serializers import (
     ZonaSerializer,
     HorarioSerializer,
@@ -95,8 +95,18 @@ class LoginView(APIView):
         if serializer.is_valid():
             usuario = serializer.validated_data['usuario']
             
+            # Una cuenta mantiene una sola sesión activa. El UUID del dispositivo
+            # es informativo; el SID firmado es el que invalida tokens anteriores.
+            import uuid
+            device_id = str(request.data.get('device_id', '')).strip()[:128] or str(uuid.uuid4())
+            session_id = uuid.uuid4().hex
+            usuario.active_device_id = device_id
+            usuario.active_session_id = session_id
+            usuario.save(update_fields=['active_device_id', 'active_session_id'])
+
             # Generar token JWT para el usuario
             refresh = RefreshToken.for_user(usuario)
+            refresh['sid'] = session_id
             access_token = str(refresh.access_token)
             
             # Responder con token y datos del usuario autenticado
@@ -349,6 +359,9 @@ class LogoutView(APIView):
                 request.user.auth_token.delete()
         except Exception:
             pass
+        request.user.active_session_id = None
+        request.user.active_device_id = None
+        request.user.save(update_fields=['active_session_id', 'active_device_id'])
         return Response({
             'success': True,
             'message': 'Sesión cerrada correctamente en el servidor.'
@@ -607,10 +620,82 @@ class RutaViewSet(viewsets.ModelViewSet):
 
     def perform_update(self, serializer):
         from django.utils import timezone
-        if 'lat_actual' in serializer.validated_data or 'lng_actual' in serializer.validated_data:
-            serializer.save(ultima_actualizacion_gps=timezone.now())
+        from rest_framework.exceptions import PermissionDenied, ValidationError
+        user = self.request.user
+        ruta = self.get_object()
+        supplied = set(self.request.data.keys())
+
+        if user.rol != 'admin':
+            if user.rol != 'recolector' or ruta.recolector_id != user.id:
+                raise PermissionDenied('La ruta no está asignada al recolector autenticado.')
+            allowed = {'estado', 'observaciones', 'fecha_hora_reporte', 'lat_actual', 'lng_actual'}
+            if supplied - allowed:
+                raise PermissionDenied('El recolector no puede modificar esos campos de la ruta.')
+
+        sends_location = bool({'lat_actual', 'lng_actual'} & supplied)
+        if sends_location:
+            if ruta.estado != Ruta.EstadoRuta.EN_PROGRESO:
+                raise ValidationError('La ubicación solo se transmite mientras la ruta está en curso.')
+            if not {'lat_actual', 'lng_actual'} <= supplied:
+                raise ValidationError('Se requieren latitud y longitud en cada actualización GPS.')
+            lat = float(serializer.validated_data['lat_actual'])
+            lng = float(serializer.validated_data['lng_actual'])
+            if not (-90 <= lat <= 90 and -180 <= lng <= 180):
+                raise ValidationError('Coordenadas geográficas inválidas.')
+            remaining = self._remaining_km(ruta.geometria_ruta or [], lat, lng)
+            serializer.save(ultima_actualizacion_gps=timezone.now(), distancia_restante=remaining)
+            return
+
+        next_state = serializer.validated_data.get('estado', ruta.estado)
+        if user.rol == 'recolector':
+            transitions = {
+                Ruta.EstadoRuta.PROGRAMADA: {Ruta.EstadoRuta.EN_PROGRESO},
+                Ruta.EstadoRuta.EN_PROGRESO: {
+                    Ruta.EstadoRuta.COMPLETADA,
+                    Ruta.EstadoRuta.PARCIALMENTE_COMPLETADA,
+                    Ruta.EstadoRuta.NO_COMPLETADA,
+                },
+            }
+            if next_state != ruta.estado and next_state not in transitions.get(ruta.estado, set()):
+                raise ValidationError('Transición de estado de ruta no permitida.')
+
+        if next_state in [Ruta.EstadoRuta.COMPLETADA, Ruta.EstadoRuta.PARCIALMENTE_COMPLETADA, Ruta.EstadoRuta.NO_COMPLETADA]:
+            serializer.save(lat_actual=None, lng_actual=None, ultima_actualizacion_gps=None, distancia_restante=0)
         else:
             serializer.save()
+
+    @staticmethod
+    def _remaining_km(nodes, lat, lng):
+        import math
+        valid = [n for n in nodes if isinstance(n, dict) and 'lat' in n and 'lng' in n]
+        if not valid:
+            return 0
+
+        def distance(a_lat, a_lng, b_lat, b_lng):
+            radius = 6371.0
+            p1, p2 = math.radians(a_lat), math.radians(b_lat)
+            dp = math.radians(b_lat - a_lat)
+            dl = math.radians(b_lng - a_lng)
+            value = math.sin(dp / 2) ** 2 + math.cos(p1) * math.cos(p2) * math.sin(dl / 2) ** 2
+            return radius * 2 * math.atan2(math.sqrt(value), math.sqrt(1 - value))
+
+        nearest = min(range(len(valid)), key=lambda i: distance(lat, lng, float(valid[i]['lat']), float(valid[i]['lng'])))
+        total = distance(lat, lng, float(valid[nearest]['lat']), float(valid[nearest]['lng']))
+        for current, following in zip(valid[nearest:], valid[nearest + 1:]):
+            total += distance(float(current['lat']), float(current['lng']), float(following['lat']), float(following['lng']))
+        return round(total, 2)
+
+    def create(self, request, *args, **kwargs):
+        if getattr(request.user, 'rol', None) != 'admin':
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Solo un administrador puede crear rutas.')
+        return super().create(request, *args, **kwargs)
+
+    def destroy(self, request, *args, **kwargs):
+        if getattr(request.user, 'rol', None) != 'admin':
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Solo un administrador puede eliminar rutas.')
+        return super().destroy(request, *args, **kwargs)
 
 class IncidenciaViewSet(viewsets.ModelViewSet):
     serializer_class = IncidenciaSerializer
@@ -623,7 +708,22 @@ class IncidenciaViewSet(viewsets.ModelViewSet):
         return Incidencia.objects.filter(recolector=user)
 
     def perform_create(self, serializer):
+        from rest_framework.exceptions import PermissionDenied
+        if getattr(self.request.user, 'rol', None) != 'recolector':
+            raise PermissionDenied('Solo los recolectores pueden reportar incidencias.')
         serializer.save(recolector=self.request.user)
+
+    def perform_update(self, serializer):
+        from rest_framework.exceptions import PermissionDenied
+        if getattr(self.request.user, 'rol', None) != 'admin':
+            raise PermissionDenied('Solo un administrador puede responder incidencias.')
+        previous_response = serializer.instance.respuesta_admin
+        incidencia = serializer.save()
+        if incidencia.respuesta_admin and incidencia.respuesta_admin != previous_response:
+            Notificacion.objects.create(
+                usuario=incidencia.recolector,
+                mensaje=f"Respuesta a incidencia #{incidencia.id}: {incidencia.respuesta_admin}",
+            )
 
 class CalificacionServicioViewSet(viewsets.ModelViewSet):
     serializer_class = CalificacionServicioSerializer
@@ -635,5 +735,46 @@ class CalificacionServicioViewSet(viewsets.ModelViewSet):
             return CalificacionServicio.objects.all()
         return CalificacionServicio.objects.filter(ciudadano=user)
 
-    def perform_create(self, serializer):
-        serializer.save(ciudadano=self.request.user)
+    http_method_names = ['get', 'post', 'patch', 'head', 'options']
+
+    def create(self, request, *args, **kwargs):
+        from django.db import IntegrityError, transaction
+        from rest_framework.exceptions import ValidationError
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            with transaction.atomic():
+                calificacion = serializer.save(ciudadano=request.user)
+        except IntegrityError:
+            raise ValidationError({'ruta': 'Ya registraste una calificación para este servicio.'})
+        forwarded = request.META.get('HTTP_X_FORWARDED_FOR', '')
+        ip = forwarded.split(',')[0].strip() if forwarded else request.META.get('REMOTE_ADDR')
+        BitacoraAuditoria.objects.create(
+            usuario=request.user,
+            accion='calificacion_creada',
+            entidad='CalificacionServicio',
+            entidad_id=calificacion.id,
+            detalle={'ruta_id': calificacion.ruta_id, 'estrellas': calificacion.estrellas},
+            ip=ip,
+        )
+        return Response({
+            'success': True,
+            'message': 'Calificación registrada correctamente.',
+            'calificacion': self.get_serializer(calificacion).data,
+        }, status=status.HTTP_201_CREATED)
+
+    def partial_update(self, request, *args, **kwargs):
+        from django.utils import timezone
+        from rest_framework.exceptions import PermissionDenied, ValidationError
+        if getattr(request.user, 'rol', None) != 'admin':
+            raise PermissionDenied('Las calificaciones no pueden ser modificadas por ciudadanos.')
+        if set(request.data.keys()) != {'estado_moderacion'}:
+            raise ValidationError('El administrador solo puede cambiar el estado de moderación.')
+        if request.data['estado_moderacion'] not in CalificacionServicio.EstadoModeracion.values:
+            raise ValidationError('Estado de moderación inválido.')
+        instance = self.get_object()
+        instance.estado_moderacion = request.data['estado_moderacion']
+        instance.moderado_por = request.user
+        instance.fecha_moderacion = timezone.now()
+        instance.save(update_fields=['estado_moderacion', 'moderado_por', 'fecha_moderacion'])
+        return Response(self.get_serializer(instance).data)

@@ -50,6 +50,9 @@ class Usuario(AbstractUser):
     fecha_aceptacion_terminos = models.DateTimeField(null=True, blank=True)
     
     foto_perfil = models.ImageField(upload_to='perfiles/', blank=True, null=True)
+    # Un nuevo login reemplaza este identificador e invalida el JWT anterior.
+    active_session_id = models.CharField(max_length=64, null=True, blank=True, editable=False)
+    active_device_id = models.CharField(max_length=128, null=True, blank=True, editable=False)
 
     # Configuramos el email como el campo principal para login
     USERNAME_FIELD = 'email'
@@ -198,10 +201,17 @@ class Incidencia(models.Model):
         return f"Incidencia {self.id} - {self.tipo} ({self.estado})"
 
 class CalificacionServicio(models.Model):
+    class EstadoModeracion(models.TextChoices):
+        VISIBLE = 'visible', 'Visible'
+        OCULTO = 'oculto', 'Oculto'
+
     ciudadano = models.ForeignKey(Usuario, on_delete=models.CASCADE, related_name='calificaciones_enviadas')
     ruta = models.ForeignKey(Ruta, on_delete=models.CASCADE, related_name='calificaciones')
     estrellas = models.IntegerField()
     comentario = models.TextField(null=True, blank=True)
+    estado_moderacion = models.CharField(max_length=10, choices=EstadoModeracion.choices, default=EstadoModeracion.VISIBLE)
+    moderado_por = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True, related_name='calificaciones_moderadas')
+    fecha_moderacion = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -212,3 +222,17 @@ class CalificacionServicio(models.Model):
 
     def __str__(self):
         return f"Calificación {self.estrellas}* para Ruta {self.ruta.id} por {self.ciudadano.nombre_completo}"
+
+
+class BitacoraAuditoria(models.Model):
+    usuario = models.ForeignKey(Usuario, on_delete=models.SET_NULL, null=True, blank=True)
+    accion = models.CharField(max_length=100)
+    entidad = models.CharField(max_length=100)
+    entidad_id = models.PositiveBigIntegerField(null=True, blank=True)
+    detalle = models.JSONField(default=dict, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [models.Index(fields=['entidad', 'entidad_id', '-created_at'])]

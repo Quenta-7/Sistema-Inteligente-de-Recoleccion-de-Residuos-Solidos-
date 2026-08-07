@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Leaf, Mail, Lock, ArrowRight, AlertCircle, Loader, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import CuscoImagen from '../assets/Cusco_imagen.png';
+import { getOrCreateDeviceId } from '../utils/auth';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -32,7 +33,7 @@ const Login = () => {
 
     try {
       // Llamar a la API del backend con el nuevo endpoint
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
       const response = await fetch(`${apiBaseUrl}/api/auth/login/`, {
         method: 'POST',
         headers: {
@@ -41,6 +42,7 @@ const Login = () => {
         body: JSON.stringify({
           email: email,
           password: password,
+          device_id: getOrCreateDeviceId(),
         }),
       });
 
@@ -80,8 +82,8 @@ const Login = () => {
         // Mostrar error del servidor
         setError(data.errors?.email?.[0] || data.errors?.password?.[0] || data.errors?.non_field_errors?.[0] || 'Credenciales inválidas');
       }
-    } catch (err) {
-      setError('Error de conexión. Verifica que el servidor esté ejecutándose en http://127.0.0.1:8000');
+    } catch {
+      setError('Error de conexión. Verifica que el servidor de la aplicación esté disponible.');
     } finally {
       setLoading(false);
     }

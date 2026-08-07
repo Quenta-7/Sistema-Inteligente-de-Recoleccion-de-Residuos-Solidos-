@@ -6,6 +6,10 @@ Plataforma web premium para optimizar la gestión y recolección de residuos só
 
 ## 🚀 Historias de Usuario Implementadas
 
+> Para despliegue seguro configure `DJANGO_DEBUG=0`, `DJANGO_SECRET_KEY`,
+> `DJANGO_ALLOWED_HOSTS`, `CORS_ALLOWED_ORIGINS` y `DJANGO_SECURE_SSL=1`.
+> El proxy frontal debe aceptar solamente TLS 1.2 o superior.
+
 El sistema cuenta con un abanico completo de Historias de Usuario desarrolladas y funcionales a nivel de frontend, backend y base de datos:
 
 ### 🔑 Autenticación, Seguridad y Registro
@@ -97,6 +101,20 @@ La estructura actual del repositorio se describe a continuación:
 ---
 
 ## ⚙️ Configuración y Ejecución
+
+### Android (interfaz híbrida con Capacitor)
+
+El frontend se reutiliza como aplicación Android; no hay una segunda base de
+código. Antes de sincronizar, defina `VITE_API_BASE_URL` con la URL HTTPS
+pública del backend y ejecute:
+
+```powershell
+cd frontend
+npm run android:sync
+npm run android:open
+```
+
+El proyecto nativo queda en `frontend/android` (Android 7/API 24 o superior).
 
 ### 🔑 Configuración del Entorno (Variables)
 En el frontend (`frontend/.env`), asegúrate de tener definida la URL del backend:

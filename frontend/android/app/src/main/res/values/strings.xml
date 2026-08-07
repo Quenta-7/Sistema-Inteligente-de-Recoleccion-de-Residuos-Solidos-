@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Te Quiero Verde Cusco</string>
+    <string name="title_activity_main">Te Quiero Verde Cusco</string>
+    <string name="package_name">pe.gob.cusco.tequieroverde</string>
+    <string name="custom_url_scheme">pe.gob.cusco.tequieroverde</string>
+</resources>

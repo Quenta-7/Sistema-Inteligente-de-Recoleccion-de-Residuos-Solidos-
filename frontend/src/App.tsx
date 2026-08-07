@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -15,10 +16,33 @@ import RecolectorDashboard from './pages/RecolectorDashboard';
 import ReportesCiudadanos from './pages/ReportesCiudadanos';
 import Perfil from './pages/Perfil';
 import ProtectedRoute from './components/ProtectedRoute';
+import { clearAuthSession, getAuthToken, getTokenExpiration } from './utils/auth';
+
+function AuthExpiryGuard() {
+  useEffect(() => {
+    const token = getAuthToken();
+    if (!token) return;
+    const expiration = getTokenExpiration(token);
+    if (!expiration) return;
+    const delay = expiration - Date.now();
+    if (delay <= 0) {
+      clearAuthSession();
+      window.location.replace('/login');
+      return;
+    }
+    const timer = window.setTimeout(() => {
+      clearAuthSession();
+      window.location.replace('/login');
+    }, Math.min(delay, 2_147_483_647));
+    return () => window.clearTimeout(timer);
+  }, []);
+  return null;
+}
 
 function App() {
   return (
     <BrowserRouter>
+      <AuthExpiryGuard />
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
