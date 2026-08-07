@@ -446,15 +446,10 @@ const Dashboard = () => {
                 <p className="text-2xl font-extrabold text-gray-900 dark:text-white"><span>{ecopuntos.toLocaleString()}</span></p>
                 <p className="text-xs text-gray-500 dark:text-slate-400 font-medium">Bonificación por evidencia validada: +50</p>
               </div>
-              <div className="sm:ml-6">
-                <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mb-2">Progreso a recompensa</p>
-                <div className="w-full sm:w-48 h-2 bg-amber-100/80 dark:bg-amber-950/40 rounded-full">
-                  <div className="h-2 bg-gradient-to-r from-emerald-500 via-teal-500 to-amber-400 rounded-full w-[83%]"></div>
-                </div>
-                <p className="text-xs text-gray-500 dark:text-slate-400 mt-2 font-medium">Siguiente meta: 1,500 puntos</p>
+              <div className="sm:ml-4">
                 <Link
                   to="/tienda-ecopuntos"
-                  className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/60 px-3 py-1 rounded-full hover:bg-sky-100 dark:hover:bg-sky-900"
+                  className="inline-flex items-center gap-1 text-xs font-semibold text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-900/60 px-3 py-1.5 rounded-full hover:bg-sky-100 dark:hover:bg-sky-900"
                 >
                   Ir a tienda <ChevronRight className="h-3 w-3" />
                 </Link>

@@ -9,6 +9,8 @@ class ZonaSerializer(serializers.ModelSerializer):
         fields = '__all__' # Exporta todos los campos
 
 class HorarioSerializer(serializers.ModelSerializer):
+    zona_nombre = serializers.CharField(source='zona.nombre', read_only=True)
+
     class Meta:
         model = Horario
         fields = '__all__'
@@ -41,7 +43,8 @@ class EvidenciaSerializer(serializers.ModelSerializer):
 
     def get_horario_entrega_detalle(self, obj):
         if obj.horario_entrega:
-            return f"{obj.horario_entrega.dia.capitalize()} {obj.horario_entrega.hora_inicio.strftime('%H:%M')}-{obj.horario_entrega.hora_fin.strftime('%H:%M')}"
+            turno = "Mañana" if obj.horario_entrega.hora_inicio.hour < 12 else "Tarde"
+            return f"{obj.horario_entrega.dia.capitalize()}: {obj.horario_entrega.hora_inicio.strftime('%H:%M')} a {obj.horario_entrega.hora_fin.strftime('%H:%M')} (Turno {turno})"
         return None
 
 class RecompensaSerializer(serializers.ModelSerializer):

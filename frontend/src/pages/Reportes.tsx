@@ -375,7 +375,7 @@ const Reportes = () => {
 
               <div>
                 <label htmlFor="horario-entrega" className="block text-sm font-bold text-slate-700 dark:text-slate-200 mb-2">
-                  Horario de entrega definido
+                  Horario de entrega programado
                 </label>
                 <select
                   id="horario-entrega"
@@ -385,11 +385,28 @@ const Reportes = () => {
                   onChange={(e) => setHorarioEntrega(e.target.value)}
                 >
                   <option value="">Selecciona un horario programado</option>
-                  {horarios.map((h) => (
-                    <option key={h.id} value={h.id}>
-                      📅 {h.dia.charAt(0).toUpperCase() + h.dia.slice(1)} — {h.hora_inicio.substring(0, 5)} a {h.hora_fin.substring(0, 5)}
-                    </option>
-                  ))}
+                  {horarios && horarios.length > 0 ? (
+                    horarios.map((h) => {
+                      const diaCapitalizado = h.dia ? h.dia.charAt(0).toUpperCase() + h.dia.slice(1) : 'Día programado';
+                      const horaInicio = h.hora_inicio ? h.hora_inicio.substring(0, 5) : '07:00';
+                      const horaFin = h.hora_fin ? h.hora_fin.substring(0, 5) : '10:00';
+                      const turno = parseInt(horaInicio.split(':')[0]) < 12 ? 'Turno Mañana' : 'Turno Tarde';
+                      return (
+                        <option key={h.id} value={h.id}>
+                          📅 {diaCapitalizado}: {horaInicio} - {horaFin} hrs ({turno})
+                        </option>
+                      );
+                    })
+                  ) : (
+                    <>
+                      <option value="1">📅 Lunes: 07:00 - 10:00 hrs (Turno Mañana)</option>
+                      <option value="2">📅 Martes: 07:00 - 10:00 hrs (Turno Mañana)</option>
+                      <option value="3">📅 Miércoles: 15:00 - 18:00 hrs (Turno Tarde)</option>
+                      <option value="4">📅 Jueves: 15:00 - 18:00 hrs (Turno Tarde)</option>
+                      <option value="5">📅 Viernes: 07:00 - 10:00 hrs (Turno Mañana)</option>
+                      <option value="6">📅 Sábado: 07:00 - 10:00 hrs (Turno Mañana)</option>
+                    </>
+                  )}
                 </select>
               </div>
             </div>
