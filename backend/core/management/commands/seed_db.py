@@ -642,8 +642,8 @@ class Command(BaseCommand):
             Incidencia.objects.get_or_create(
                 recolector=recolector,
                 tipo='Vehiculo averiado',
+                descripcion='Falla mecánica del camión recolector en Av. Evitamiento, San Jerónimo. Se requirió apoyo.',
                 defaults={
-                    'descripcion': 'Falla mecánica del camión recolector en Av. Evitamiento, San Jerónimo. Se requirió apoyo.',
                     'estado': Incidencia.EstadoIncidencia.RESUELTA,
                     'respuesta_admin': 'Se envió unidad de auxilio mecánico desde el municipio de San Jerónimo.'
                 }
@@ -651,8 +651,8 @@ class Command(BaseCommand):
             Incidencia.objects.get_or_create(
                 recolector=recolector,
                 tipo='Via bloqueada',
+                descripcion='Jr. Cusco cerrado por obras de pavimentación. Se realizó desvío por Sector Conchacalla.',
                 defaults={
-                    'descripcion': 'Jr. Cusco cerrado por obras de pavimentación. Se realizó desvío por Sector Conchacalla.',
                     'estado': Incidencia.EstadoIncidencia.PENDIENTE
                 }
             )
