@@ -13,3 +13,5 @@ requests==2.34.2
 sqlparse==0.5.5
 tzdata==2026.2
 python-dotenv==1.0.1
+gunicorn==21.2.0
+
