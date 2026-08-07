@@ -30,7 +30,7 @@ export const authedFetch = async (
   // Manejo centralizado de tokens expirados o no autorizados (401)
   if (response.status === 401) {
     const currentPath = window.location.pathname;
-    const isPublicPage = ['/login', '/registro', '/recuperar-contrasena', '/politica-privacidad', '/terminos-condiciones'].includes(currentPath);
+    const isPublicPage = ['/login', '/registro', '/recuperar-contrasena', '/restablecer-contrasena', '/politica-privacidad', '/terminos-condiciones'].some(page => currentPath.startsWith(page));
     
     if (!isPublicPage) {
       localStorage.removeItem('auth_token');

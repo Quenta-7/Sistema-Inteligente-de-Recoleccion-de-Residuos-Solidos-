@@ -5,6 +5,7 @@ import Horarios from './pages/Horarios';
 import Reportes from './pages/Reportes';
 import Registro from './pages/Registro';
 import RecuperarContrasena from './pages/RecuperarContrasena';
+import RestablecerContrasena from './pages/RestablecerContrasena';
 import TiendaEcoPuntos from './pages/TiendaEcoPuntos';
 import MapaEnVivo from './pages/MapaEnVivo';
 import TerminosCondiciones from './pages/TerminosCondiciones';
@@ -23,6 +24,8 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/registro" element={<Registro />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
+        <Route path="/restablecer-contrasena/:uid/:token" element={<RestablecerContrasena />} />
+        <Route path="/restablecer-contrasena" element={<RestablecerContrasena />} />
         
         {/* Rutas protegidas para ciudadanos */}
         <Route path="/dashboard" element={

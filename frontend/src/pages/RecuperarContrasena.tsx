@@ -85,9 +85,9 @@ const RecuperarContrasena = () => {
           <div className="mx-auto h-16 w-16 flex items-center justify-center rounded-2xl bg-gradient-to-tr from-emerald-400 to-teal-500 shadow-lg mb-6 transform transition hover:scale-110">
             <Leaf className="h-8 w-8 text-white" />
           </div>
-          <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">Recuperar contrasena</h2>
+          <h2 className="text-4xl font-extrabold text-gray-900 dark:text-white tracking-tight">Recuperar contraseña</h2>
           <p className="mt-3 text-sm text-gray-600 dark:text-gray-300 font-medium">
-            Ingresa tu correo y te enviaremos un enlace de recuperacion
+            Ingresa tu correo y te enviaremos un enlace de recuperación
           </p>
         </div>
 
@@ -99,10 +99,10 @@ const RecuperarContrasena = () => {
         )}
 
         {enviado && (
-          <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/55 rounded-lg flex items-start gap-3">
+          <div className="mb-6 p-4 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/55 rounded-xl flex items-start gap-3">
             <CheckCircle2 className="h-5 w-5 text-emerald-500 flex-shrink-0 mt-0.5" />
             <p className="text-sm text-emerald-700 dark:text-emerald-300">
-              Si el correo existe, recibiras un enlace para restablecer tu contrasena.
+              Si el correo existe, recibirás las instrucciones para restablecer tu contraseña en tu bandeja de entrada.
             </p>
           </div>
         )}

@@ -26,8 +26,10 @@ urlpatterns = [
     path('api/auth/login/', views.LoginView.as_view(), name='login'),
     # Endpoint de logout
     path('api/auth/logout/', views.LogoutView.as_view(), name='logout'),
-    # Endpoint de recuperar contraseña
+    # Endpoints de recuperación de contraseña
     path('api/auth/recuperar-contrasena/', views.RecuperarContrasenaView.as_view(), name='recuperar_contrasena'),
+    path('api/auth/validar-token-recuperacion/<str:uidb64>/<str:token>/', views.ValidarTokenRecuperacionView.as_view(), name='validar_token_recuperacion'),
+    path('api/auth/restablecer-contrasena/', views.RestablecerContrasenaView.as_view(), name='restablecer_contrasena'),
     # Endpoint de consulta DNI
     path('api/consultar-dni/<str:dni>/', views.ConsultarDniView.as_view(), name='consultar_dni'),
     # Endpoint de registro

@@ -1,7 +1,10 @@
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
 from core.models import Usuario, Zona, Horario, Evidencia, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio
 
 class CoreApiTests(TestCase):
@@ -190,3 +193,48 @@ class CoreApiTests(TestCase):
         }
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+
+    def test_solicitud_recuperar_contrasena(self):
+        url = reverse('recuperar_contrasena')
+        # Probar correo existente
+        response = self.client.post(url, {"email": "ciudadano@test.com"}, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data['success'])
+
+        # Probar correo no existente
+        response_inexistente = self.client.post(url, {"email": "noexiste@test.com"}, format='json')
+        self.assertEqual(response_inexistente.status_code, status.HTTP_200_OK)
+        self.assertTrue(response_inexistente.data['success'])
+
+    def test_flujo_completo_restablecer_contrasena(self):
+        # 1. Generar token para ciudadano@test.com
+        uid = urlsafe_base64_encode(force_bytes(self.ciudadano.pk))
+        token = default_token_generator.make_token(self.ciudadano)
+
+        # 2. Validar token
+        url_validar = reverse('validar_token_recuperacion', kwargs={'uidb64': uid, 'token': token})
+        response_validar = self.client.get(url_validar)
+        self.assertEqual(response_validar.status_code, status.HTTP_200_OK)
+        self.assertTrue(response_validar.data['valid'])
+
+        # 3. Restablecer con nueva contraseña
+        url_restablecer = reverse('restablecer_contrasena')
+        nueva_clave = "NuevaPassword123!"
+        response_restablecer = self.client.post(url_restablecer, {
+            "uid": uid,
+            "token": token,
+            "password": nueva_clave
+        }, format='json')
+        self.assertEqual(response_restablecer.status_code, status.HTTP_200_OK)
+        self.assertTrue(response_restablecer.data['success'])
+
+        # 4. Probar login con nueva contraseña
+        url_login = reverse('login')
+        response_login = self.client.post(url_login, {
+            "email": "ciudadano@test.com",
+            "password": nueva_clave
+        }, format='json')
+        self.assertEqual(response_login.status_code, status.HTTP_200_OK)
+        self.assertTrue(response_login.data['success'])
+
+

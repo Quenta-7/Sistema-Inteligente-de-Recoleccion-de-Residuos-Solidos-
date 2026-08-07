@@ -5,6 +5,11 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.authtoken.models import Token
 from rest_framework.permissions import IsAuthenticated
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.conf import settings
 from .models import Zona, Horario, Reporte, Usuario, Evidencia, Notificacion, Recompensa, Canje, Ruta, Incidencia, CalificacionServicio
 from .serializers import (
     ZonaSerializer,
@@ -22,6 +27,7 @@ from .serializers import (
     IncidenciaSerializer,
     CalificacionServicioSerializer,
 )
+
 
 class ZonaViewSet(viewsets.ModelViewSet):
     queryset = Zona.objects.all()
@@ -351,22 +357,158 @@ class LogoutView(APIView):
 
 class RecuperarContrasenaView(APIView):
     """
-    Endpoint mock para la solicitud de recuperación de contraseña.
+    Solicitud de recuperación de contraseña.
     POST /api/auth/recuperar-contrasena/
+    { "email": "usuario@email.com" }
     """
     def post(self, request):
-        email = request.data.get('email')
+        email = request.data.get('email', '').strip()
         if not email:
             return Response({
                 'success': False,
                 'message': 'El correo electrónico es obligatorio.'
             }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Simula envío exitoso de correo de recuperación
+        try:
+            usuario = Usuario.objects.get(email__iexact=email)
+        except Usuario.DoesNotExist:
+            return Response({
+                'success': True,
+                'message': 'Si el correo ingresado se encuentra registrado, recibirás las instrucciones para restablecer tu contraseña.'
+            }, status=status.HTTP_200_OK)
+
+        uidb64 = urlsafe_base64_encode(force_bytes(usuario.pk))
+        token = default_token_generator.make_token(usuario)
+
+        frontend_url = getattr(settings, 'FRONTEND_URL', 'http://localhost:5173')
+        reset_url = f"{frontend_url}/restablecer-contrasena/{uidb64}/{token}"
+
+        # Enviar correo de restablecimiento
+        asunto = "Restablecimiento de contraseña - Sistema Inteligente de Recolección de Residuos"
+        mensaje_texto = (
+            f"Hola {usuario.nombre_completo},\n\n"
+            f"Hemos recibido una solicitud para restablecer la contraseña de tu cuenta.\n\n"
+            f"Para restablecer tu contraseña, haz clic en el siguiente enlace o cópialo en tu navegador:\n"
+            f"{reset_url}\n\n"
+            f"Este enlace caducará por seguridad. Si no solicitaste este cambio, puedes ignorar este correo.\n\n"
+            f"Atentamente,\n"
+            f"Equipo de Gestión de Residuos Sólidos"
+        )
+
+        mensaje_html = f"""
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 12px; background-color: #ffffff;">
+            <div style="text-align: center; margin-bottom: 20px;">
+                <h2 style="color: #059669; margin: 0;">🌱 Sistema de Recolección de Residuos</h2>
+                <p style="color: #64748b; font-size: 14px;">Restablecimiento de Contraseña</p>
+            </div>
+            <hr style="border: none; border-top: 1px solid #e2e8f0; margin: 20px 0;" />
+            <p style="color: #334155;">Hola <strong>{usuario.nombre_completo}</strong>,</p>
+            <p style="color: #334155;">Hemos recibido una solicitud para restablecer la contraseña de tu cuenta asociada a <strong>{usuario.email}</strong>.</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{reset_url}" style="background-color: #10b981; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; display: inline-block;">Restablecer mi contraseña</a>
+            </div>
+            <p style="color: #64748b; font-size: 13px;">O copia y pega el siguiente enlace en tu navegador:</p>
+            <p style="background-color: #f1f5f9; padding: 10px; border-radius: 6px; font-size: 12px; word-break: break-all; color: #0f172a;">{reset_url}</p>
+            <p style="color: #94a3b8; font-size: 12px; margin-top: 25px;">Si no solicitaste este cambio, puedes ignorar este correo de forma segura.</p>
+        </div>
+        """
+
+        try:
+            send_mail(
+                subject=asunto,
+                message=mensaje_texto,
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@residuos.com'),
+                recipient_list=[usuario.email],
+                html_message=mensaje_html,
+                fail_silently=False
+            )
+        except Exception:
+            pass
+
         return Response({
             'success': True,
-            'message': f'Se ha enviado un enlace de recuperación al correo {email} exitosamente.'
+            'message': 'Si el correo ingresado se encuentra registrado, recibirás las instrucciones para restablecer tu contraseña en tu bandeja de entrada.'
         }, status=status.HTTP_200_OK)
+
+
+class ValidarTokenRecuperacionView(APIView):
+    """
+    Verifica si el token de restablecimiento es válido.
+    GET /api/auth/validar-token-recuperacion/<uidb64>/<token>/
+    """
+    def get(self, request, uidb64, token):
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            usuario = Usuario.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
+            return Response({
+                'valid': False,
+                'message': 'El enlace de recuperación es inválido o ha expirado.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not default_token_generator.check_token(usuario, token):
+            return Response({
+                'valid': False,
+                'message': 'El enlace de recuperación ha expirado o ya fue utilizado.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response({
+            'valid': True,
+            'email': usuario.email,
+            'nombre_completo': usuario.nombre_completo
+        }, status=status.HTTP_200_OK)
+
+
+class RestablecerContrasenaView(APIView):
+    """
+    Endpoint para guardar la nueva contraseña usando el token verificado.
+    POST /api/auth/restablecer-contrasena/
+    {
+        "uid": "...",
+        "token": "...",
+        "password": "Nuevapassword123!"
+    }
+    """
+    def post(self, request):
+        uidb64 = request.data.get('uid')
+        token = request.data.get('token')
+        nueva_password = request.data.get('password')
+
+        if not uidb64 or not token or not nueva_password:
+            return Response({
+                'success': False,
+                'message': 'Todos los campos (uid, token y nueva contraseña) son obligatorios.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if len(nueva_password) < 8:
+            return Response({
+                'success': False,
+                'message': 'La contraseña debe tener al menos 8 caracteres.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            uid = force_str(urlsafe_base64_decode(uidb64))
+            usuario = Usuario.objects.get(pk=uid)
+        except (TypeError, ValueError, OverflowError, Usuario.DoesNotExist):
+            return Response({
+                'success': False,
+                'message': 'El token o usuario es inválido.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if not default_token_generator.check_token(usuario, token):
+            return Response({
+                'success': False,
+                'message': 'El enlace de recuperación es inválido o ha expirado.'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        usuario.set_password(nueva_password)
+        usuario.save()
+
+        return Response({
+            'success': True,
+            'message': 'Tu contraseña ha sido actualizada correctamente. Ahora puedes iniciar sesión con tu nueva clave.'
+        }, status=status.HTTP_200_OK)
+
 
 
 class NotificacionViewSet(viewsets.ModelViewSet):
