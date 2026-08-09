@@ -33,7 +33,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-local-developm
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get('DJANGO_DEBUG', '1') == '1'
 
-ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if host.strip()]
+ALLOWED_HOSTS = [host.strip() for host in os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',') if host.strip()]
 
 
 # Application definition
@@ -54,7 +54,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',  # Debe ir arriba de todo para interceptar las peticiones OPTIONS
 
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -65,15 +65,36 @@ MIDDLEWARE = [
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
+# Configuración de CORS
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",  # ejemplo: frontend React
-    "http://127.0.0.1:5173",  # otro ejemplo
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://sistema-inteligente-de-recoleccion.vercel.app",
 ]
+
 if os.environ.get('CORS_ALLOWED_ORIGINS'):
     CORS_ALLOWED_ORIGINS = [origin.strip() for origin in os.environ['CORS_ALLOWED_ORIGINS'].split(',') if origin.strip()]
 
-AUTH_USER_MODEL = 'core.Usuario'
+# Permite cualquier subdominio/preview generado por Vercel
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://.*\.vercel\.app$",
+]
 
+CORS_ALLOW_CREDENTIALS = True
+
+CORS_ALLOW_HEADERS = [
+    "accept",
+    "accept-encoding",
+    "authorization",
+    "content-type",
+    "dnt",
+    "origin",
+    "user-agent",
+    "x-csrftoken",
+    "x-requested-with",
+]
+
+AUTH_USER_MODEL = 'core.Usuario'
 
 ROOT_URLCONF = 'config.urls'
 
@@ -208,5 +229,3 @@ else:
 
 # URL del Frontend para enlaces de recuperación
 FRONTEND_URL = os.environ.get('FRONTEND_URL', 'http://localhost:5173')
-
-
