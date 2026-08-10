@@ -250,15 +250,19 @@ class Command(BaseCommand):
 
         usuarios_creados = {}
         for usuario_data in usuarios_data:
-            usuario, created = Usuario.objects.get_or_create(
-                email=usuario_data['email'],
-                defaults=usuario_data
-            )
-            if created:
+            email = usuario_data['email']
+            username = usuario_data.get('username')
+            usuario = Usuario.objects.filter(email=email).first()
+            if not usuario and username:
+                usuario = Usuario.objects.filter(username=username).first()
+
+            if not usuario:
+                usuario = Usuario.objects.create(**usuario_data)
                 self.stdout.write(self.style.SUCCESS(f'[OK] Usuario creado: {usuario.nombre_completo}'))
             else:
                 self.stdout.write(f'  Usuario existente: {usuario.nombre_completo}')
-            usuarios_creados[usuario.email] = usuario
+
+            usuarios_creados[email] = usuario
 
         # 3. CREAR HORARIOS
         # Un único camión recolector cubre todo el distrito San Jerónimo en recorrido semanal.
