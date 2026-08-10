@@ -435,8 +435,10 @@ class RecuperarContrasenaView(APIView):
                 html_message=mensaje_html,
                 fail_silently=False
             )
-        except Exception:
-            pass
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error al enviar correo de recuperación a {usuario.email}: {e}")
 
         return Response({
             'success': True,
