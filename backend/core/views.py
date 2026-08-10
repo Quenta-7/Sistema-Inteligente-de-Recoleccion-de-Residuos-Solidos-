@@ -426,19 +426,23 @@ class RecuperarContrasenaView(APIView):
         </div>
         """
 
-        try:
-            send_mail(
-                subject=asunto,
-                message=mensaje_texto,
-                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@residuos.com'),
-                recipient_list=[usuario.email],
-                html_message=mensaje_html,
-                fail_silently=False
-            )
-        except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
-            logger.error(f"Error al enviar correo de recuperación a {usuario.email}: {e}")
+        def enviar_correo_background():
+            try:
+                send_mail(
+                    subject=asunto,
+                    message=mensaje_texto,
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@residuos.com'),
+                    recipient_list=[usuario.email],
+                    html_message=mensaje_html,
+                    fail_silently=False
+                )
+            except Exception as e:
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error al enviar correo de recuperación a {usuario.email}: {e}")
+
+        import threading
+        threading.Thread(target=enviar_correo_background).start()
 
         return Response({
             'success': True,

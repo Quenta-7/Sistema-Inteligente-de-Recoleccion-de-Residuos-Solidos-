@@ -219,11 +219,14 @@ EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
 if EMAIL_HOST:
     EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.smtp.EmailBackend')
     EMAIL_PORT = int(os.environ.get('EMAIL_PORT', 587))
-    EMAIL_USE_TLS = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't')
-    EMAIL_USE_SSL = os.environ.get('EMAIL_USE_SSL', 'False').lower() in ('true', '1', 't')
+    use_ssl = os.environ.get('EMAIL_USE_SSL', 'False').lower() in ('true', '1', 't')
+    use_tls = os.environ.get('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 't') if not use_ssl else False
+    EMAIL_USE_SSL = use_ssl
+    EMAIL_USE_TLS = use_tls
     EMAIL_HOST_USER = os.environ.get('EMAIL_HOST_USER', '')
     EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_HOST_PASSWORD', '')
     DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', EMAIL_HOST_USER or 'SistemadeResiduos <noreply@residuos-solidos.com>')
+    EMAIL_TIMEOUT = int(os.environ.get('EMAIL_TIMEOUT', 10))
 else:
     EMAIL_BACKEND = os.environ.get('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
     DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'SistemadeResiduos <noreply@residuos-solidos.com>')
