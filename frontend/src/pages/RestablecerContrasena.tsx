@@ -44,7 +44,7 @@ const RestablecerContrasena = () => {
       }
 
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
         const response = await fetch(`${apiBaseUrl}/api/auth/validar-token-recuperacion/${uid}/${token}/`);
         const data = await response.json();
 
@@ -91,7 +91,7 @@ const RestablecerContrasena = () => {
     setCargando(true);
 
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
       const response = await fetch(`${apiBaseUrl}/api/auth/restablecer-contrasena/`, {
         method: 'POST',
         headers: {
