@@ -129,6 +129,62 @@ Desde la raíz del proyecto, abre una terminal de PowerShell y ejecuta:
 ```
 *Este comando automatiza la verificación del entorno, crea el virtual environment en Python, instala dependencias frontend y backend, ejecuta las migraciones, realiza la siembra inicial (seed) y levanta los servidores localmente.*
 
+### 🧱 Compilación y Ejecución por Partes (Backend y Frontend)
+
+Si prefieres compilar y ejecutar los componentes de manera independiente paso a paso:
+
+#### 🐍 1. Backend (Django REST Framework)
+1. Navega al directorio del backend:
+   ```bash
+   cd backend
+   ```
+2. Crea y activa un entorno virtual de Python:
+   - **Windows (PowerShell):**
+     ```powershell
+     python -m venv .venv
+     .\.venv\Scripts\Activate.ps1
+     ```
+   - **Linux / macOS:**
+     ```bash
+     python3 -m venv .venv
+     source .venv/bin/activate
+     ```
+3. Instala las dependencias necesarias:
+   ```bash
+   pip install --upgrade pip
+   pip install -r requirements.txt
+   pip install Pillow
+   ```
+4. Aplica las migraciones de la base de datos e inicializa los datos iniciales (seed):
+   ```bash
+   python manage.py migrate
+   python manage.py seed_db
+   ```
+5. Inicia el servidor de desarrollo del Backend:
+   ```bash
+   python manage.py runserver
+   ```
+   *El backend estará disponible en `http://127.0.0.1:8000`*
+
+#### ⚛️ 2. Frontend (React + Vite + TypeScript)
+1. Navega al directorio del frontend:
+   ```bash
+   cd frontend
+   ```
+2. Instala las dependencias de Node.js:
+   ```bash
+   npm install
+   ```
+3. Compila el proyecto frontend (opcional para verificar tipos y generar el build optimizado de producción):
+   ```bash
+   npm run build
+   ```
+4. Inicia el servidor de desarrollo del Frontend:
+   ```bash
+   npm run dev
+   ```
+   *El frontend estará disponible en `http://localhost:5173`*
+
 ---
 
 ## 🔗 Endpoints Clave de la API Backend
