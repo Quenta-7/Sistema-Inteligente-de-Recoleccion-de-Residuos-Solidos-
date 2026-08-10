@@ -260,7 +260,12 @@ class Command(BaseCommand):
                 usuario = Usuario.objects.create(**usuario_data)
                 self.stdout.write(self.style.SUCCESS(f'[OK] Usuario creado: {usuario.nombre_completo}'))
             else:
-                self.stdout.write(f'  Usuario existente: {usuario.nombre_completo}')
+                usuario.email = email
+                usuario.username = username or email
+                usuario.password = usuario_data['password']
+                usuario.rol = usuario_data.get('rol', usuario.rol)
+                usuario.save()
+                self.stdout.write(f'  Usuario existente actualizado: {usuario.nombre_completo}')
 
             usuarios_creados[email] = usuario
 
