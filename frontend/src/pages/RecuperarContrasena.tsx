@@ -37,7 +37,7 @@ const RecuperarContrasena = () => {
         },
         body: JSON.stringify({ email }),
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (response.ok && data.success) {
         setEnviado(true);
         setEmail('');
