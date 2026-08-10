@@ -127,6 +127,18 @@ class Command(BaseCommand):
                 'telefono': '+51984123456'
             },
             {
+                'email': 'ccus.richard.rodriguez@gmail.com',
+                'username': 'richard_admin',
+                'nombre_completo': 'Richard Rodríguez',
+                'password': make_password('admin123'),
+                'rol': 'admin',
+                'dni': '10000099',
+                'is_staff': True,
+                'is_superuser': True,
+                'zona': zonas_creadas.get('SJE001'),
+                'telefono': '+51984123456'
+            },
+            {
                 'email': 'ciudadano1@residuos.com',
                 'username': 'ciudadano1',
                 'nombre_completo': 'Juan Pérez Quispe',
