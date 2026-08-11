@@ -235,15 +235,7 @@ const Login = () => {
           </p>
         </form>
 
-        {/* Credenciales de prueba */}
-        <div className="mt-8 pt-6 border-t border-gray-200 dark:border-slate-800">
-          <p className="text-xs text-gray-500 dark:text-gray-450 mb-2 font-semibold">Credenciales de prueba:</p>
-          <div className="space-y-1 text-xs text-gray-650 dark:text-gray-400">
-            <p>Ciudadano: <span className="font-mono bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded font-semibold text-emerald-700 dark:text-emerald-400">ciudadano1@residuos.com</span> (pass123)</p>
-            <p className="mt-1">Recolector: <span className="font-mono bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded font-semibold text-amber-750 dark:text-amber-400">recolector@residuos.com</span> (pass123)</p>
-            <p className="mt-1">Administrador: <span className="font-mono bg-gray-100 dark:bg-slate-800 px-2 py-1 rounded font-semibold text-sky-700 dark:text-sky-400">admin@residuos.com</span> (admin123)</p>
-          </div>
-        </div>
+
 
         {/* Enlaces Legales */}
         <div className="mt-6 pt-4 border-t border-gray-150 dark:border-slate-850 flex justify-center gap-4 text-xs text-gray-500 dark:text-gray-450 font-semibold">
