@@ -26,6 +26,141 @@ import { authedFetch, getMediaUrl } from '../api';
 import { fetchStreetRoute } from '../utils/routing';
 import L from 'leaflet';
 
+const SAN_JERONIMO_BOUNDARY: [number, number][] = [
+  [-13.5220, -71.8750],
+  [-13.5280, -71.8580],
+  [-13.5380, -71.8480],
+  [-13.5520, -71.8430],
+  [-13.5680, -71.8530],
+  [-13.5780, -71.8680],
+  [-13.5680, -71.8840],
+  [-13.5500, -71.8920],
+  [-13.5350, -71.8850],
+  [-13.5220, -71.8750]
+];
+
+const WORLD_OUTER_RING: [number, number][] = [
+  [-90, -180],
+  [-90, 180],
+  [90, 180],
+  [90, -180],
+  [-90, -180]
+];
+
+type RutaPrincipal = {
+  id: string;
+  codigo: string;
+  zona: string;
+  conductor: string;
+  placa: string;
+  estado: string;
+  puntos: { lat: number; lng: number; nombre: string }[];
+  paradas: { nombre: string; hora: string }[];
+};
+
+const RUTAS_PRINCIPALES: Record<string, RutaPrincipal> = {
+  'SJ-01': {
+    id: 'SJ-01',
+    codigo: 'SJ-01',
+    zona: 'Cuadrante Este – Urb. Larapa Residencial & Larapa Grande & Pata Pata',
+    conductor: 'Julio Quispe M.',
+    placa: 'A3T-851',
+    estado: 'En ruta',
+    puntos: [
+      { lat: -13.5510, lng: -71.8740, nombre: 'Salida: Base Operativa Municipal' },
+      { lat: -13.5525, lng: -71.8705, nombre: 'Calle Los Álamos (Larapa Residencial)' },
+      { lat: -13.5515, lng: -71.8680, nombre: 'Av. Larapa Central' },
+      { lat: -13.5525, lng: -71.8655, nombre: 'Urb. Larapa Grande' },
+      { lat: -13.5545, lng: -71.8620, nombre: 'Sector Pata Pata Residencial' },
+      { lat: -13.5505, lng: -71.8715, nombre: 'Retorno: Av. Universidad' },
+      { lat: -13.5510, lng: -71.8740, nombre: 'Retorno: Base Operativa Municipal' }
+    ],
+    paradas: [
+      { nombre: 'Salida: Base Operativa Municipal', hora: '07:00' },
+      { nombre: 'Calle Los Álamos (Larapa Residencial)', hora: '07:15' },
+      { nombre: 'Av. Larapa Central', hora: '07:35' },
+      { nombre: 'Urb. Larapa Grande', hora: '07:55' },
+      { nombre: 'Sector Pata Pata Residencial', hora: '08:15' },
+      { nombre: 'Retorno: Base Operativa Municipal', hora: '08:35' }
+    ]
+  },
+  'SJ-02': {
+    id: 'SJ-02',
+    codigo: 'SJ-02',
+    zona: 'Cuadrante Noreste (Arriba a la Derecha) – Versalles & Kantu & Huayna Picol Norte',
+    conductor: 'Efraín Mamani H.',
+    placa: 'B2R-412',
+    estado: 'En recolección',
+    puntos: [
+      { lat: -13.5510, lng: -71.8740, nombre: 'Salida: Base Operativa Municipal' },
+      { lat: -13.5480, lng: -71.8680, nombre: 'Sector Kantu de Larapa' },
+      { lat: -13.5450, lng: -71.8650, nombre: 'Urb. Versalles (Arriba Derecha)' },
+      { lat: -13.5415, lng: -71.8620, nombre: 'APV Huayna Picol Norte' },
+      { lat: -13.5440, lng: -71.8660, nombre: 'APV San Antonio Norte' },
+      { lat: -13.5490, lng: -71.8710, nombre: 'Av. Collana Norte' },
+      { lat: -13.5510, lng: -71.8740, nombre: 'Retorno: Base Operativa Municipal' }
+    ],
+    paradas: [
+      { nombre: 'Salida: Base Operativa Municipal', hora: '07:00' },
+      { nombre: 'Sector Kantu de Larapa', hora: '07:20' },
+      { nombre: 'Urb. Versalles (Cuadrante Noreste)', hora: '07:45' },
+      { nombre: 'APV Huayna Picol Norte', hora: '08:05' },
+      { nombre: 'APV San Antonio Norte', hora: '08:20' },
+      { nombre: 'Retorno: Base Operativa Municipal', hora: '08:40' }
+    ]
+  },
+  'SJ-03': {
+    id: 'SJ-03',
+    codigo: 'SJ-03',
+    zona: 'Cuadrante Noroeste (Arriba a la Izquierda) – Santa Rosa Alta & Mirador & Conchacalla Alta',
+    conductor: 'Marcos Condori T.',
+    placa: 'C5W-738',
+    estado: 'Por iniciar',
+    puntos: [
+      { lat: -13.5510, lng: -71.8740, nombre: 'Salida: Base Operativa Municipal' },
+      { lat: -13.5450, lng: -71.8785, nombre: 'Urb. Santa Rosa Alta' },
+      { lat: -13.5420, lng: -71.8800, nombre: 'APV Pampa Chanca Alta' },
+      { lat: -13.5380, lng: -71.8815, nombre: 'APV Mirador San Jerónimo' },
+      { lat: -13.5400, lng: -71.8835, nombre: 'APV Conchacalla Alta' },
+      { lat: -13.5470, lng: -71.8780, nombre: 'Bajada Conchacalla' },
+      { lat: -13.5510, lng: -71.8740, nombre: 'Retorno: Base Operativa Municipal' }
+    ],
+    paradas: [
+      { nombre: 'Salida: Base Operativa Municipal', hora: '07:00' },
+      { nombre: 'Urb. Santa Rosa Alta', hora: '07:20' },
+      { nombre: 'APV Pampa Chanca Alta', hora: '07:40' },
+      { nombre: 'APV Mirador San Jerónimo', hora: '08:05' },
+      { nombre: 'APV Conchacalla Alta', hora: '08:25' },
+      { nombre: 'Retorno: Base Operativa Municipal', hora: '08:50' }
+    ]
+  },
+  'SJ-04': {
+    id: 'SJ-04',
+    codigo: 'SJ-04',
+    zona: 'Cuadrante Suroeste (Abajo a la Izquierda) – Pillao Matao Sur & Chimpahuaylla Sur & Retamales Sur',
+    conductor: 'David Ramos V.',
+    placa: 'E4M-902',
+    estado: 'En ruta',
+    puntos: [
+      { lat: -13.5510, lng: -71.8740, nombre: 'Salida: Base Operativa Municipal' },
+      { lat: -13.5525, lng: -71.8770, nombre: 'Sector Chimpahuaylla Sur' },
+      { lat: -13.5535, lng: -71.8805, nombre: 'Pillao Matao Sur' },
+      { lat: -13.5545, lng: -71.8830, nombre: 'APV Los Retamales Sur' },
+      { lat: -13.5560, lng: -71.8860, nombre: 'Límite San Sebastián Sur' },
+      { lat: -13.5530, lng: -71.8790, nombre: 'Retorno: Av. Cusco Sur' },
+      { lat: -13.5510, lng: -71.8740, nombre: 'Retorno: Base Operativa Municipal' }
+    ],
+    paradas: [
+      { nombre: 'Salida: Base Operativa Municipal', hora: '07:00' },
+      { nombre: 'Sector Chimpahuaylla Sur', hora: '07:15' },
+      { nombre: 'Pillao Matao Sur', hora: '07:35' },
+      { nombre: 'APV Los Retamales Sur', hora: '07:55' },
+      { nombre: 'Límite San Sebastián Sur', hora: '08:15' },
+      { nombre: 'Retorno: Base Operativa Municipal', hora: '08:35' }
+    ]
+  }
+};
+
 type Evidencia = {
   id: number;
   usuario: number;
@@ -590,6 +725,7 @@ const AdminDashboard = () => {
     }
   };
 
+  const [selectedRouteKey, setSelectedRouteKey] = useState<string>('SJ-01');
   const [selectedRealRutaId, setSelectedRealRutaId] = useState<number | null>(null);
 
   // Poll real routes when monitoreo tab is active
@@ -601,7 +737,11 @@ const AdminDashboard = () => {
     }
   }, [activeTab]);
 
-  const activeRealRuta = rutas.find(r => r.id === selectedRealRutaId) || rutas.find(r => r.estado === 'en_progreso') || rutas[0];
+  const activePrincipalRoute = RUTAS_PRINCIPALES[selectedRouteKey] || RUTAS_PRINCIPALES['SJ-01'];
+  const activeRealRuta = rutas.find(r => r.id === selectedRealRutaId) || 
+    rutas.find(r => r.zona_nombre && r.zona_nombre.toLowerCase().includes(activePrincipalRoute.codigo.toLowerCase())) || 
+    rutas.find(r => r.estado === 'en_progreso') || 
+    rutas[0];
 
   useEffect(() => {
     if (activeTab === 'monitoreo' && mapContainerRef.current) {
@@ -612,11 +752,28 @@ const AdminDashboard = () => {
         const map = L.map(mapContainerRef.current, {
           zoomControl: true,
           scrollWheelZoom: true
-        }).setView([-13.5495, -71.8755], 15);
+        }).setView([-13.5495, -71.8755], 14);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           maxZoom: 19,
           attribution: '&copy; OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Capa de Máscara perimetral de San Jerónimo
+        L.polygon([WORLD_OUTER_RING, SAN_JERONIMO_BOUNDARY], {
+          color: '#020617',
+          fillColor: '#020617',
+          fillOpacity: 0.60,
+          weight: 0,
+          stroke: false
+        }).addTo(map);
+
+        // Borde resaltado del perímetro del Distrito de San Jerónimo
+        L.polygon(SAN_JERONIMO_BOUNDARY, {
+          color: '#10b981',
+          weight: 3.5,
+          fillOpacity: 0.03,
+          dashArray: '8, 6'
         }).addTo(map);
 
         mapRef.current = map;
@@ -631,50 +788,29 @@ const AdminDashboard = () => {
     };
   }, [activeTab]);
 
-  const getGeometriaParaRuta = (ruta: any) => {
-    if (ruta?.geometria_ruta && Array.isArray(ruta.geometria_ruta) && ruta.geometria_ruta.length > 0) {
-      return ruta.geometria_ruta;
+  const getGeometriaParaRuta = (routeKeyOrObj: any) => {
+    if (routeKeyOrObj?.geometria_ruta && Array.isArray(routeKeyOrObj.geometria_ruta) && routeKeyOrObj.geometria_ruta.length > 0) {
+      return routeKeyOrObj.geometria_ruta;
     }
     
-    const idStr = String(ruta?.id || '');
-    const nombreStr = (ruta?.zona_nombre || '').toLowerCase();
+    const key = typeof routeKeyOrObj === 'string' ? routeKeyOrObj : (routeKeyOrObj?.codigo || routeKeyOrObj?.id || selectedRouteKey);
+    const keyStr = String(key).toUpperCase();
+
+    if (RUTAS_PRINCIPALES[keyStr]) {
+      return RUTAS_PRINCIPALES[keyStr].puntos;
+    }
     
-    if (idStr === '1' || nombreStr.includes('este') || nombreStr.includes('sje001') || nombreStr.includes('larapa')) {
-      return [
-        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Partida' },
-        { lat: -13.5525, lng: -71.8705, nombre: 'Urb. Larapa Residencial' },
-        { lat: -13.5515, lng: -71.8680, nombre: 'Av. Larapa Central' },
-        { lat: -13.5525, lng: -71.8655, nombre: 'Urb. Larapa Grande' },
-        { lat: -13.5545, lng: -71.8620, nombre: 'Sector Pata Pata' },
-        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Retorno' }
-      ];
+    const nombreStr = (routeKeyOrObj?.zona_nombre || routeKeyOrObj?.nombre || '').toLowerCase();
+    if (nombreStr.includes('este') || nombreStr.includes('sje001') || nombreStr.includes('larapa')) {
+      return RUTAS_PRINCIPALES['SJ-01'].puntos;
     }
-    if (idStr === '2' || nombreStr.includes('noreste') || nombreStr.includes('sje002') || nombreStr.includes('versalles')) {
-      return [
-        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Partida' },
-        { lat: -13.5480, lng: -71.8710, nombre: 'Urb. Versalles' },
-        { lat: -13.5450, lng: -71.8680, nombre: 'Sector Kantu de Larapa' },
-        { lat: -13.5420, lng: -71.8640, nombre: 'APV Huayna Picol Norte' },
-        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Retorno' }
-      ];
+    if (nombreStr.includes('noreste') || nombreStr.includes('sje002') || nombreStr.includes('versalles')) {
+      return RUTAS_PRINCIPALES['SJ-02'].puntos;
     }
-    if (idStr === '3' || nombreStr.includes('noroeste') || nombreStr.includes('laderas') || nombreStr.includes('sje003')) {
-      return [
-        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Partida' },
-        { lat: -13.5460, lng: -71.8840, nombre: 'Urb. Santa Rosa Alta' },
-        { lat: -13.5420, lng: -71.8880, nombre: 'APV Pampa Chanca Alta' },
-        { lat: -13.5390, lng: -71.8920, nombre: 'APV Mirador San Jerónimo' },
-        { lat: -13.5360, lng: -71.8950, nombre: 'Conchacalla Alta' },
-        { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Retorno' }
-      ];
+    if (nombreStr.includes('noroeste') || nombreStr.includes('sje003') || nombreStr.includes('santa rosa')) {
+      return RUTAS_PRINCIPALES['SJ-03'].puntos;
     }
-    return [
-      { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Partida' },
-      { lat: -13.5560, lng: -71.8820, nombre: 'Pillao Matao Sur' },
-      { lat: -13.5600, lng: -71.8870, nombre: 'Sector Chimpahuaylla Sur' },
-      { lat: -13.5640, lng: -71.8920, nombre: 'APV Los Retamales Sur' },
-      { lat: -13.5510, lng: -71.8740, nombre: 'Base Operativa Municipal – Retorno' }
-    ];
+    return RUTAS_PRINCIPALES['SJ-04'].puntos;
   };
 
   useEffect(() => {
@@ -685,7 +821,8 @@ const AdminDashboard = () => {
     stopMarkersRef.current = [];
     if (polylineRef.current) polylineRef.current.remove();
 
-    const pts = getGeometriaParaRuta(activeRealRuta);
+    const currentRoute = RUTAS_PRINCIPALES[selectedRouteKey] || RUTAS_PRINCIPALES['SJ-01'];
+    const pts = currentRoute.puntos;
 
     const latLngs = pts.map((p: any) => [p.lat, p.lng] as [number, number]);
     const polyline = L.polyline(latLngs, {
@@ -713,7 +850,25 @@ const AdminDashboard = () => {
       mapRef.current.fitBounds(poly.getBounds(), { padding: [50, 50] });
     });
 
-    pts.forEach((parada: any, idx: number) => {
+    // Marcador Base Operativa Municipal (Punto 0)
+    const baseCoords = pts[0];
+    const baseIcon = L.divIcon({
+      className: 'custom-base-icon-wrapper',
+      html: `<div class="bg-amber-500 text-white font-bold px-3 py-1 rounded-md border border-white shadow-md text-[11px] whitespace-nowrap inline-flex items-center justify-center">
+               🚩 Base Municipal (Inicio/Fin)
+             </div>`,
+      iconSize: [185, 28],
+      iconAnchor: [92, 14]
+    });
+
+    const baseMarker = L.marker([baseCoords.lat, baseCoords.lng], { icon: baseIcon })
+      .bindPopup(`<strong>🚩 Base Operativa Municipal (San Jerónimo)</strong><br/>Ruta: ${currentRoute.codigo}`)
+      .addTo(map);
+    stopMarkersRef.current.push(baseMarker);
+
+    // Paradas intermedias numeradas
+    const paradasIntermedias = pts.slice(1, pts.length - 1);
+    paradasIntermedias.forEach((parada: any, idx: number) => {
       const paradaIcon = L.divIcon({
         className: 'custom-parada-icon-wrapper',
         html: `<div class="w-7 h-7 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white shadow-lg bg-sky-600">
@@ -724,18 +879,16 @@ const AdminDashboard = () => {
       });
 
       const marker = L.marker([parada.lat, parada.lng], { icon: paradaIcon })
-        .bindPopup(`<strong>Punto ${idx + 1}: ${parada.nombre || 'Parada'}</strong>`)
+        .bindPopup(`<strong>Parada ${idx + 1}: ${parada.nombre || 'Punto de Acopio'}</strong>`)
         .addTo(map);
 
       stopMarkersRef.current.push(marker);
     });
 
-    // Real truck position
-    let truckPos = { lat: -13.5485, lng: -71.8772 };
+    // Ubicación real del camión o punto inicial de la ruta activa
+    let truckPos = { lat: pts[0].lat, lng: pts[0].lng };
     if (activeRealRuta?.lat_actual && activeRealRuta?.lng_actual) {
       truckPos = { lat: activeRealRuta.lat_actual, lng: activeRealRuta.lng_actual };
-    } else if (pts.length > 0) {
-      truckPos = { lat: pts[0].lat, lng: pts[0].lng };
     }
 
     if (!truckMarkerRef.current) {
@@ -754,12 +907,11 @@ const AdminDashboard = () => {
       });
 
       truckMarkerRef.current = L.marker([truckPos.lat, truckPos.lng], { icon: truckIcon })
-        .bindPopup(`<strong>Camión Recolector</strong><br/>Ubicación en vivo`)
+        .bindPopup(`<strong>Camión Recolector (${currentRoute.codigo})</strong><br/>Placa: ${currentRoute.placa}<br/>Conductor: ${activeRealRuta?.recolector_nombre || currentRoute.conductor}`)
         .addTo(map);
     } else {
       truckMarkerRef.current.setLatLng([truckPos.lat, truckPos.lng]);
-    }
-  }, [activeTab, activeRealRuta, rutas]);
+  }, [activeTab, selectedRouteKey, activeRealRuta]);
 
 
 
@@ -1731,21 +1883,21 @@ const AdminDashboard = () => {
             </div>
           )}
 
-{/* Tab 6: Monitoreo GPS y Telemetría (Moved from Citizen to Admin) */}
+{/* Tab 6: Monitoreo GPS y Telemetría */}
           {activeTab === 'monitoreo' && (
             <div className="space-y-6 fade-in-up">
               <div className="flex items-center justify-between">
                 <div>
                   <h1 className="text-2xl font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
-                    <Activity className="h-7 w-7 text-sky-500" /> Monitoreo y Telemetría GPS Real
+                    <Activity className="h-7 w-7 text-sky-500" /> Monitoreo y Telemetría GPS Real – San Jerónimo
                   </h1>
                   <p className="text-slate-600 dark:text-slate-400 text-sm mt-1">
-                    Rastreo satelital en vivo transmitido desde el dispositivo móvil de los camiones recolectores.
+                    Rastreo satelital en vivo transmitido desde los camiones recolectores en las 4 rutas principales.
                   </p>
                 </div>
                 <div className="bg-white dark:bg-slate-950 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center gap-2.5 shadow-sm text-xs font-semibold">
-                  <span className={`h-2.5 w-2.5 rounded-full ${activeRealRuta?.lat_actual ? 'bg-emerald-500 animate-ping' : 'bg-amber-500'}`}></span>
-                  <span>{activeRealRuta?.lat_actual ? 'Transmisión GPS Real en Vivo' : 'Servidor GPS Activo'}</span>
+                  <span className={`h-2.5 w-2.5 rounded-full ${activeRealRuta?.lat_actual ? 'bg-emerald-500 animate-ping' : 'bg-emerald-500'}`}></span>
+                  <span>{activeRealRuta?.lat_actual ? 'Transmisión GPS Real en Vivo' : 'GPS San Jerónimo Conectado'}</span>
                 </div>
               </div>
 
@@ -1755,26 +1907,28 @@ const AdminDashboard = () => {
                 <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-5 rounded-3xl flex flex-col gap-4 shadow-sm">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
-                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Mapa Operativo - San Jerónimo, Cusco</p>
+                      <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Mapa Operativo – San Jerónimo, Cusco</p>
                       <p className="text-[11px] text-slate-500">
-                        Ruta activa: <strong className="text-sky-600 dark:text-sky-400">{activeRealRuta?.zona_nombre || 'General'}</strong>
+                        Ruta activa: <strong className="text-sky-600 dark:text-sky-400">{activePrincipalRoute.id}: {activePrincipalRoute.zona}</strong>
                       </p>
                     </div>
                     <div className="flex items-center gap-2 text-xs font-bold bg-slate-50 dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800">
                       <span className="text-slate-500">Estado:</span>
-                      <span className="uppercase text-emerald-600 dark:text-emerald-400">{activeRealRuta?.estado?.replace('_', ' ') || 'Registrada'}</span>
+                      <span className="uppercase text-emerald-600 dark:text-emerald-400">{activeRealRuta?.estado?.replace('_', ' ') || activePrincipalRoute.estado}</span>
                     </div>
                   </div>
 
                   <div className="relative">
-                    <div ref={mapContainerRef} className="h-[360px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 overflow-hidden relative z-10" />
+                    <div ref={mapContainerRef} className="h-[380px] w-full rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-900 overflow-hidden relative z-10" />
                     <div className="absolute left-3 bottom-3 bg-white/95 dark:bg-slate-950/90 border border-slate-200 dark:border-slate-800 p-2.5 rounded-xl text-[10px] font-mono shadow z-20">
                       {activeRealRuta?.lat_actual && activeRealRuta?.lng_actual ? (
                         <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                           GPS Real: Lat {activeRealRuta.lat_actual.toFixed(5)}, Lng {activeRealRuta.lng_actual.toFixed(5)}
                         </span>
                       ) : (
-                        <span className="text-slate-500">Posición base: Lat -13.54850, Lng -71.87720</span>
+                        <span className="text-slate-500">
+                          Posición actual ({activePrincipalRoute.codigo}): Lat {activePrincipalRoute.puntos[0].lat.toFixed(5)}, Lng {activePrincipalRoute.puntos[0].lng.toFixed(5)}
+                        </span>
                       )}
                     </div>
                   </div>
@@ -1782,23 +1936,29 @@ const AdminDashboard = () => {
                   {/* Telemetría Real Panel */}
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-2">
                     <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold">Recolector a Cargo</p>
-                      <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1 truncate">{activeRealRuta?.recolector_nombre || 'No asignado'}</p>
+                      <p className="text-[10px] text-slate-500 uppercase font-bold">Conductor / Recolector</p>
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1 truncate">
+                        {activeRealRuta?.recolector_nombre || activePrincipalRoute.conductor}
+                      </p>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold">Sector / Zona</p>
-                      <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1 truncate">{activeRealRuta?.zona_nombre || 'San Jerónimo'}</p>
+                      <p className="text-[10px] text-slate-500 uppercase font-bold">Unidad Municipal</p>
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1 font-mono">
+                        {activePrincipalRoute.placa}
+                      </p>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl">
                       <p className="text-[10px] text-slate-500 uppercase font-bold">Horario de Salida</p>
-                      <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">{activeRealRuta?.hora_inicio || '07:00'}</p>
+                      <p className="text-sm font-extrabold text-slate-900 dark:text-white mt-1">
+                        {activeRealRuta?.hora_inicio || activePrincipalRoute.paradas[0].hora}
+                      </p>
                     </div>
                     <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-3.5 rounded-xl">
-                      <p className="text-[10px] text-slate-500 uppercase font-bold">Última Señal GPS</p>
+                      <p className="text-[10px] text-slate-500 uppercase font-bold">Señal GPS Satelital</p>
                       <p className="text-xs font-extrabold text-emerald-600 dark:text-emerald-400 mt-1">
                         {activeRealRuta?.ultima_actualizacion_gps
                           ? new Date(activeRealRuta.ultima_actualizacion_gps).toLocaleTimeString()
-                          : 'En espera'}
+                          : 'Activo en Vivo'}
                       </p>
                     </div>
                   </div>
@@ -1806,46 +1966,64 @@ const AdminDashboard = () => {
 
                 {/* Right side selector & Real Stops */}
                 <div className="flex flex-col gap-6">
-                  {/* Select Real Route */}
+                  {/* Select 4 Principal Routes */}
                   <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white mb-3">Rutas Registradas en Base de Datos</p>
-                    {rutas.length === 0 ? (
-                      <p className="text-xs text-slate-500">No hay rutas programadas en la base de datos.</p>
-                    ) : (
-                      <div className="space-y-2.5 max-h-48 overflow-y-auto pr-1">
-                        {rutas.map(r => {
-                          const isSelected = activeRealRuta?.id === r.id;
-                          return (
-                            <button
-                              key={r.id}
-                              onClick={() => setSelectedRealRutaId(r.id)}
-                              className={`w-full border p-3 rounded-xl text-left text-xs transition-colors ${isSelected ? 'border-sky-500 bg-sky-50 dark:bg-sky-500/10' : 'border-slate-100 dark:border-slate-800 hover:bg-slate-50'}`}
-                            >
-                              <div className="flex items-center justify-between">
-                                <p className="font-bold text-slate-900 dark:text-white">Ruta #{r.id} - {r.zona_nombre}</p>
-                                <span className="text-[9px] uppercase font-bold text-emerald-600">{r.estado}</span>
-                              </div>
-                              <p className="text-slate-500 mt-0.5 text-[11px]">Recolector: {r.recolector_nombre}</p>
-                              {r.lat_actual && (
-                                <p className="text-[9px] font-mono text-sky-500 mt-0.5">GPS Transmitiendo</p>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
+                    <p className="text-sm font-bold text-slate-900 dark:text-white mb-3">4 Rutas Principales – San Jerónimo</p>
+                    <div className="space-y-2.5">
+                      {Object.values(RUTAS_PRINCIPALES).map((r) => {
+                        const isSelected = selectedRouteKey === r.codigo;
+                        return (
+                          <button
+                            key={r.codigo}
+                            onClick={() => {
+                              setSelectedRouteKey(r.codigo);
+                              const matchingReal = rutas.find((dbR: any) => 
+                                dbR.zona_nombre && dbR.zona_nombre.toLowerCase().includes(r.codigo.toLowerCase())
+                              );
+                              if (matchingReal) {
+                                setSelectedRealRutaId(matchingReal.id);
+                              }
+                            }}
+                            className={`w-full border p-3 rounded-2xl text-left text-xs transition-all ${
+                              isSelected 
+                                ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 shadow-sm' 
+                                : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-900'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <p className={`font-bold ${isSelected ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                                Ruta {r.codigo}
+                              </p>
+                              <span className={`text-[9px] uppercase font-bold px-2 py-0.5 rounded-full ${
+                                isSelected ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
+                              }`}>
+                                {isSelected ? 'En mapa' : 'Ver'}
+                              </span>
+                            </div>
+                            <p className="text-slate-500 mt-0.5 text-[11px] line-clamp-1">{r.zona}</p>
+                            <p className="text-slate-400 text-[10px] mt-1 font-mono">Conductor: {r.conductor} | Placa: {r.placa}</p>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Real Stops Timeline */}
                   <div className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-800 p-6 rounded-3xl shadow-sm flex-1">
-                    <p className="text-sm font-bold text-slate-900 dark:text-white mb-4">Puntos de Acopio del Sector</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center justify-between">
+                      <span>Puntos de Acopio del Sector</span>
+                      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">{activePrincipalRoute.codigo}</span>
+                    </p>
                     <div className="space-y-3 max-h-60 overflow-y-auto pr-1">
-                      {getGeometriaParaRuta(activeRealRuta).map((p: any, idx: number) => (
-                        <div key={idx} className="flex gap-2 text-xs items-center">
-                          <span className="h-5 w-5 rounded-full bg-sky-500 text-white flex items-center justify-center font-bold text-[9px] flex-shrink-0">
+                      {activePrincipalRoute.paradas.map((p, idx) => (
+                        <div key={idx} className="flex gap-2.5 text-xs items-center">
+                          <span className="h-6 w-6 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-[10px] flex-shrink-0 shadow-sm">
                             {idx + 1}
                           </span>
-                          <p className="font-semibold text-slate-800 dark:text-slate-200">{p.nombre || `Punto ${idx + 1}`}</p>
+                          <div>
+                            <p className="font-bold text-slate-800 dark:text-slate-200">{p.nombre}</p>
+                            <p className="text-[10px] text-slate-500 font-mono">Hora: {p.hora} hrs</p>
+                          </div>
                         </div>
                       ))}
                     </div>
