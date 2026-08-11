@@ -55,7 +55,12 @@ const Registro = () => {
         const data = await response.json();
 
         if (response.ok) {
-          setZonas(data);
+          const list = Array.isArray(data) ? data : data.results || [];
+          const filtradas = list.filter((z: any) =>
+            !['ZC001', 'ZN001', 'ZS001', 'ZE001'].includes(z.codigo) &&
+            !['zona centro', 'zona norte', 'zona sur', 'zona este'].includes(z.nombre?.toLowerCase())
+          );
+          setZonas(filtradas);
         } else {
           setErrorZonas('No se pudieron cargar las zonas.');
         }
@@ -308,7 +313,7 @@ const Registro = () => {
                 value={zona}
                 onChange={(e) => setZona(e.target.value)}
               >
-                <option value="" className="text-gray-900 dark:text-white dark:bg-slate-900">Sector de residencia en San Jerónimo</option>
+                <option value="" className="text-gray-900 dark:text-white dark:bg-slate-900">Selecciona tu sector en San Jerónimo</option>
                 {zonas.map((zonaItem) => (
                   <option key={zonaItem.id} value={zonaItem.id} className="text-gray-900 dark:text-white dark:bg-slate-900">
                     {zonaItem.nombre}

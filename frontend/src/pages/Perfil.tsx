@@ -147,8 +147,12 @@ const Perfil = () => {
         if (zonasRes.ok) {
           const zonasData = await zonasRes.json();
           const list: Zona[] = Array.isArray(zonasData) ? zonasData : zonasData.results || [];
-          setZonas(list);
-          const zona = list.find((z) => z.id === usuario.zona);
+          const listFiltered = list.filter((z: any) =>
+            !['ZC001', 'ZN001', 'ZS001', 'ZE001'].includes(z.codigo) &&
+            !['zona centro', 'zona norte', 'zona sur', 'zona este'].includes(z.nombre?.toLowerCase())
+          );
+          setZonas(listFiltered);
+          const zona = listFiltered.find((z) => z.id === usuario.zona);
           if (zona) setNombreZona(zona.nombre);
         }
       } catch (err: unknown) {

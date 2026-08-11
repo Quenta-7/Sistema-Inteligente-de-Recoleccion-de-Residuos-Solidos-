@@ -33,6 +33,19 @@ class ZonaViewSet(viewsets.ModelViewSet):
     queryset = Zona.objects.all()
     serializer_class = ZonaSerializer
 
+    def get_queryset(self):
+        return Zona.objects.exclude(
+            codigo__in=['ZC001', 'ZN001', 'ZS001', 'ZE001']
+        ).exclude(
+            nombre__icontains='Zona Centro'
+        ).exclude(
+            nombre__icontains='Zona Norte'
+        ).exclude(
+            nombre__icontains='Zona Sur'
+        ).exclude(
+            nombre__icontains='Zona Este'
+        )
+
 class HorarioViewSet(viewsets.ModelViewSet):
     queryset = Horario.objects.all()
     serializer_class = HorarioSerializer
