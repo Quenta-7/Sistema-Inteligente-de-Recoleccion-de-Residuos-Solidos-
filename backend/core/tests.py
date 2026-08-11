@@ -303,4 +303,40 @@ class CoreApiTests(TestCase):
         self.assertEqual(response_login.status_code, status.HTTP_200_OK)
         self.assertTrue(response_login.data['success'])
 
+    def test_filtrado_horarios_por_zona(self):
+        # Crear otra zona y otro horario
+        zona2 = Zona.objects.create(nombre="Zona 2 Test", codigo="Z2-TEST")
+        horario2 = Horario.objects.create(
+            zona=zona2,
+            dia="martes",
+            hora_inicio="14:00:00",
+            hora_fin="17:00:00",
+            tipos_residuo=["reciclable"]
+        )
+
+        # Autenticar ciudadano de la primera zona
+        self.client.force_authenticate(user=self.ciudadano)
+
+        # 1. GET /api/horarios/ debe retornar solo los horarios de su zona por defecto
+        res = self.client.get('/api/horarios/')
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        ids = [h['id'] for h in res.data]
+        self.assertIn(self.horario.id, ids)
+        self.assertNotIn(horario2.id, ids)
+
+        # 2. GET /api/horarios/?mi_zona=true debe retornar solo los de su zona
+        res_mi_zona = self.client.get('/api/horarios/?mi_zona=true')
+        self.assertEqual(res_mi_zona.status_code, status.HTTP_200_OK)
+        ids_mi_zona = [h['id'] for h in res_mi_zona.data]
+        self.assertIn(self.horario.id, ids_mi_zona)
+        self.assertNotIn(horario2.id, ids_mi_zona)
+
+        # 3. GET /api/horarios/?todos=true debe retornar todos los horarios
+        res_todos = self.client.get('/api/horarios/?todos=true')
+        self.assertEqual(res_todos.status_code, status.HTTP_200_OK)
+        ids_todos = [h['id'] for h in res_todos.data]
+        self.assertIn(self.horario.id, ids_todos)
+        self.assertIn(horario2.id, ids_todos)
+
+
 

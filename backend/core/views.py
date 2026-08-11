@@ -37,6 +37,29 @@ class HorarioViewSet(viewsets.ModelViewSet):
     queryset = Horario.objects.all()
     serializer_class = HorarioSerializer
 
+    def get_queryset(self):
+        queryset = Horario.objects.all()
+        user = self.request.user
+
+        zona_param = self.request.query_params.get('zona')
+        if zona_param:
+            return queryset.filter(zona_id=zona_param)
+
+        mi_zona = self.request.query_params.get('mi_zona')
+        if mi_zona == 'true':
+            if user.is_authenticated and user.zona:
+                return queryset.filter(zona=user.zona)
+            return queryset.none()
+
+        if self.request.query_params.get('todos') == 'true':
+            return queryset
+
+        if user.is_authenticated and hasattr(user, 'rol') and user.rol in ['ciudadano', 'recolector']:
+            if user.zona:
+                return queryset.filter(zona=user.zona)
+
+        return queryset
+
 class ReporteViewSet(viewsets.ModelViewSet):
     serializer_class = ReporteSerializer
     permission_classes = [IsAuthenticated]

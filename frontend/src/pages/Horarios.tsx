@@ -91,7 +91,7 @@ const Horarios = () => {
         const dataZonas = await resZonas.json();
         setZonas(Array.isArray(dataZonas) ? dataZonas : dataZonas.results || []);
 
-        const resHorarios = await authedFetch('/api/horarios/');
+        const resHorarios = await authedFetch('/api/horarios/?todos=true');
         if (!resHorarios.ok) throw new Error('Error al cargar horarios');
         const dataHorarios = await resHorarios.json();
         setHorarios(Array.isArray(dataHorarios) ? dataHorarios : dataHorarios.results || []);

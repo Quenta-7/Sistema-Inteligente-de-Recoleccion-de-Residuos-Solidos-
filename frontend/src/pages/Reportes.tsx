@@ -75,10 +75,37 @@ const Reportes = () => {
 
   const cargarHorariosZona = async () => {
     try {
-      const horariosResponse = await authedFetch('/api/horarios/');
+      let userZonaId: number | null = null;
+      const userDataRaw = localStorage.getItem('user_data') ?? sessionStorage.getItem('user_data');
+      if (userDataRaw) {
+        try {
+          const u = JSON.parse(userDataRaw);
+          if (u.zona) {
+            userZonaId = typeof u.zona === 'object' ? u.zona.id : Number(u.zona);
+          }
+        } catch (e) {}
+      }
+
+      if (!userZonaId) {
+        try {
+          const resPerfil = await authedFetch('/api/perfil/');
+          if (resPerfil.ok) {
+            const dataPerfil = await resPerfil.json();
+            if (dataPerfil.user && dataPerfil.user.zona) {
+              userZonaId = typeof dataPerfil.user.zona === 'object' ? dataPerfil.user.zona.id : Number(dataPerfil.user.zona);
+            }
+          }
+        } catch (e) {}
+      }
+
+      const url = userZonaId ? `/api/horarios/?zona=${userZonaId}` : '/api/horarios/?mi_zona=true';
+      const horariosResponse = await authedFetch(url);
       if (horariosResponse.ok) {
         const horariosData = await horariosResponse.json();
-        const list = Array.isArray(horariosData) ? horariosData : horariosData.results || [];
+        let list = Array.isArray(horariosData) ? horariosData : horariosData.results || [];
+        if (userZonaId) {
+          list = list.filter((h: any) => Number(h.zona) === userZonaId);
+        }
         setHorarios(list);
       }
     } catch (err) {
@@ -384,28 +411,22 @@ const Reportes = () => {
                   value={horarioEntrega}
                   onChange={(e) => setHorarioEntrega(e.target.value)}
                 >
-                  <option value="">Selecciona un horario programado</option>
+                  <option value="">Selecciona un horario de tu zona</option>
                   {horarios && horarios.length > 0 ? (
                     horarios.map((h) => {
                       const diaCapitalizado = h.dia ? h.dia.charAt(0).toUpperCase() + h.dia.slice(1) : 'Día programado';
                       const horaInicio = h.hora_inicio ? h.hora_inicio.substring(0, 5) : '07:00';
                       const horaFin = h.hora_fin ? h.hora_fin.substring(0, 5) : '10:00';
                       const turno = parseInt(horaInicio.split(':')[0]) < 12 ? 'Turno Mañana' : 'Turno Tarde';
+                      const sectorInfo = h.zona_nombre ? ` — ${h.zona_nombre}` : '';
                       return (
                         <option key={h.id} value={h.id}>
-                          📅 {diaCapitalizado}: {horaInicio} - {horaFin} hrs ({turno})
+                          📅 {diaCapitalizado}: {horaInicio} - {horaFin} hrs ({turno}){sectorInfo}
                         </option>
                       );
                     })
                   ) : (
-                    <>
-                      <option value="1">📅 Lunes: 07:00 - 10:00 hrs (Turno Mañana)</option>
-                      <option value="2">📅 Martes: 07:00 - 10:00 hrs (Turno Mañana)</option>
-                      <option value="3">📅 Miércoles: 15:00 - 18:00 hrs (Turno Tarde)</option>
-                      <option value="4">📅 Jueves: 15:00 - 18:00 hrs (Turno Tarde)</option>
-                      <option value="5">📅 Viernes: 07:00 - 10:00 hrs (Turno Mañana)</option>
-                      <option value="6">📅 Sábado: 07:00 - 10:00 hrs (Turno Mañana)</option>
-                    </>
+                    <option value="" disabled>No hay horarios disponibles para tu zona asignada</option>
                   )}
                 </select>
               </div>
