@@ -20,9 +20,17 @@ import {
   Star,
   MessageSquare,
   Send,
-  Truck
+  Truck,
+  AlertCircle,
+  X,
+  User,
+  Mail,
+  Lock,
+  Phone,
+  Eye,
+  EyeOff
 } from 'lucide-react';
-import { authedFetch, getMediaUrl } from '../api';
+import { authedFetch, getApiBaseUrl, getMediaUrl } from '../api';
 import { fetchStreetRoute } from '../utils/routing';
 import L from 'leaflet';
 
@@ -286,7 +294,13 @@ const AdminDashboard = () => {
   // Modales CRUD States
   const [showUserModal, setShowUserModal] = useState(false);
   const [editingUser, setEditingUser] = useState<Partial<Usuario> | null>(null);
+  const [buscandoDniUserModal, setBuscandoDniUserModal] = useState(false);
+  const [nombreReadOnlyUserModal, setNombreReadOnlyUserModal] = useState(false);
+  const [dniFeedbackUserModal, setDniFeedbackUserModal] = useState('');
+  const [mostrarPasswordUserModal, setMostrarPasswordUserModal] = useState(false);
+
   const [userForm, setUserForm] = useState({
+    dni: '',
     email: '',
     nombre_completo: '',
     rol: 'ciudadano',
@@ -558,14 +572,94 @@ const AdminDashboard = () => {
   };
 
   // USER CRUD
+  const openNewUserModal = () => {
+    setEditingUser(null);
+    setUserForm({
+      dni: '',
+      email: '',
+      nombre_completo: '',
+      rol: 'ciudadano',
+      zona: '',
+      telefono: '',
+      activo: true,
+      ecopuntos: 0,
+      password: ''
+    });
+    setNombreReadOnlyUserModal(false);
+    setDniFeedbackUserModal('');
+    setBuscandoDniUserModal(false);
+    setMostrarPasswordUserModal(false);
+    setShowUserModal(true);
+  };
+
+  const openEditUserModal = (u: Usuario) => {
+    setEditingUser(u);
+    setUserForm({
+      dni: u.dni || '',
+      email: u.email || '',
+      nombre_completo: u.nombre_completo || '',
+      rol: u.rol || 'ciudadano',
+      zona: u.zona ? String(u.zona) : '',
+      telefono: u.telefono || '',
+      activo: u.activo ?? true,
+      ecopuntos: u.ecopuntos ?? 0,
+      password: ''
+    });
+    setNombreReadOnlyUserModal(false);
+    setDniFeedbackUserModal('');
+    setBuscandoDniUserModal(false);
+    setMostrarPasswordUserModal(false);
+    setShowUserModal(true);
+  };
+
+  const handleDniChangeUserModal = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, '').substring(0, 8);
+    setUserForm(prev => ({ ...prev, dni: val }));
+    setDniFeedbackUserModal('');
+
+    if (val.length === 8) {
+      setBuscandoDniUserModal(true);
+      try {
+        const apiBaseUrl = getApiBaseUrl();
+        const response = await fetch(`${apiBaseUrl}/api/consultar-dni/${val}/`);
+        const data = await response.json();
+
+        if (response.ok && data.success) {
+          setUserForm(prev => ({
+            ...prev,
+            nombre_completo: data.nombre_completo
+          }));
+          setNombreReadOnlyUserModal(true);
+          setDniFeedbackUserModal('✓ Nombre autocompletado con éxito desde RENIEC.');
+        } else {
+          setNombreReadOnlyUserModal(false);
+          setDniFeedbackUserModal(data.message || 'DNI no encontrado en RENIEC. Digite el nombre manualmente.');
+        }
+      } catch (err) {
+        setNombreReadOnlyUserModal(false);
+        setDniFeedbackUserModal('Error al consultar DNI. Digite el nombre manualmente.');
+      } finally {
+        setBuscandoDniUserModal(false);
+      }
+    } else {
+      setNombreReadOnlyUserModal(false);
+      setDniFeedbackUserModal('');
+    }
+  };
+
   const saveUser = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (userForm.dni && userForm.dni.length !== 8) {
+      showFeedback('El DNI debe tener exactamente 8 caracteres numéricos.', 'error');
+      return;
+    }
     try {
       const isEditing = !!editingUser;
       const url = isEditing ? `/api/usuarios/${editingUser.id}/` : `/api/usuarios/`;
       const method = isEditing ? 'PATCH' : 'POST';
 
       const payload: any = {
+        dni: userForm.dni || null,
         email: userForm.email,
         nombre_completo: userForm.nombre_completo,
         rol: userForm.rol,
@@ -575,9 +669,11 @@ const AdminDashboard = () => {
         ecopuntos: Number(userForm.ecopuntos)
       };
 
+      if (userForm.password) {
+        payload.password = userForm.password;
+      }
       if (!isEditing) {
         payload.username = userForm.email;
-        payload.password = userForm.password;
       }
 
       const res = await authedFetch(url, {
@@ -591,8 +687,8 @@ const AdminDashboard = () => {
         setEditingUser(null);
         cargarUsuarios();
       } else {
-        const errData = await res.json();
-        showFeedback(errData.detail || 'Error al guardar el usuario.', 'error');
+        const errData = await res.json().catch(() => ({}));
+        showFeedback(parseApiErrorMessage(errData, 'Error al guardar el usuario.'), 'error');
       }
     } catch (err) {
       showFeedback('Error de conexión con el servidor.', 'error');
@@ -656,6 +752,23 @@ const AdminDashboard = () => {
   };
 
   // RUTA CRUD
+  const parseApiErrorMessage = (data: any, fallback: string): string => {
+    if (!data) return fallback;
+    if (typeof data === 'string') return data;
+    if (typeof data.detail === 'string') return data.detail;
+    if (Array.isArray(data.non_field_errors)) return data.non_field_errors.join(' ');
+    const messages: string[] = [];
+    Object.keys(data).forEach((key) => {
+      const val = data[key];
+      if (Array.isArray(val)) {
+        messages.push(val.join(' '));
+      } else if (typeof val === 'string') {
+        messages.push(val);
+      }
+    });
+    return messages.length > 0 ? messages.join(' ') : fallback;
+  };
+
   const asignarRecolectorARuta = async (rutaId: number, recolectorId: number) => {
     if (!recolectorId) return;
     try {
@@ -667,7 +780,9 @@ const AdminDashboard = () => {
         showFeedback('Recolector asignado a la ruta correctamente.', 'success');
         cargarRutas();
       } else {
-        showFeedback('Error al asignar el recolector a la ruta.', 'error');
+        const errorData = await res.json().catch(() => ({}));
+        showFeedback(parseApiErrorMessage(errorData, 'Error al asignar el recolector a la ruta.'), 'error');
+        cargarRutas();
       }
     } catch (err) {
       showFeedback('Error de conexión con el servidor.', 'error');
@@ -703,7 +818,8 @@ const AdminDashboard = () => {
         setEditingRuta(null);
         cargarRutas();
       } else {
-        showFeedback('Error al guardar la ruta.', 'error');
+        const errorData = await res.json().catch(() => ({}));
+        showFeedback(parseApiErrorMessage(errorData, 'Error al guardar la ruta.'), 'error');
       }
     } catch (err) {
       showFeedback('Error al guardar la ruta.', 'error');
@@ -1009,8 +1125,42 @@ const AdminDashboard = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-300">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors duration-300 relative">
       
+      {/* Toast Flotante de Notificaciones sobrepuesto a modales y recuadros */}
+      {feedbackMsg && (
+        <div className="fixed top-6 right-6 z-[9999] max-w-md w-full animate-bounce-short shadow-2xl transition-all duration-300">
+          <div className={`p-4 rounded-2xl border backdrop-blur-md flex items-start gap-3 justify-between shadow-2xl ${
+            feedbackMsg.type === 'success'
+              ? 'bg-emerald-900/95 border-emerald-500/50 text-emerald-100 shadow-emerald-900/40'
+              : 'bg-red-900/95 border-red-500/50 text-red-100 shadow-red-900/40'
+          }`}>
+            <div className="flex items-start gap-3">
+              {feedbackMsg.type === 'success' ? (
+                <CheckCircle className="h-6 w-6 text-emerald-400 flex-shrink-0 mt-0.5" />
+              ) : (
+                <AlertCircle className="h-6 w-6 text-red-400 flex-shrink-0 mt-0.5" />
+              )}
+              <div>
+                <h4 className="font-extrabold text-sm tracking-tight mb-0.5">
+                  {feedbackMsg.type === 'success' ? 'Operación Exitosa' : 'Atención / Validación'}
+                </h4>
+                <p className="text-xs font-medium leading-relaxed opacity-95">
+                  {feedbackMsg.text}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setFeedbackMsg(null)}
+              className="p-1 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors flex-shrink-0 ml-2"
+              title="Cerrar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Top Admin Nav */}
       <nav className="bg-white dark:bg-slate-950 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 py-4 transition-colors duration-300">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
@@ -1139,16 +1289,6 @@ const AdminDashboard = () => {
 
         {/* Main Panel Content */}
         <main className="flex-1 min-w-0">
-          {feedbackMsg && (
-            <div className={`mb-6 p-4 rounded-xl border flex items-center gap-3 justify-between shadow-lg fade-in-up ${
-              feedbackMsg.type === 'success' ? 'bg-emerald-950/70 border-emerald-500/30 text-emerald-300' : 'bg-red-950/70 border-red-500/30 text-red-300'
-            }`}>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="h-5 w-5 flex-shrink-0" />
-                <p className="text-sm font-semibold">{feedbackMsg.text}</p>
-              </div>
-            </div>
-          )}
 
           {/* Tab 1: Stats */}
           {activeTab === 'stats' && (
@@ -1475,21 +1615,8 @@ const AdminDashboard = () => {
                   <p className="text-slate-650 dark:text-slate-400 text-sm mt-1">Crea, modifica y elimina cuentas de ciudadanos, recolectores y administradores.</p>
                 </div>
                 <button
-                  onClick={() => {
-                    setUserForm({
-                      email: '',
-                      nombre_completo: '',
-                      rol: 'ciudadano',
-                      zona: '',
-                      telefono: '',
-                      activo: true,
-                      ecopuntos: 0,
-                      password: ''
-                    });
-                    setEditingUser(null);
-                    setShowUserModal(true);
-                  }}
-                  className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-505 text-white font-bold text-xs rounded-xl"
+                  onClick={openNewUserModal}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-sky-600 hover:bg-sky-505 text-white font-bold text-xs rounded-xl shadow-md transition-all transform hover:-translate-y-0.5"
                 >
                   <Plus className="h-4 w-4" /> Nuevo Usuario
                 </button>
@@ -1502,7 +1629,7 @@ const AdminDashboard = () => {
                   <table className="min-w-full divide-y divide-slate-200 dark:divide-slate-800">
                     <thead className="bg-slate-100 dark:bg-slate-950">
                       <tr>
-                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Nombre / Correo</th>
+                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">DNI / Nombre / Correo</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Rol</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">EcoPuntos</th>
                         <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase">Estado</th>
@@ -1513,7 +1640,14 @@ const AdminDashboard = () => {
                       {usuarios.map(u => (
                         <tr key={u.id} className="hover:bg-slate-100/40 transition-colors">
                           <td className="px-6 py-4">
-                            <p className="text-sm font-bold text-slate-900 dark:text-white">{u.nombre_completo}</p>
+                            <div className="flex items-center gap-2">
+                              {u.dni && (
+                                <span className="text-[10px] font-extrabold bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded">
+                                  DNI: {u.dni}
+                                </span>
+                              )}
+                              <p className="text-sm font-bold text-slate-900 dark:text-white">{u.nombre_completo}</p>
+                            </div>
                             <p className="text-xs text-slate-500">{u.email}</p>
                           </td>
                           <td className="px-6 py-4 text-sm font-semibold capitalize text-slate-700 dark:text-slate-300">{u.rol}</td>
@@ -1525,20 +1659,7 @@ const AdminDashboard = () => {
                           </td>
                           <td className="px-6 py-4 text-center space-x-2">
                             <button
-                              onClick={() => {
-                                setEditingUser(u);
-                                setUserForm({
-                                  email: u.email,
-                                  nombre_completo: u.nombre_completo,
-                                  rol: u.rol,
-                                  zona: u.zona ? String(u.zona) : '',
-                                  telefono: u.telefono || '',
-                                  activo: u.activo,
-                                  ecopuntos: u.ecopuntos,
-                                  password: ''
-                                });
-                                setShowUserModal(true);
-                              }}
+                              onClick={() => openEditUserModal(u)}
                               className="p-1.5 bg-sky-100 hover:bg-sky-200 text-sky-700 rounded-lg inline-flex items-center"
                               title="Editar"
                             >
@@ -2256,61 +2377,198 @@ const AdminDashboard = () => {
       {showUserModal && (
         <div className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <form onSubmit={saveUser} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{editingUser ? 'Editar Usuario' : 'Crear Nuevo Usuario'}</h2>
+            <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+              <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <User className="h-5 w-5 text-sky-500" />
+                {editingUser ? 'Editar Usuario' : 'Crear Nuevo Usuario'}
+              </h2>
+              <button
+                type="button"
+                onClick={() => { setShowUserModal(false); setEditingUser(null); }}
+                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
             
-            <div className="grid grid-cols-1 gap-3">
+            <div className="grid grid-cols-1 gap-3.5">
+              {/* DNI con autocompletado RENIEC */}
               <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase">Nombre Completo</label>
-                <input required type="text" value={userForm.nombre_completo} onChange={e => setUserForm({...userForm, nombre_completo: e.target.value})} className="w-full bg-slate-55 dark:bg-slate-950 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white" />
-              </div>
-              <div>
-                <label className="block text-xs font-bold text-slate-500 uppercase">Correo Electrónico</label>
-                <input required type="email" value={userForm.email} onChange={e => setUserForm({...userForm, email: e.target.value})} className="w-full bg-slate-55 dark:bg-slate-950 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white" />
-              </div>
-              {!editingUser && (
-                <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase">Contraseña</label>
-                  <input required type="password" value={userForm.password} onChange={e => setUserForm({...userForm, password: e.target.value})} className="w-full bg-slate-55 dark:bg-slate-950 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white" />
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                  DNI (Documento de Identidad)
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Número de DNI (8 dígitos)"
+                    value={userForm.dni}
+                    onChange={handleDniChangeUserModal}
+                    disabled={buscandoDniUserModal}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 pr-10 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  />
+                  {buscandoDniUserModal && (
+                    <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-sky-500"></div>
+                    </div>
+                  )}
                 </div>
-              )}
+                {dniFeedbackUserModal && (
+                  <p className={`text-[11px] font-semibold mt-1 ${dniFeedbackUserModal.includes('✓') ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'}`}>
+                    {dniFeedbackUserModal}
+                  </p>
+                )}
+              </div>
+
+              {/* Nombre Completo */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase">
+                    Nombre Completo
+                  </label>
+                  {nombreReadOnlyUserModal && (
+                    <button
+                      type="button"
+                      onClick={() => setNombreReadOnlyUserModal(false)}
+                      className="text-[10px] text-sky-600 dark:text-sky-400 underline font-semibold"
+                    >
+                      Editar manualmente
+                    </button>
+                  )}
+                </div>
+                <input
+                  required
+                  type="text"
+                  readOnly={nombreReadOnlyUserModal}
+                  placeholder="Nombre y apellidos"
+                  value={userForm.nombre_completo}
+                  onChange={e => setUserForm({ ...userForm, nombre_completo: e.target.value })}
+                  className={`w-full border rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500 ${
+                    nombreReadOnlyUserModal
+                      ? 'bg-slate-100 dark:bg-slate-800/90 cursor-not-allowed text-slate-500 font-medium'
+                      : 'bg-slate-50 dark:bg-slate-950 border-slate-200 dark:border-slate-800'
+                  }`}
+                />
+              </div>
+
+              {/* Correo Electrónico */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Correo Electrónico</label>
+                <input
+                  required
+                  type="email"
+                  placeholder="ejemplo@correo.com"
+                  value={userForm.email}
+                  onChange={e => setUserForm({ ...userForm, email: e.target.value })}
+                  className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                />
+              </div>
+
+              {/* Contraseña */}
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">
+                  {editingUser ? 'Contraseña (Dejar en blanco para mantener la actual)' : 'Contraseña de Acceso'}
+                </label>
+                <div className="relative">
+                  <input
+                    required={!editingUser}
+                    type={mostrarPasswordUserModal ? 'text' : 'password'}
+                    placeholder={editingUser ? '••••••••' : 'Mínimo 8 caracteres'}
+                    value={userForm.password}
+                    onChange={e => setUserForm({ ...userForm, password: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 pr-10 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setMostrarPasswordUserModal(!mostrarPasswordUserModal)}
+                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-sky-500"
+                  >
+                    {mostrarPasswordUserModal ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Grid: Teléfono y Rol */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase">Teléfono</label>
-                  <input type="text" value={userForm.telefono} onChange={e => setUserForm({...userForm, telefono: e.target.value})} className="w-full bg-slate-55 dark:bg-slate-950 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-850 dark:text-white" />
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Teléfono</label>
+                  <input
+                    type="text"
+                    placeholder="987654321"
+                    value={userForm.telefono}
+                    onChange={e => setUserForm({ ...userForm, telefono: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase">Rol</label>
-                  <select value={userForm.rol} onChange={e => setUserForm({...userForm, rol: e.target.value})} className="w-full bg-slate-55 dark:bg-slate-950 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white">
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Rol de Usuario</label>
+                  <select
+                    value={userForm.rol}
+                    onChange={e => setUserForm({ ...userForm, rol: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  >
                     <option value="ciudadano">Ciudadano</option>
                     <option value="recolector">Recolector</option>
                     <option value="admin">Administrador</option>
                   </select>
                 </div>
               </div>
+
+              {/* Grid: Sector y EcoPuntos */}
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs font-bold text-slate-500 uppercase">Sector / Zona</label>
-                  <select value={userForm.zona} onChange={e => setUserForm({...userForm, zona: e.target.value})} className="w-full bg-slate-55 dark:bg-slate-950 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white">
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">Sector / Zona</label>
+                  <select
+                    value={userForm.zona}
+                    onChange={e => setUserForm({ ...userForm, zona: e.target.value })}
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                  >
                     <option value="">Ninguno</option>
                     {zonas.map(z => <option key={z.id} value={z.id}>{z.nombre}</option>)}
                   </select>
                 </div>
                 {editingUser && (
                   <div>
-                    <label className="block text-xs font-bold text-slate-500 uppercase">EcoPuntos</label>
-                    <input type="number" value={userForm.ecopuntos} onChange={e => setUserForm({...userForm, ecopuntos: Number(e.target.value)})} className="w-full bg-slate-55 dark:bg-slate-950 border border-slate-200 rounded-xl p-2.5 text-xs text-slate-800 dark:text-white" />
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase mb-1">EcoPuntos</label>
+                    <input
+                      type="number"
+                      value={userForm.ecopuntos}
+                      onChange={e => setUserForm({ ...userForm, ecopuntos: Number(e.target.value) })}
+                      className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl p-2.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-sky-500"
+                    />
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2 pt-2">
-                <input type="checkbox" id="activo" checked={userForm.activo} onChange={e => setUserForm({...userForm, activo: e.target.checked})} className="h-4 w-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500" />
-                <label htmlFor="activo" className="text-xs font-semibold text-slate-700 dark:text-slate-300">Usuario Activo en el Sistema</label>
+
+              {/* Checkbox Activo */}
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="activo"
+                  checked={userForm.activo}
+                  onChange={e => setUserForm({ ...userForm, activo: e.target.checked })}
+                  className="h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 cursor-pointer"
+                />
+                <label htmlFor="activo" className="text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer">
+                  Usuario Activo en el Sistema
+                </label>
               </div>
             </div>
 
             <div className="flex gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button type="button" onClick={() => { setShowUserModal(false); setEditingUser(null); }} className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-350 font-bold text-xs py-3 rounded-xl">Cancelar</button>
-              <button type="submit" className="flex-1 bg-sky-600 hover:bg-sky-550 text-white font-bold text-xs py-3 rounded-xl shadow-md">Guardar Usuario</button>
+              <button
+                type="button"
+                onClick={() => { setShowUserModal(false); setEditingUser(null); }}
+                className="flex-1 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs py-3 rounded-xl"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="flex-1 bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs py-3 rounded-xl shadow-md transition-all"
+              >
+                {editingUser ? 'Guardar Cambios' : 'Guardar Usuario'}
+              </button>
             </div>
           </form>
         </div>

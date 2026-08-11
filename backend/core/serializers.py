@@ -91,6 +91,8 @@ class UsuarioSerializer(serializers.ModelSerializer):
 
 class UsuarioAdminSerializer(serializers.ModelSerializer):
     foto_perfil_url = serializers.SerializerMethodField()
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    dni = serializers.CharField(required=False, allow_blank=True, allow_null=True)
 
     def get_foto_perfil_url(self, obj):
         if obj.foto_perfil:
@@ -102,8 +104,42 @@ class UsuarioAdminSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Usuario
-        fields = ['id', 'email', 'nombre_completo', 'rol', 'zona', 'telefono', 'activo', 'ecopuntos', 'acepta_terminos', 'fecha_aceptacion_terminos', 'foto_perfil', 'foto_perfil_url']
+        fields = ['id', 'email', 'dni', 'nombre_completo', 'password', 'rol', 'zona', 'telefono', 'activo', 'ecopuntos', 'acepta_terminos', 'fecha_aceptacion_terminos', 'foto_perfil', 'foto_perfil_url']
         read_only_fields = ['id', 'fecha_aceptacion_terminos']
+
+    def validate_dni(self, value):
+        if value:
+            value = str(value).strip()
+            if not value.isdigit() or len(value) != 8:
+                raise serializers.ValidationError('El DNI debe contener exactamente 8 caracteres numéricos.')
+            qs = Usuario.objects.filter(dni=value)
+            if self.instance:
+                qs = qs.exclude(pk=self.instance.pk)
+            if qs.exists():
+                raise serializers.ValidationError('Ya existe un usuario registrado con este DNI.')
+        return value
+
+    def create(self, validated_data):
+        password = validated_data.pop('password', None)
+        email = validated_data.get('email')
+        usuario = Usuario(**validated_data)
+        if email:
+            usuario.username = email
+        if password:
+            usuario.set_password(password)
+        else:
+            usuario.set_unusable_password()
+        usuario.save()
+        return usuario
+
+    def update(self, instance, validated_data):
+        password = validated_data.pop('password', None)
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        if password:
+            instance.set_password(password)
+        instance.save()
+        return instance
 
 class RegistroSerializer(serializers.ModelSerializer):
     dni = serializers.CharField(
@@ -215,6 +251,63 @@ class RutaSerializer(serializers.ModelSerializer):
         if value not in Ruta.EstadoRuta.values:
             raise serializers.ValidationError("Estado de ruta inválido.")
         return value
+
+    def validate(self, attrs):
+        recolector = attrs.get('recolector', self.instance.recolector if self.instance else None)
+        zona = attrs.get('zona', self.instance.zona if self.instance else None)
+        fecha = attrs.get('fecha', self.instance.fecha if self.instance else None)
+        hora_inicio = attrs.get('hora_inicio', self.instance.hora_inicio if self.instance else None)
+        hora_fin_estimada = attrs.get('hora_fin_estimada', self.instance.hora_fin_estimada if self.instance else None)
+        estado = attrs.get('estado', self.instance.estado if self.instance else Ruta.EstadoRuta.PROGRAMADA)
+
+        if hora_inicio and hora_fin_estimada:
+            if hora_inicio >= hora_fin_estimada:
+                raise serializers.ValidationError({
+                    'hora_fin_estimada': 'La hora de fin estimada debe ser posterior a la hora de inicio.'
+                })
+
+        ACTIVE_STATES = [Ruta.EstadoRuta.PROGRAMADA, Ruta.EstadoRuta.EN_PROGRESO]
+
+        if estado in ACTIVE_STATES and recolector and zona and fecha and hora_inicio and hora_fin_estimada:
+            # 1. Unicidad de recolector: un recolector no puede tener dos rutas activas en horarios solapados del mismo día
+            qs_recolector = Ruta.objects.filter(
+                recolector=recolector,
+                fecha=fecha,
+                estado__in=ACTIVE_STATES,
+                hora_inicio__lt=hora_fin_estimada,
+                hora_fin_estimada__gt=hora_inicio
+            )
+            if self.instance:
+                qs_recolector = qs_recolector.exclude(pk=self.instance.pk)
+
+            if qs_recolector.exists():
+                conflict = qs_recolector.first()
+                inicio_str = conflict.hora_inicio.strftime('%H:%M')
+                fin_str = conflict.hora_fin_estimada.strftime('%H:%M')
+                raise serializers.ValidationError({
+                    'recolector': f'El recolector {recolector.nombre_completo} ya tiene una ruta activa ("{conflict.zona.nombre}") programada de {inicio_str} a {fin_str} el día {fecha}.'
+                })
+
+            # 2. Unicidad de zona: una zona no puede tener dos rutas activas programadas en horarios solapados del mismo día
+            qs_zona = Ruta.objects.filter(
+                zona=zona,
+                fecha=fecha,
+                estado__in=ACTIVE_STATES,
+                hora_inicio__lt=hora_fin_estimada,
+                hora_fin_estimada__gt=hora_inicio
+            )
+            if self.instance:
+                qs_zona = qs_zona.exclude(pk=self.instance.pk)
+
+            if qs_zona.exists():
+                conflict = qs_zona.first()
+                inicio_str = conflict.hora_inicio.strftime('%H:%M')
+                fin_str = conflict.hora_fin_estimada.strftime('%H:%M')
+                raise serializers.ValidationError({
+                    'zona': f'La zona "{conflict.zona.nombre}" ya tiene una ruta activa programada con el recolector {conflict.recolector.nombre_completo} de {inicio_str} a {fin_str} el día {fecha}.'
+                })
+
+        return attrs
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

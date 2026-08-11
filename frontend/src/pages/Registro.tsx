@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Leaf, Mail, Lock, User, MapPin, ArrowRight, CheckCircle2, AlertCircle, Sun, Moon, Eye, EyeOff } from 'lucide-react';
+import { User, Mail, Lock, MapPin, CheckCircle2, AlertCircle, Sun, Moon, Leaf, Eye, EyeOff, ArrowRight } from 'lucide-react';
+
+
+import { getApiBaseUrl } from '../api';
 import CuscoImagen from '../assets/Cusco_imagen.png';
 
 type Zona = {
@@ -47,7 +50,7 @@ const Registro = () => {
       setErrorZonas('');
 
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000';
+        const apiBaseUrl = getApiBaseUrl();
         const response = await fetch(`${apiBaseUrl}/api/zonas/`);
         const data = await response.json();
 
@@ -74,7 +77,7 @@ const Registro = () => {
     if (val.length === 8) {
       setBuscandoDni(true);
       try {
-        const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+        const apiBaseUrl = getApiBaseUrl();
         const response = await fetch(`${apiBaseUrl}/api/consultar-dni/${val}/`);
         const data = await response.json();
 
@@ -128,7 +131,7 @@ const Registro = () => {
     setCargando(true);
 
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const apiBaseUrl = getApiBaseUrl();
       const response = await fetch(`${apiBaseUrl}/api/register/`, {
         method: 'POST',
         headers: {

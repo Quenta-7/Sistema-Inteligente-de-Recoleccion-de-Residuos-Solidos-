@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Leaf, Mail, ArrowRight, CheckCircle2, AlertCircle, Sun, Moon } from 'lucide-react';
 import CuscoImagen from '../assets/Cusco_imagen.png';
+import { getApiBaseUrl } from '../api';
 
 const RecuperarContrasena = () => {
   const [email, setEmail] = useState('');
@@ -29,7 +30,7 @@ const RecuperarContrasena = () => {
     setCargando(true);
 
     try {
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const apiBaseUrl = getApiBaseUrl();
       const response = await fetch(`${apiBaseUrl}/api/auth/recuperar-contrasena/`, {
         method: 'POST',
         headers: {

@@ -245,6 +245,46 @@ class CoreApiTests(TestCase):
         self.assertIsNone(completed.data['lat_actual'])
         self.assertIsNone(completed.data['lng_actual'])
 
+    def test_unicidad_y_no_solapamiento_de_rutas_programadas(self):
+        self.client.force_authenticate(user=self.admin)
+        # 1. Crear primera ruta programada
+        res1 = self.client.post('/api/rutas/', {
+            'recolector': self.recolector.id,
+            'zona': self.zona.id,
+            'fecha': '2026-08-11',
+            'hora_inicio': '07:00:00',
+            'hora_fin_estimada': '10:00:00',
+            'estado': 'programada'
+        }, format='json')
+        self.assertEqual(res1.status_code, status.HTTP_201_CREATED)
+        ruta1_id = res1.data['id']
+
+        # 2. Intentar crear segunda ruta idéntica/solapada mientras la primera está programada -> Rechazado
+        res2 = self.client.post('/api/rutas/', {
+            'recolector': self.recolector.id,
+            'zona': self.zona.id,
+            'fecha': '2026-08-11',
+            'hora_inicio': '07:00:00',
+            'hora_fin_estimada': '10:00:00',
+            'estado': 'programada'
+        }, format='json')
+        self.assertEqual(res2.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn('recolector', res2.data)
+
+        # 3. Cambiar estado de la primera ruta a 'no_completada' (avería/no completada)
+        self.client.patch(f'/api/rutas/{ruta1_id}/', {'estado': 'no_completada'}, format='json')
+
+        # 4. Ahora sí debe permitir programar una nueva ruta para esa hora/día
+        res3 = self.client.post('/api/rutas/', {
+            'recolector': self.recolector.id,
+            'zona': self.zona.id,
+            'fecha': '2026-08-11',
+            'hora_inicio': '07:00:00',
+            'hora_fin_estimada': '10:00:00',
+            'estado': 'programada'
+        }, format='json')
+        self.assertEqual(res3.status_code, status.HTTP_201_CREATED)
+
     def test_nuevo_login_invalida_jwt_anterior(self):
         login_url = reverse('login')
         first = self.client.post(login_url, {

@@ -4,7 +4,19 @@
  */
 import { clearAuthSession, getAuthToken, isTokenExpired } from './utils/auth';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
+export const getApiBaseUrl = (): string => {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL;
+  }
+  const isLocalhost = typeof window !== 'undefined' && Boolean(
+    window.location.hostname === 'localhost' ||
+    window.location.hostname === '127.0.0.1' ||
+    window.location.hostname === '[::1]'
+  );
+  return isLocalhost ? 'http://127.0.0.1:8000' : 'https://jose07q.pythonanywhere.com';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 export const authedFetch = async (
   url: string,

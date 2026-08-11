@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Leaf, Mail, Lock, ArrowRight, AlertCircle, Loader, Sun, Moon, Eye, EyeOff } from 'lucide-react';
 import CuscoImagen from '../assets/Cusco_imagen.png';
 import { getOrCreateDeviceId } from '../utils/auth';
+import { getApiBaseUrl } from '../api';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -26,14 +27,20 @@ const Login = () => {
     }
   }, [theme]);
 
+  const toggleTheme = () => {
+    const nextTheme = theme === 'light' ? 'dark' : 'light';
+    setThemeState(nextTheme);
+    localStorage.setItem('color-theme', nextTheme);
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // Llamar a la API del backend con el nuevo endpoint
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      // Llamar a la API del backend
+      const apiBaseUrl = getApiBaseUrl();
       const response = await fetch(`${apiBaseUrl}/api/auth/login/`, {
         method: 'POST',
         headers: {
@@ -83,7 +90,7 @@ const Login = () => {
         setError(data.errors?.email?.[0] || data.errors?.password?.[0] || data.errors?.non_field_errors?.[0] || 'Credenciales inválidas');
       }
     } catch {
-      setError('Error de conexión. Verifica que el servidor de la aplicación esté disponible.');
+      setError(`Error de conexión. No se pudo conectar con el servidor (${getApiBaseUrl()}).`);
     } finally {
       setLoading(false);
     }
@@ -103,11 +110,7 @@ const Login = () => {
       {/* Botón de tema flotante */}
       <div className="absolute top-4 right-4 z-20">
         <button
-          onClick={() => {
-            const nextTheme = theme === 'light' ? 'dark' : 'light';
-            setThemeState(nextTheme);
-            localStorage.setItem('color-theme', nextTheme);
-          }}
+          onClick={toggleTheme}
           className="p-2 text-slate-500 dark:text-slate-350 hover:text-amber-500 transition-colors bg-white/90 dark:bg-slate-800/90 rounded-full border border-slate-200 dark:border-slate-700 shadow-md backdrop-blur-sm"
           title={theme === 'light' ? 'Modo Oscuro' : 'Modo Claro'}
         >
