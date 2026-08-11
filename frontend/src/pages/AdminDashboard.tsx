@@ -495,7 +495,12 @@ const AdminDashboard = () => {
       const res = await authedFetch('/api/zonas/');
       if (res.ok) {
         const data = await res.json();
-        setZonas(Array.isArray(data) ? data : data.results || []);
+        const rawList = Array.isArray(data) ? data : data.results || [];
+        const filtered = rawList.filter((z: any) =>
+          !['ZC001', 'ZN001', 'ZS001', 'ZE001'].includes(z.codigo) &&
+          !['zona centro', 'zona norte', 'zona sur', 'zona este'].includes(z.nombre?.toLowerCase())
+        );
+        setZonas(filtered);
       }
     } catch (err) {
       console.error(err);
