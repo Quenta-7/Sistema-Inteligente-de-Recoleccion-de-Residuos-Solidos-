@@ -10,34 +10,34 @@ def add_seed_data(apps, schema_editor):
     Usuario = apps.get_model('core', 'Usuario')
     Horario = apps.get_model('core', 'Horario')
     
-    # 1. CREAR ZONAS
+    # 1. CREAR ZONAS (Cuadrantes San Jerónimo)
     zonas_data = [
         {
-            'nombre': 'Zona Centro',
-            'codigo': 'ZC001',
-            'descripcion': 'Zona del centro histórico de la ciudad',
-            'geometria': {'type': 'Polygon', 'coordinates': [[[-74.0, 40.7], [-74.0, 40.8], [-73.9, 40.8], [-73.9, 40.7], [-74.0, 40.7]]]},
+            'nombre': 'Cuadrante Este – Urb. Larapa Residencial & Larapa Grande & Pata Pata',
+            'codigo': 'SJE001',
+            'descripcion': 'Sector Este: Urb. Larapa Residencial, Larapa Grande y Pata Pata',
+            'geometria': {'type': 'Polygon', 'coordinates': [[[-71.8740, -13.5500], [-71.8740, -13.5560], [-71.8600, -13.5560], [-71.8600, -13.5500], [-71.8740, -13.5500]]]},
             'activa': True
         },
         {
-            'nombre': 'Zona Norte',
-            'codigo': 'ZN001',
-            'descripcion': 'Zona norte de la ciudad',
-            'geometria': {'type': 'Polygon', 'coordinates': [[[-74.0, 40.8], [-74.0, 40.9], [-73.9, 40.9], [-73.9, 40.8], [-74.0, 40.8]]]},
+            'nombre': 'Cuadrante Noreste – Urb. Versalles & Kantu & Huayna Picol Norte',
+            'codigo': 'SJE002',
+            'descripcion': 'Sector Noreste: Urb. Versalles, Sector Kantu de Larapa, APV Huayna Picol Norte',
+            'geometria': {'type': 'Polygon', 'coordinates': [[[-71.8740, -13.5410], [-71.8740, -13.5500], [-71.8600, -13.5500], [-71.8600, -13.5410], [-71.8740, -13.5410]]]},
             'activa': True
         },
         {
-            'nombre': 'Zona Sur',
-            'codigo': 'ZS001',
-            'descripcion': 'Zona sur de la ciudad',
-            'geometria': {'type': 'Polygon', 'coordinates': [[[-74.0, 40.6], [-74.0, 40.7], [-73.9, 40.7], [-73.9, 40.6], [-74.0, 40.6]]]},
+            'nombre': 'Cuadrante Noroeste – Santa Rosa Alta & Mirador & Conchacalla Alta',
+            'codigo': 'SJE003',
+            'descripcion': 'Sector Noroeste: Urb. Santa Rosa Alta, APV Pampa Chanca Alta, APV Mirador Norte y Conchacalla Alta',
+            'geometria': {'type': 'Polygon', 'coordinates': [[[-71.8860, -13.5350], [-71.8860, -13.5500], [-71.8740, -13.5500], [-71.8740, -13.5350], [-71.8860, -13.5350]]]},
             'activa': True
         },
         {
-            'nombre': 'Zona Este',
-            'codigo': 'ZE001',
-            'descripcion': 'Zona este de la ciudad',
-            'geometria': {'type': 'Polygon', 'coordinates': [[[-73.9, 40.7], [-73.9, 40.8], [-73.8, 40.8], [-73.8, 40.7], [-73.9, 40.7]]]},
+            'nombre': 'Cuadrante Suroeste – Pillao Matao Sur & Chimpahuaylla Sur & Retamales Sur',
+            'codigo': 'SJE004',
+            'descripcion': 'Sector Suroeste: Sector Chimpahuaylla Sur, Pillao Matao Sur, APV Los Retamales Sur',
+            'geometria': {'type': 'Polygon', 'coordinates': [[[-71.8860, -13.5500], [-71.8860, -13.5580], [-71.8740, -13.5580], [-71.8740, -13.5500], [-71.8860, -13.5500]]]},
             'activa': True
         },
     ]
@@ -60,8 +60,8 @@ def add_seed_data(apps, schema_editor):
             'rol': 'admin',
             'is_staff': True,
             'is_superuser': True,
-            'zona': zonas_creadas.get('ZC001'),
-            'telefono': '+1234567890'
+            'zona': zonas_creadas.get('SJE001'),
+            'telefono': '+51984123456'
         },
         {
             'email': 'ciudadano1@residuos.com',
@@ -69,8 +69,8 @@ def add_seed_data(apps, schema_editor):
             'nombre_completo': 'Juan Pérez',
             'password': make_password('pass123'),
             'rol': 'ciudadano',
-            'zona': zonas_creadas.get('ZC001'),
-            'telefono': '+1111111111'
+            'zona': zonas_creadas.get('SJE001'),
+            'telefono': '+51951111111'
         },
         {
             'email': 'ciudadano2@residuos.com',
@@ -78,8 +78,8 @@ def add_seed_data(apps, schema_editor):
             'nombre_completo': 'María García',
             'password': make_password('pass123'),
             'rol': 'ciudadano',
-            'zona': zonas_creadas.get('ZN001'),
-            'telefono': '+2222222222'
+            'zona': zonas_creadas.get('SJE002'),
+            'telefono': '+51952222222'
         },
         {
             'email': 'ciudadano3@residuos.com',
@@ -87,17 +87,17 @@ def add_seed_data(apps, schema_editor):
             'nombre_completo': 'Carlos López',
             'password': make_password('pass123'),
             'rol': 'ciudadano',
-            'zona': zonas_creadas.get('ZS001'),
-            'telefono': '+3333333333'
+            'zona': zonas_creadas.get('SJE003'),
+            'telefono': '+51953333333'
         },
         {
             'email': 'supervisor@residuos.com',
             'username': 'supervisor',
-            'nombre_completo': 'Supervisor de Zona',
+            'nombre_completo': 'Supervisor San Jerónimo',
             'password': make_password('pass123'),
             'rol': 'admin',
-            'zona': zonas_creadas.get('ZE001'),
-            'telefono': '+9999999999'
+            'zona': zonas_creadas.get('SJE004'),
+            'telefono': '+51959999999'
         },
     ]
     
@@ -109,72 +109,72 @@ def add_seed_data(apps, schema_editor):
     
     # 3. CREAR HORARIOS
     horarios_data = [
-        # Zona Centro
+        # SJE001 - Cuadrante Este
         {
-            'zona_codigo': 'ZC001',
+            'zona_codigo': 'SJE001',
             'dia': 'lunes',
-            'hora_inicio': time(8, 0),
-            'hora_fin': time(12, 0),
-            'tipos_residuo': ['orgánico', 'papel']
+            'hora_inicio': time(7, 0),
+            'hora_fin': time(10, 0),
+            'tipos_residuo': ['Residuos Generales']
         },
         {
-            'zona_codigo': 'ZC001',
+            'zona_codigo': 'SJE001',
             'dia': 'miercoles',
-            'hora_inicio': time(14, 0),
+            'hora_inicio': time(15, 0),
             'hora_fin': time(18, 0),
-            'tipos_residuo': ['plástico', 'vidrio']
+            'tipos_residuo': ['Residuos Generales']
         },
         {
-            'zona_codigo': 'ZC001',
+            'zona_codigo': 'SJE001',
             'dia': 'viernes',
-            'hora_inicio': time(8, 0),
-            'hora_fin': time(12, 0),
-            'tipos_residuo': ['metal', 'electrónico']
+            'hora_inicio': time(7, 0),
+            'hora_fin': time(10, 0),
+            'tipos_residuo': ['Residuos Generales']
         },
-        # Zona Norte
+        # SJE002 - Cuadrante Noreste
         {
-            'zona_codigo': 'ZN001',
+            'zona_codigo': 'SJE002',
+            'dia': 'lunes',
+            'hora_inicio': time(7, 0),
+            'hora_fin': time(10, 0),
+            'tipos_residuo': ['Residuos Generales']
+        },
+        {
+            'zona_codigo': 'SJE002',
+            'dia': 'miercoles',
+            'hora_inicio': time(15, 0),
+            'hora_fin': time(18, 0),
+            'tipos_residuo': ['Residuos Generales']
+        },
+        # SJE003 - Cuadrante Noroeste
+        {
+            'zona_codigo': 'SJE003',
             'dia': 'martes',
-            'hora_inicio': time(8, 0),
-            'hora_fin': time(12, 0),
-            'tipos_residuo': ['orgánico', 'papel']
+            'hora_inicio': time(7, 0),
+            'hora_fin': time(10, 0),
+            'tipos_residuo': ['Residuos Generales']
         },
         {
-            'zona_codigo': 'ZN001',
+            'zona_codigo': 'SJE003',
             'dia': 'jueves',
-            'hora_inicio': time(14, 0),
+            'hora_inicio': time(15, 0),
             'hora_fin': time(18, 0),
-            'tipos_residuo': ['plástico', 'vidrio']
+            'tipos_residuo': ['Residuos Generales']
         },
-        # Zona Sur
+        # SJE004 - Cuadrante Suroeste
         {
-            'zona_codigo': 'ZS001',
-            'dia': 'lunes',
-            'hora_inicio': time(14, 0),
-            'hora_fin': time(18, 0),
-            'tipos_residuo': ['orgánico', 'papel']
-        },
-        {
-            'zona_codigo': 'ZS001',
-            'dia': 'miercoles',
-            'hora_inicio': time(8, 0),
-            'hora_fin': time(12, 0),
-            'tipos_residuo': ['plástico', 'metal']
-        },
-        # Zona Este
-        {
-            'zona_codigo': 'ZE001',
+            'zona_codigo': 'SJE004',
             'dia': 'martes',
-            'hora_inicio': time(14, 0),
-            'hora_fin': time(18, 0),
-            'tipos_residuo': ['orgánico', 'vidrio']
+            'hora_inicio': time(7, 0),
+            'hora_fin': time(10, 0),
+            'tipos_residuo': ['Residuos Generales']
         },
         {
-            'zona_codigo': 'ZE001',
-            'dia': 'viernes',
-            'hora_inicio': time(14, 0),
+            'zona_codigo': 'SJE004',
+            'dia': 'jueves',
+            'hora_inicio': time(15, 0),
             'hora_fin': time(18, 0),
-            'tipos_residuo': ['papel', 'cartón']
+            'tipos_residuo': ['Residuos Generales']
         },
     ]
     
