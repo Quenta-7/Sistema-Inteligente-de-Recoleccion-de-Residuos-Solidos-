@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ArrowLeft, Camera, UploadCloud, CheckCircle2, Recycle, AlertCircle, Loader, Sun, Moon, MapPin, Trophy } from 'lucide-react';
-import { authedFetch } from '../api';
+import { authedFetch, getMediaUrl } from '../api';
 
 const Reportes = () => {
   const [descripcion, setDescripcion] = useState('');
@@ -517,9 +517,9 @@ const Reportes = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {evidencias.map((evidencia) => (
                   <div key={evidencia.id} className="bg-white dark:bg-slate-950 rounded-xl border border-gray-100 dark:border-slate-800 overflow-hidden hover:shadow-md transition-shadow">
-                    {evidencia.foto_url && (
+                    {(evidencia.foto_url || evidencia.foto) && (
                       <img 
-                        src={evidencia.foto_url} 
+                        src={getMediaUrl(evidencia.foto_url || evidencia.foto)} 
                         alt="Evidencia" 
                         className="w-full h-40 object-cover"
                       />

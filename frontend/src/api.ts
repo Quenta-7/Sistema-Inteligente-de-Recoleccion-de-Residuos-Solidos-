@@ -47,3 +47,33 @@ export const authedFetch = async (
 
   return response;
 };
+
+export const getMediaUrl = (url: string | null | undefined): string => {
+  if (!url) return '';
+  if (url.startsWith('data:') || url.startsWith('blob:')) return url;
+
+  const rawBase = import.meta.env.VITE_API_BASE_URL || '';
+  const apiBase = rawBase.endsWith('/') ? rawBase.slice(0, -1) : rawBase;
+
+  // Relative path starting with / (e.g. /media/evidencias/foo.jpg)
+  if (url.startsWith('/')) {
+    return apiBase ? `${apiBase}${url}` : url;
+  }
+
+  // If local domain returned in deployment response, replace host with API base
+  if (apiBase && (url.includes('localhost') || url.includes('127.0.0.1') || url.includes('0.0.0.0'))) {
+    try {
+      const parsed = new URL(url);
+      return `${apiBase}${parsed.pathname}`;
+    } catch (e) {
+      return url;
+    }
+  }
+
+  // Fix mixed content if page is served over HTTPS
+  if (window.location.protocol === 'https:' && url.startsWith('http://') && !url.includes('localhost')) {
+    return url.replace('http://', 'https://');
+  }
+
+  return url;
+};

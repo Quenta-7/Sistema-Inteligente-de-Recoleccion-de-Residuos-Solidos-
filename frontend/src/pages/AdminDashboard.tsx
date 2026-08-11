@@ -22,7 +22,7 @@ import {
   Send,
   Truck
 } from 'lucide-react';
-import { authedFetch } from '../api';
+import { authedFetch, getMediaUrl } from '../api';
 import { fetchStreetRoute } from '../utils/routing';
 import L from 'leaflet';
 
@@ -1290,8 +1290,8 @@ const AdminDashboard = () => {
                   {evidenciasFiltradas.map((evidencia) => (
                     <div key={evidencia.id} className="bg-white dark:bg-slate-950 border border-slate-200 dark:border-slate-850 rounded-2xl overflow-hidden flex flex-col justify-between shadow-sm">
                       <div>
-                        {evidencia.foto_url && (
-                          <img src={evidencia.foto_url} alt="Evidencia" className="w-full h-48 object-cover" />
+                        {(evidencia.foto_url || evidencia.foto) && (
+                          <img src={getMediaUrl(evidencia.foto_url || evidencia.foto)} alt="Evidencia" className="w-full h-48 object-cover" />
                         )}
                         <div className="p-5">
                           <span className="text-[10px] font-bold text-sky-600 bg-sky-100 px-2 py-0.5 rounded">{evidencia.tipo_residuo}</span>

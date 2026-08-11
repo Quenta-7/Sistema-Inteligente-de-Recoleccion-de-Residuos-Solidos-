@@ -37,7 +37,11 @@ class EvidenciaSerializer(serializers.ModelSerializer):
         if obj.foto:
             request = self.context.get('request')
             if request:
-                return request.build_absolute_uri(obj.foto.url)
+                url = request.build_absolute_uri(obj.foto.url)
+                if request.is_secure() or request.META.get('HTTP_X_FORWARDED_PROTO') == 'https':
+                    if url.startswith('http://'):
+                        url = 'https://' + url[7:]
+                return url
             return obj.foto.url
         return None
 

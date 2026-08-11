@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Calendar, LogOut, Map, Bell, User, ChevronRight, Leaf, Camera, Trophy, Sun, Moon, Menu, X, Star, CheckCircle, AlertTriangle } from 'lucide-react';
-import { authedFetch } from '../api';
+import { authedFetch, getMediaUrl } from '../api';
 
 
 
@@ -323,7 +323,7 @@ const Dashboard = () => {
               <div className="flex items-center space-x-3">
                 <a href="/perfil" className="h-10 w-10 bg-sky-100 dark:bg-sky-950 rounded-full overflow-hidden flex items-center justify-center border-2 border-white dark:border-slate-800 shadow-sm hover:ring-2 hover:ring-sky-400 transition-all" title="Ver mi perfil">
                   {fotoPerfilUrl ? (
-                    <img src={fotoPerfilUrl} alt="Foto de perfil" className="h-full w-full object-cover" />
+                    <img src={getMediaUrl(fotoPerfilUrl)} alt="Foto de perfil" className="h-full w-full object-cover" />
                   ) : (
                     <User className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                   )}
@@ -389,7 +389,7 @@ const Dashboard = () => {
               <div className="flex items-center space-x-3 mb-4">
                 <div className="h-10 w-10 bg-sky-100 dark:bg-sky-950 rounded-full overflow-hidden flex items-center justify-center">
                   {fotoPerfilUrl ? (
-                    <img src={fotoPerfilUrl} alt="Foto de perfil" className="h-full w-full object-cover" />
+                    <img src={getMediaUrl(fotoPerfilUrl)} alt="Foto de perfil" className="h-full w-full object-cover" />
                   ) : (
                     <User className="h-5 w-5 text-sky-600 dark:text-sky-400" />
                   )}

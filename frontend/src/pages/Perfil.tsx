@@ -17,7 +17,7 @@ import {
   Leaf,
   Camera,
 } from 'lucide-react';
-import { authedFetch } from '../api';
+import { authedFetch, getMediaUrl } from '../api';
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -383,7 +383,7 @@ const Perfil = () => {
                 <div className="relative z-10 flex flex-col sm:flex-row sm:items-end gap-5">
                   <div className="relative h-20 w-20 bg-white/20 backdrop-blur-sm rounded-2xl flex items-center justify-center border-2 border-white/30 shadow-lg flex-shrink-0 group">
                     {perfil.foto_perfil_url ? (
-                      <img src={perfil.foto_perfil_url} alt="Foto de perfil" className="h-full w-full object-cover rounded-xl" />
+                      <img src={getMediaUrl(perfil.foto_perfil_url)} alt="Foto de perfil" className="h-full w-full object-cover rounded-xl" />
                     ) : (
                       <User className="h-10 w-10 text-white" />
                     )}
