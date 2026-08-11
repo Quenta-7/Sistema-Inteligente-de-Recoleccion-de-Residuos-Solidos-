@@ -24,9 +24,6 @@ import {
   AlertCircle,
   X,
   User,
-  Mail,
-  Lock,
-  Phone,
   Eye,
   EyeOff
 } from 'lucide-react';
@@ -178,6 +175,7 @@ type Evidencia = {
   tipo_residuo: string;
   descripcion: string;
   foto_url?: string;
+  foto?: string;
   cantidad?: number;
   ecopuntos: number;
   estado: string;
@@ -904,30 +902,7 @@ const AdminDashboard = () => {
     };
   }, [activeTab]);
 
-  const getGeometriaParaRuta = (routeKeyOrObj: any) => {
-    if (routeKeyOrObj?.geometria_ruta && Array.isArray(routeKeyOrObj.geometria_ruta) && routeKeyOrObj.geometria_ruta.length > 0) {
-      return routeKeyOrObj.geometria_ruta;
-    }
-    
-    const key = typeof routeKeyOrObj === 'string' ? routeKeyOrObj : (routeKeyOrObj?.codigo || routeKeyOrObj?.id || selectedRouteKey);
-    const keyStr = String(key).toUpperCase();
 
-    if (RUTAS_PRINCIPALES[keyStr]) {
-      return RUTAS_PRINCIPALES[keyStr].puntos;
-    }
-    
-    const nombreStr = (routeKeyOrObj?.zona_nombre || routeKeyOrObj?.nombre || '').toLowerCase();
-    if (nombreStr.includes('este') || nombreStr.includes('sje001') || nombreStr.includes('larapa')) {
-      return RUTAS_PRINCIPALES['SJ-01'].puntos;
-    }
-    if (nombreStr.includes('noreste') || nombreStr.includes('sje002') || nombreStr.includes('versalles')) {
-      return RUTAS_PRINCIPALES['SJ-02'].puntos;
-    }
-    if (nombreStr.includes('noroeste') || nombreStr.includes('sje003') || nombreStr.includes('santa rosa')) {
-      return RUTAS_PRINCIPALES['SJ-03'].puntos;
-    }
-    return RUTAS_PRINCIPALES['SJ-04'].puntos;
-  };
 
   useEffect(() => {
     const map = mapRef.current;
@@ -1699,6 +1674,7 @@ const AdminDashboard = () => {
                 <button
                   onClick={() => {
                     setUserForm({
+                      dni: '',
                       email: '',
                       nombre_completo: 'Recolector 05 – (Placa: E5M-000)',
                       rol: 'recolector',
@@ -1773,6 +1749,7 @@ const AdminDashboard = () => {
                               onClick={() => {
                                 setEditingUser(u);
                                 setUserForm({
+                                  dni: u.dni || '',
                                   email: u.email,
                                   nombre_completo: u.nombre_completo,
                                   rol: u.rol,
