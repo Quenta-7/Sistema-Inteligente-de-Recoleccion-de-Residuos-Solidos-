@@ -1027,6 +1027,7 @@ const AdminDashboard = () => {
         .addTo(map);
     } else {
       truckMarkerRef.current.setLatLng([truckPos.lat, truckPos.lng]);
+    }
   }, [activeTab, selectedRouteKey, activeRealRuta]);
 
 
